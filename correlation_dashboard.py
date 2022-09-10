@@ -17,14 +17,14 @@ top_stock_and_coin_close_prices_over_time_data_frame = pd.read_sql(
 dataframes_from_queries.top_stock_and_coin_close_prices_over_time, con=connect)
 
 
-app = Dash(__name__)
+
+# app = Dash(__name__)
 server = Flask(__name__)
-application = app.server
-# app = Dash(
-#     __name__,
-#     server=server,
-#     url_base_pathname='/'
-# )
+app = Dash(
+    __name__,
+    server=server,
+    url_base_pathname='/'
+)
 
 
 colors = {
@@ -134,52 +134,4 @@ def my_dash_app():
 
 
 if __name__ == '__main__':
-    application.run(debug=True)
-
-
-
-
-
-
-
-# from flask import Flask
-# import dash
-# from flask import render_template
-# # import correlation_dashboard
-#
-#
-# application = Flask(__name__)
-# # application = app.server
-#
-# @application.route("/")
-# # def index():
-# #     # return render_template(correlation_dashboard.correlation_dash(), title='Home Page')
-# #     return "hello world"
-# def index():
-#     return "Hello World"
-#         # render_template("templates.base.html", title='Home Page')
-#
-# if __name__ == '__main__':
-#     application.run(port=8080, debug=True)
-#
-# # index()
-#
-# # from flask import Flask
-# # from dash import Dash
-# # import correlation_dashboard
-# # import dash_core_components as dcc
-# # import dash_html_components as html
-# #
-# #
-# # server = Flask(__name__)
-# # app = Dash(
-# #     __name__,
-# #     server=server,
-# #     url_base_pathname='/'
-# # )
-#
-#
-# #
-# # @server.route("/")
-# # def my_dash_app():
-# #     return app.index()
+    app.run(host='0.0.0.0', port=8000, debug=True)
