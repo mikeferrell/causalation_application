@@ -12,6 +12,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
+
 app.config["SQLALCHEMY_DATABASE_URI"] = passwords.rds_access
 url = passwords.rds_access
 engine = create_engine(url)

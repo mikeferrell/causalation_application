@@ -1,5 +1,5 @@
 from flask import Flask
-from dash import Dash, dcc, html
+from dash import Dash, dcc, html, Input, Output
 import pandas as pd
 import dataframes_from_queries
 import plotly.graph_objects as go
@@ -20,11 +20,6 @@ dataframes_from_queries.top_stock_and_coin_close_prices_over_time, con=connect)
 app = Dash(__name__)
 server = Flask(__name__)
 application = app.server
-# app = Dash(
-#     __name__,
-#     server=server,
-#     url_base_pathname='/'
-# )
 
 
 colors = {
@@ -39,18 +34,16 @@ correlation_data_frame = dataframes_from_queries.correlation_data_frame
 # top_stock_and_coin_close_prices_over_time_data_frame = dataframes_from_queries.top_stock_and_coin_close_prices_over_time_data_frame
 
 
-
-
-def Mult_Y_Axis_Lines(dataframe_input):
+def Mult_Y_Axis_Lines(dataframe_input, stock_name):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     # Add traces
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"close_date"], y=dataframe_input.loc[:,"close_price"], name="TFC"),
+        go.Scatter(x=dataframe_input.loc[:,"close_date"], y=dataframe_input.loc[:,"close_price"], name=stock_name),
         secondary_y=False,
     )
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"close_date"], y=dataframe_input.loc[:,"coin_price"], name="Ripple"),
+        go.Scatter(x=dataframe_input.loc[:,"close_date"], y=dataframe_input.loc[:,"coin_price"], name="Crypto"),
         secondary_y=True,
     )
     # Add figure title
@@ -66,25 +59,29 @@ def Mult_Y_Axis_Lines(dataframe_input):
     return fig
 
 
-# df = dataframe_input
-#
-# trace1 = go.Scatter(x=df['stock_symbol'],
-#                     y=df['close_price'],
-#                     name='Stock Price',
-#                     mode='lines+markers',
-#                     yaxis='y1')
-# trace2 = go.Scatter(x=df['stock_symbol'],
-#                     y=df['coin_price'],
-#                     name='Coin Price',
-#                     mode='lines+markers',
-#                     yaxis='y2')
-# data = [trace1, trace2]
-# layout = go.Layout(title='Coin and Stock Price over Time',
-#                    yaxis=dict(title='stock price'),
-#                    yaxis2=dict(title='coin price',
-#                                overlaying='y',
-#                                side='right'))
-# return go.Figure(data=data, layout=layout)
+def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Add traces
+    fig.add_trace(
+        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"close_price"], name=stock_name),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"inflation_percentage"], name="Inflation_Mention_Percentage"),
+        secondary_y=True,
+    )
+    # Add figure title
+    fig.update_layout(
+        title_text="Stock Most Correlated with Mentions of Inflations in 10K Filings"
+    )
+    # Set x-axis title
+    fig.update_xaxes(title_text="xaxis title")
+    # Set y-axes titles
+    fig.update_yaxes(title_text="<b>primary</b> yaxis title", secondary_y=False)
+    fig.update_yaxes(title_text="<b>secondary</b> yaxis title", secondary_y=True)
+
+    return fig
 
 
 def generate_table(dataframe):
@@ -108,21 +105,29 @@ html.H1(
     }
 ),
 
-html.Div(children='Is it Correlation? Is it Causal? How would I know?', style={
-    'textAlign': 'center',
-    'color': colors['text']
-}),
+html.Div([
+    dcc.Dropdown(dataframes_from_queries.dropdown_list, id='dropdown-input', placeholder = 'Choose a Stock'),
+    html.Div(id='dropdown-output')
+]),
+
+html.H1(
+    children='Static Charts',
+    style={
+        'textAlign': 'center',
+        'color': colors['text']
+    }),
 
 dcc.Graph(
     id='example-graph-2',
-    figure=Mult_Y_Axis_Lines(top_stock_and_coin_close_prices_over_time_data_frame)
+    figure=Mult_Y_Axis_Lines(top_stock_and_coin_close_prices_over_time_data_frame, "TFC")
 ),
-
-# html.H4('stock and coin correlation over time'),
-# Mult_Y_Axis_Lines(top_stock_and_coin_close_prices_over_time_data_frame),
 
 html.H4(children='Most Correlated Stock and Crypto'),
 generate_table(top_correlated_coin_and_stock_data_frame),
+
+#trying to make a table with the dropdown value, not working yet
+# html.H4(children='Recent Prices'),
+# generate_table(dataframes_from_queries.dropdown_results(f'{input_value}')),
 
 html.H3(children='Crypto and Stock Top 100 Correlations'),
 generate_table(correlation_data_frame)
@@ -132,54 +137,26 @@ generate_table(correlation_data_frame)
 def my_dash_app():
     return app.index()
 
+@app.callback(
+    Output('dropdown-output', 'children'),
+    Input('dropdown-input', 'value')
+)
+def update_output(value):
+    description = 'Strongest Crypto Correlation Based on Stock Selection'
+    dropdown_table = generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(value))
+    # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
+    new_chart = dcc.Graph(
+        id='example-graph-2',
+        figure=Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
+        )
+    edgar_dropdown_table = generate_table(dataframes_from_queries.inflation_mention_correlation(value))
+    edgar_chart = dcc.Graph(
+        id='example-graph-2',
+        figure=Edgar_Mult_Y_Axis_Lines(dataframes_from_queries.inflation_mention_chart(value), value)
+        )
+    return description, dropdown_table, new_chart, edgar_dropdown_table, edgar_chart
+
 
 if __name__ == '__main__':
     application.run(debug=True)
 
-
-
-
-
-
-
-# from flask import Flask
-# import dash
-# from flask import render_template
-# # import correlation_dashboard
-#
-#
-# application = Flask(__name__)
-# # application = app.server
-#
-# @application.route("/")
-# # def index():
-# #     # return render_template(correlation_dashboard.correlation_dash(), title='Home Page')
-# #     return "hello world"
-# def index():
-#     return "Hello World"
-#         # render_template("templates.base.html", title='Home Page')
-#
-# if __name__ == '__main__':
-#     application.run(port=8080, debug=True)
-#
-# # index()
-#
-# # from flask import Flask
-# # from dash import Dash
-# # import correlation_dashboard
-# # import dash_core_components as dcc
-# # import dash_html_components as html
-# #
-# #
-# # server = Flask(__name__)
-# # app = Dash(
-# #     __name__,
-# #     server=server,
-# #     url_base_pathname='/'
-# # )
-#
-#
-# #
-# # @server.route("/")
-# # def my_dash_app():
-# #     return app.index()
