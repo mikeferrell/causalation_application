@@ -240,7 +240,7 @@ def inflation_mention_chart(stock_symbol):
         )
         
         select stock_date, stock_symbol,
-        avg(close_price) over(order by stock_symbol, stock_date rows 7 preceding) as stock_rolling_avg,
+        avg(close_price) close_price as stock_price,
         'Inflation Mentions' as inflation_mentions,
         avg(inflation_percentage) over(order by stock_symbol, stock_date rows 25 preceding) as inflation_mentions_rolling_avg
         from rolling_average_calculation
