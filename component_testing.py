@@ -1,6 +1,5 @@
 from flask import Flask
 from dash import Dash, dcc, html, Input, Output
-import dash_bootstrap_components as dbc
 import pandas as pd
 import dataframes_from_queries
 import plotly.graph_objects as go
@@ -65,11 +64,11 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
 
     # Add traces
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"stock_rolling_avg"], name=stock_name),
+        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"close_price"], name=stock_name),
         secondary_y=False,
     )
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"inflation_mentions_rolling_avg"], name="Inflation_Mention_Percentage"),
+        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"inflation_percentage"], name="Inflation_Mention_Percentage"),
         secondary_y=True,
     )
     # Add figure title
@@ -85,19 +84,7 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
     return fig
 
 
-def generate_table(dataframe, style_data={
-    'color': 'black',
-    'backgroundColor': 'white'
-}, style_data_conditional=[
-    {
-        'if': {'row_index': 'odd'},
-        'backgroundColor': 'rgb(220, 220, 220)',
-    }
-], style_header={
-    'backgroundColor': 'rgb(210, 210, 210)',
-    'color': 'black',
-    'fontWeight': 'bold'
-}):
+def generate_table(dataframe):
     return html.Table([
         html.Thead(
             html.Tr([html.Th(col) for col in dataframe.columns])
@@ -130,46 +117,40 @@ html.H1(
         'color': colors['text']
     }),
 
-html.H4(children='Stocks Correlated with Inflation Mentions'),
-    generate_table(dataframes_from_queries.top_inflation_correlations_with_rolling_avg('desc')),
-
-html.H4(children='Stocks Inversely Correlated with Inflation Mentions'),
-    generate_table(dataframes_from_queries.top_inflation_correlations_with_rolling_avg('asc')),
-
 dcc.Graph(
     id='example-graph-2',
     figure=Mult_Y_Axis_Lines(top_stock_and_coin_close_prices_over_time_data_frame, "TFC")
 ),
 
 html.H4(children='Most Correlated Stock and Crypto'),
-    generate_table(top_correlated_coin_and_stock_data_frame),
+generate_table(top_correlated_coin_and_stock_data_frame),
 
 html.H3(children='Crypto and Stock Top 100 Correlations'),
-    generate_table(correlation_data_frame)
+generate_table(correlation_data_frame)
 ])
 
 @server.route("/")
 def my_dash_app():
     return app.index()
 
-@app.callback(
-    Output('dropdown-output', 'children'),
-    Input('dropdown-input', 'value')
-)
-def update_output(value):
-    description = 'Strongest Crypto Correlation Based on Stock Selection'
-    dropdown_table = generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(value))
-    # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
-    new_chart = dcc.Graph(
-        id='example-graph-2',
-        figure=Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
-        )
-    edgar_dropdown_table = generate_table(dataframes_from_queries.inflation_mention_correlation(value))
-    edgar_chart = dcc.Graph(
-        id='example-graph-2',
-        figure=Edgar_Mult_Y_Axis_Lines(dataframes_from_queries.inflation_mention_chart(value), value)
-        )
-    return description, dropdown_table, new_chart, edgar_dropdown_table, edgar_chart
+# @app.callback(
+#     Output('dropdown-output', 'children'),
+#     Input('dropdown-input', 'value')
+# )
+# def update_output(value):
+#     description = 'Strongest Crypto Correlation Based on Stock Selection'
+#     dropdown_table = generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(value))
+#     # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
+#     new_chart = dcc.Graph(
+#         id='example-graph-2',
+#         figure=Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
+#         )
+#     edgar_dropdown_table = generate_table(dataframes_from_queries.inflation_mention_correlation(value))
+#     edgar_chart = dcc.Graph(
+#         id='example-graph-2',
+#         figure=Edgar_Mult_Y_Axis_Lines(dataframes_from_queries.inflation_mention_chart(value), value)
+#         )
+#     return description, dropdown_table, new_chart, edgar_dropdown_table, edgar_chart
 
 
 if __name__ == '__main__':

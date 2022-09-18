@@ -130,9 +130,73 @@ def inflation_mention_correlation(stock_symbol):
     return df_results
 
 
+def top_inflation_correlations_with_rolling_avg(asc_or_desc):
+    query_results = f'''
+            with top_correlations as (with rolling_average_calculation as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
+            case when risk_factors ilike '%%inflat%%' then 1
+            when risk_disclosures ilike '%%inflat%%' then 1
+            else 0 
+            end as inflation_count
+            from public.edgar_data 
+            where risk_factors != ''
+            and risk_disclosures != ''
+            order by inflation_count desc)
+            
+            select sum(inflation_count) as inflation_mentions, 
+            count(filing_url) as total_filings, 
+            DATE_TRUNC('week',filing_date) as filing_week
+            from count_inflation_mentions
+            group by filing_week
+            order by filing_week asc
+            )
+            ,
+            
+            stock_weekly_opening as (with temp_table as (
+            select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol
+            from public.ticker_data
+            order by stock_symbol, date(created_at)  asc
+            )
+            
+            SELECT
+                created_at, 
+                close_price,
+                stock_symbol,
+                LAG(created_at,1) OVER (
+                    ORDER BY stock_symbol, created_at
+                ) as next_date,
+                    case when LAG(created_at) OVER (
+                    ORDER BY stock_symbol, created_at
+                ) = created_at then null else created_at
+                end as first_price_in_week
+            FROM
+                temp_table)
+            
+            select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * inflation_mentions / total_filings as inflation_percentage
+            from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week
+            )
+            
+            select stock_date, stock_symbol,
+            close_price,
+            'Inflation Mentions' as inflation_mentions,
+            avg(inflation_percentage) over(order by stock_symbol, stock_date rows 10 preceding) as inflation_mentions_rolling_avg
+            from rolling_average_calculation
+            order by stock_symbol, stock_date
+            )
+            
+            select stock_symbol, inflation_mentions, corr(close_price, inflation_mentions_rolling_avg) * 1.000 as correlation
+            from top_correlations
+            where stock_date >= '2017-03-06'
+            group by 1, 2
+            order by correlation {asc_or_desc}
+            limit 10
+                '''
+    df_results = pd.read_sql(query_results, con=connect)
+    return df_results
+
+
 def inflation_mention_chart(stock_symbol):
     query_results = f'''
-        with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
+        with rolling_average_calculation as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
         case when risk_factors ilike '%%inflat%%' then 1
         when risk_disclosures ilike '%%inflat%%' then 1
         else 0 
@@ -142,14 +206,17 @@ def inflation_mention_chart(stock_symbol):
         and risk_disclosures != ''
         order by inflation_count desc)
         
-        select sum(inflation_count) as inflation_mentions, count(filing_url) as total_filings, DATE_TRUNC('month',filing_date) as filing_month
+        select sum(inflation_count) as inflation_mentions, 
+        count(filing_url) as total_filings, 
+        DATE_TRUNC('week',filing_date) as filing_week
         from count_inflation_mentions
-        group by filing_month
-        order by filing_month asc
-        ),
+        group by filing_week
+        order by filing_week asc
+        )
+        ,
         
-        stock_monthly_opening as (with temp_table as (
-        select date(created_at) as created_at, close_price, stock_symbol
+        stock_weekly_opening as (with temp_table as (
+        select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol
         from public.ticker_data
         order by stock_symbol, date(created_at)  asc
         )
@@ -161,17 +228,24 @@ def inflation_mention_chart(stock_symbol):
             LAG(created_at,1) OVER (
                 ORDER BY stock_symbol, created_at
             ) as next_date,
-                case when split_part(LAG(created_at,1) OVER (
+                case when LAG(created_at) OVER (
                 ORDER BY stock_symbol, created_at
-            )::TEXT, '-', 2) = 
-        split_part(created_at::TEXT, '-', 2) then null else created_at
-            end as first_price_in_month
+            ) = created_at then null else created_at
+            end as first_price_in_week
         FROM
             temp_table)
         
-        select first_price_in_month as stock_date, close_price, stock_symbol, 1.00 * inflation_mentions / total_filings as inflation_percentage
-        from stock_monthly_opening join keyword_data on stock_monthly_opening.first_price_in_month = keyword_data.filing_month
-        where stock_symbol in ('{stock_symbol}')
+        select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * inflation_mentions / total_filings as inflation_percentage
+        from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week
+        )
+        
+        select stock_date, stock_symbol,
+        avg(close_price) over(order by stock_symbol, stock_date rows 7 preceding) as stock_rolling_avg,
+        'Inflation Mentions' as inflation_mentions,
+        avg(inflation_percentage) over(order by stock_symbol, stock_date rows 25 preceding) as inflation_mentions_rolling_avg
+        from rolling_average_calculation
+        where stock_symbol = '{stock_symbol}'
+        order by stock_symbol, stock_date
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
     return query_results_df
