@@ -85,19 +85,7 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
     return fig
 
 
-def generate_table(dataframe, style_data={
-    'color': 'black',
-    'backgroundColor': 'white'
-}, style_data_conditional=[
-    {
-        'if': {'row_index': 'odd'},
-        'backgroundColor': 'rgb(220, 220, 220)',
-    }
-], style_header={
-    'backgroundColor': 'rgb(210, 210, 210)',
-    'color': 'black',
-    'fontWeight': 'bold'
-}):
+def generate_table(dataframe):
     return html.Table([
         html.Thead(
             html.Tr([html.Th(col) for col in dataframe.columns])
