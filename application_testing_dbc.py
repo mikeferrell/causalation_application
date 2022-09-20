@@ -19,7 +19,7 @@ top_stock_and_coin_close_prices_over_time_data_frame = pd.read_sql(
 dataframes_from_queries.top_stock_and_coin_close_prices_over_time, con=connect)
 
 
-app = Dash(__name__, title='Causalation')
+app = Dash(__name__, title='Causalation', serve_locally=False, external_stylesheets=[dbc.themes.LITERA])
 server = Flask(__name__)
 application = app.server
 
@@ -28,7 +28,6 @@ colors = {
 'background': '#FFFFFF',
 'text': '#000000'
 }
-
 
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
@@ -74,24 +73,44 @@ html.H3(children='Crypto and Stock Top 100 Correlations'),
 def my_dash_app():
     return app.index()
 
-@app.callback(
-    Output('dropdown-output', 'children'),
-    Input('dropdown-input', 'value')
-)
-def update_output(value):
-    description = 'Strongest Crypto Correlation Based on Stock Selection'
-    dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(value))
-    # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
-    new_chart = dcc.Graph(
-        id='example-graph-2',
-        figure=my_dash_charts.Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
-        )
-    edgar_dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.inflation_mention_correlation(value))
-    edgar_chart = dcc.Graph(
-        id='example-graph-2',
-        figure=my_dash_charts.Edgar_Mult_Y_Axis_Lines(dataframes_from_queries.inflation_mention_chart(value), value)
-        )
-    return description, dropdown_table, new_chart, edgar_dropdown_table, edgar_chart
+# button = html.Div(
+#     [
+#         dbc.Button(
+#             "Click me", id="example-button", className="me-2", n_clicks=0
+#         ),
+#         html.Span(id="example-output", style={"verticalAlign": "middle"}),
+#     ]
+# )
+#
+#
+# @app.callback(
+#     Output("example-output", "children"), [Input("example-button", "n_clicks")]
+# )
+# def on_button_click(n):
+#     if n is None:
+#         return "Not clicked."
+#     else:
+#         return f"Clicked {n} times."
+
+
+# @app.callback(
+#     Output('dropdown-output', 'children'),
+#     Input('dropdown-input', 'value')
+# )
+# def update_output(value):
+#     description = 'Strongest Crypto Correlation Based on Stock Selection'
+#     dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(value))
+#     # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
+#     new_chart = dcc.Graph(
+#         id='example-graph-2',
+#         figure=my_dash_charts.Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
+#         )
+#     edgar_dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.inflation_mention_correlation(value))
+#     edgar_chart = dcc.Graph(
+#         id='example-graph-2',
+#         figure=my_dash_charts.Edgar_Mult_Y_Axis_Lines(dataframes_from_queries.inflation_mention_chart(value), value)
+#         )
+#     return description, dropdown_table, new_chart, edgar_dropdown_table, edgar_chart
 
 
 if __name__ == '__main__':
