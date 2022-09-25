@@ -1,0 +1,2 @@
+logo = '/Users/michaelferrell/PycharmProjects/causalation_dashboard/assets/causalation-logo-no-background.png'
+small_logo = '/Users/michaelferrell/PycharmProjects/causalation_dashboard/assets/small_logo.png'

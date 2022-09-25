@@ -41,7 +41,7 @@ html.H1(
 ),
 
 html.Div([
-    dcc.Dropdown(dataframes_from_queries.dropdown_list, id='dropdown-input', placeholder = 'Choose a Stock'),
+    dcc.Dropdown(dataframes_from_queries.stock_symbol_dropdown_list, id='dropdown-input', placeholder ='Choose a Stock'),
     html.Div(id='dropdown-output')
 ]),
 

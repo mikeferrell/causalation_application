@@ -1,5 +1,6 @@
 from flask import Flask
 from dash import Dash, dcc, html
+import dash_bootstrap_components as dbc
 import pandas as pd
 import dataframes_from_queries
 import plotly.graph_objects as go
@@ -64,13 +65,5 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
 
 
 def generate_table(dataframe):
-    return html.Table([
-        html.Thead(
-            html.Tr([html.Th(col) for col in dataframe.columns])
-        ),
-        html.Tbody([
-            html.Tr([
-                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-            ]) for i in range(len(dataframe))
-        ])
-    ])
+    table = dbc.Table.from_dataframe(dataframe, striped=True, bordered=True, hover=True)
+    return table
