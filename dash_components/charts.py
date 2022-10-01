@@ -67,3 +67,4 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
 def generate_table(dataframe):
     table = dbc.Table.from_dataframe(dataframe, striped=True, bordered=True, hover=True)
     return table
+

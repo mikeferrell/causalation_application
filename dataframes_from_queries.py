@@ -14,6 +14,13 @@ def stock_symbol_dropdown(stock_symbol):
     recent_prices_df = pd.read_sql(recent_prices, con=connect)
     return recent_prices_df
 
+def keyword_dropdown():
+    keyword_count = f'''select distinct keywords, keyword_count from public.rake_data
+order by keyword_count desc'''
+    keyword_count_df = pd.read_sql(keyword_count, con=connect)
+    keyword_count_df= keyword_count_df.iloc[:, 0]
+    return keyword_count_df
+
 def stock_crypto_correlation_filtered(stock_symbol):
     query_results = f'''
                 with a as (

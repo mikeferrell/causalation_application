@@ -1,5 +1,6 @@
+import dash.exceptions
 from flask import Flask
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State, exceptions
 import dash_bootstrap_components as dbc
 import pandas as pd
 from datetime import date
@@ -88,17 +89,26 @@ app.layout = html.Div(children=[
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_symbol_dropdown_list,
-                                           id='dropdown-input', placeholder='Choose a Stock'),
-                              html.Div(id='dropdown-output')
+                                           id='dropdown_input', placeholder='Choose a Stock')
                               ],
-                             ), width={"size": 3, "offset": 3}),
-            dbc.Col(html.Div([dcc.DatePickerRange(id='date-picker-range',
+                             ), width={"size": 2, "offset": 2}),
+            dbc.Col(html.Div([dcc.DatePickerRange(id='date_picker_range',
                                                   start_date=date(2017, 1, 1),
-                                                  end_date=date(2022, 8, 1)),
-                              html.Div(id='my-date-output')], ),
-                    width={"size": 3, "offset": 1})
-            ]
+                                                  end_date=date(2022, 8, 1),
+                                                  clearable=False)], ),
+                    width={"size": 3, "offset": 1}),
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.keyword_dropdown(),
+                                           id='keyword_dropdown_input', placeholder='Choose a Keyword')
+                              ],
+                             ), width={"size": 2}),
+            dbc.Col(html.Div(dbc.Button("Apply Filters", id='my_button', color="primary", className="me-1", n_clicks=0)
+                             ),
+                    width={"size": 2})
+            ],
+        className="g-2"
     ),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
+    dbc.Row(dbc.Col(html.Div(id="correlation_table"), width={"size": 5, "offset": 2})),
     html.Div(html.H1(
         children='Static Charts',
         style={
@@ -109,7 +119,7 @@ app.layout = html.Div(children=[
         [
             dbc.Col(my_dash_charts.generate_table(
                 dataframes_from_queries.top_inflation_correlations_with_rolling_avg('desc')),
-                width={"size": 3, "offset": 3}),
+                width={"size": 3, "offset": 2}),
             dbc.Col(my_dash_charts.generate_table(
                 dataframes_from_queries.top_inflation_correlations_with_rolling_avg('asc')),
                 width={"size": 3, "offset": 1}),
@@ -144,7 +154,7 @@ def my_dash_app():
     return app.index()
 
 
-@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
+@app.callback(Output("page-content", "content_children"), [Input("url", "pathname")])
 def render_page_content(pathname):
     if pathname == "/":
         return html.P("Causalation")
@@ -184,30 +194,38 @@ def render_page_content(pathname):
 
 
 @app.callback(
-    Output('dropdown-output', 'children'),
-    Output("my-date-output", "children"),
-    Input('dropdown-input', 'value'),
-    [Input("date-picker-range", "start_date"), Input("date-picker-range", "end_date")]
+    Output('date_and_stock_for_chart', 'figure'),
+    Output('correlation_table', 'children'),
+    Input('my_button', 'n_clicks'),
+    [State('dropdown_input', 'value'),
+        # State('keyword_dropdown_input', 'value'),
+    State('date_picker_range', 'start_date'),
+    State('date_picker_range', 'end_date')]
 )
-def update_output(value, start_date, end_date):
-    start_date = str(start_date)
-    end_date = str(end_date)
-    description = 'Strongest Crypto Correlation Based on Stock Selection'
-    dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(value))
+def update_output(n_clicks, stock_dropdown_value, start_date, end_date):
+    # start_date = str(start_date)
+    # end_date = str(end_date)
+    # description = 'Strongest Crypto Correlation Based on Stock Selection'
     # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
     # new_chart = dcc.Graph(
     #     id='example-graph-2',
     #     figure=my_dash_charts.Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
     #     )
     # edgar_dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.inflation_mention_correlation(value))
-    edgar_chart = dcc.Graph(
-        id='example-graph-2',
-        figure=my_dash_charts.Edgar_Mult_Y_Axis_Lines(
-            dataframes_from_queries.inflation_mention_chart(value, start_date, end_date), value)
-    )
-    return description, dropdown_table, edgar_chart
-    # , new_chart, edgar_dropdown_table, edgar_chart
+    if len(stock_dropdown_value) > 0:
+        print(n_clicks)
+        edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
+                dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date, end_date), stock_dropdown_value)
+        dropdown_table = my_dash_charts.generate_table(
+            dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
+        print("filter_applied")
+    elif len(stock_dropdown_value) == 0:
+        raise exceptions.PreventUpdate
+    # dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
+    # keyword_selection = keyword_dropdown_value
+    return edgar_chart, dropdown_table
+    # description, new_chart, edgar_dropdown_table, edgar_chart, dropdown_table,
 
 
 if __name__ == '__main__':
-    application.run(debug=True)
+    application.run(port=8080, debug=True)
