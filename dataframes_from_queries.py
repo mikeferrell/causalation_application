@@ -9,7 +9,8 @@ connect = engine.connect()
 
 def stock_symbol_dropdown(stock_symbol):
     recent_prices = f'''select stock_symbol, close_price, date(created_at) 
-    from ticker_data where stock_symbol = '{stock_symbol}'
+    from ticker_data 
+    where stock_symbol = '{stock_symbol}'
     order by date(created_at) desc limit 30'''
     recent_prices_df = pd.read_sql(recent_prices, con=connect)
     return recent_prices_df
@@ -17,6 +18,27 @@ def stock_symbol_dropdown(stock_symbol):
 def keyword_dropdown():
     keyword_count = f'''select distinct keywords, keyword_count from public.rake_data
 order by keyword_count desc'''
+    keyword_count_df = pd.read_sql(keyword_count, con=connect)
+    keyword_count_df= keyword_count_df.iloc[:, 0]
+    return keyword_count_df
+
+def keyword_table(keyword, start_date, end_date):
+    keyword_count = f'''with keyword_words as (SELECT
+date(filing_date) as filing_date,
+  round(
+    length(risk_factors) - length(REPLACE(risk_factors, '{keyword}', ''))
+  ) / length('{keyword}') AS keyword_count
+FROM
+  public.edgar_data
+WHERE filing_date >= '{start_date}'
+and filing_date <= '{end_date}'
+)
+  
+select '{keyword}' as keywords,
+sum(keyword_count) as keyword_count
+from keyword_words
+where keyword_count > 0
+group by 1'''
     keyword_count_df = pd.read_sql(keyword_count, con=connect)
     keyword_count_df= keyword_count_df.iloc[:, 0]
     return keyword_count_df
@@ -83,19 +105,19 @@ def change_stock_on_chart(stock_symbol):
     df_results = pd.read_sql(query_results, con=connect)
     return df_results
 
-def inflation_mention_correlation(stock_symbol):
-    query_results = f'''with inflation_information as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
-        case when risk_factors ilike '%%inflat%%' then 1
-        when risk_disclosures ilike '%%inflat%%' then 1
+def inflation_mention_correlation(stock_symbol, keyword):
+    query_results = f'''with keyword_information as (with keyword_data as (with count_keyword_mentions as (select date(filing_date) as filing_date, filing_url,
+        case when risk_factors ilike '%%{keyword}%%' then 1
+        when risk_disclosures ilike '%%{keyword}%%' then 1
         else 0 
-        end as inflation_count
+        end as keyword_count
         from public.edgar_data 
         where risk_factors != ''
         and risk_disclosures != ''
-        order by inflation_count desc)
+        order by keyword_count desc)
         
-        select sum(inflation_count) as inflation_mentions, count(filing_url) as total_filings, DATE_TRUNC('month',filing_date) as filing_month
-        from count_inflation_mentions
+        select sum(keyword_count) as keyword_mentions, count(filing_url) as total_filings, DATE_TRUNC('month',filing_date) as filing_month
+        from count_keyword_mentions
         group by filing_month
         order by filing_month asc
         ),
@@ -121,12 +143,12 @@ def inflation_mention_correlation(stock_symbol):
         FROM
             temp_table)
         
-        select first_price_in_month as stock_date, close_price, stock_symbol, 1.00 * inflation_mentions / total_filings as inflation_percentage
+        select first_price_in_month as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
         from stock_monthly_opening join keyword_data on stock_monthly_opening.first_price_in_month = keyword_data.filing_month  + interval '1 month'
         )
         
-        select stock_symbol, 'inflation mentions' as inflation_mentions, corr(close_price, inflation_percentage) * 1.000 as correlation
-        from inflation_information
+        select stock_symbol, '{keyword} mentions' as keyword_mentions, corr(close_price, keyword_percentage) * 1.000 as correlation
+        from keyword_information
         where stock_symbol = '{stock_symbol}'
         group by 1, 2
         order by correlation desc

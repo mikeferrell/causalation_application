@@ -89,7 +89,7 @@ app.layout = html.Div(children=[
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_symbol_dropdown_list,
-                                           id='dropdown_input', placeholder='Choose a Stock')
+                                           id='dropdown_input', placeholder='Choose a Stock', value='AAPL')
                               ],
                              ), width={"size": 2, "offset": 2}),
             dbc.Col(html.Div([dcc.DatePickerRange(id='date_picker_range',
@@ -108,7 +108,11 @@ app.layout = html.Div(children=[
         className="g-2"
     ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
-    dbc.Row(dbc.Col(html.Div(id="correlation_table"), width={"size": 5, "offset": 2})),
+    dbc.Row([
+        dbc.Col(html.Div(id="correlation_table"), width={"size": 5, "offset": 2}),
+        # dbc.Col(html.Div(id="keyword_count_table"), width={"size": 3}),
+        dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 5})
+            ]),
     html.Div(html.H1(
         children='Static Charts',
         style={
@@ -196,35 +200,31 @@ def render_page_content(pathname):
 @app.callback(
     Output('date_and_stock_for_chart', 'figure'),
     Output('correlation_table', 'children'),
+    Output('keyword_correlation_table', 'children'),
+    # Output('keyword_count_table', 'children'),
     Input('my_button', 'n_clicks'),
     [State('dropdown_input', 'value'),
-        # State('keyword_dropdown_input', 'value'),
+    State('keyword_dropdown_input', 'value'),
     State('date_picker_range', 'start_date'),
     State('date_picker_range', 'end_date')]
 )
-def update_output(n_clicks, stock_dropdown_value, start_date, end_date):
-    # start_date = str(start_date)
-    # end_date = str(end_date)
-    # description = 'Strongest Crypto Correlation Based on Stock Selection'
-    # crypto_in_chart = dataframes_from_queries.stock_crypto_correlation_filtered(value)['coin_name'].iloc[0]
-    # new_chart = dcc.Graph(
-    #     id='example-graph-2',
-    #     figure=my_dash_charts.Mult_Y_Axis_Lines(dataframes_from_queries.change_stock_on_chart(value), value)
-    #     )
-    # edgar_dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.inflation_mention_correlation(value))
+def update_output(n_clicks, stock_dropdown_value, keyword_dropdown_value, start_date, end_date):
     if len(stock_dropdown_value) > 0:
         print(n_clicks)
         edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
                 dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date, end_date), stock_dropdown_value)
         dropdown_table = my_dash_charts.generate_table(
             dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
+        keyword_correlation_table = my_dash_charts.generate_table(
+                dataframes_from_queries.inflation_mention_correlation(stock_dropdown_value, keyword_dropdown_value))
+        # keyword_count_table = my_dash_charts.generate_table(
+        #     dataframes_from_queries.keyword_table(keyword_dropdown_value, start_date, end_date))
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
-    # dropdown_table = my_dash_charts.generate_table(dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
-    # keyword_selection = keyword_dropdown_value
-    return edgar_chart, dropdown_table
-    # description, new_chart, edgar_dropdown_table, edgar_chart, dropdown_table,
+
+    return edgar_chart, dropdown_table, keyword_correlation_table
+
 
 
 if __name__ == '__main__':
