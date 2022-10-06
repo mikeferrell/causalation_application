@@ -39,7 +39,7 @@ def Mult_Y_Axis_Lines(dataframe_input, stock_name):
     return fig
 
 
-def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
+def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name, keyword):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     # Add traces
@@ -48,7 +48,8 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name):
         secondary_y=False,
     )
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"inflation_mentions_rolling_avg"], name="Inflation_Mention_Percentage"),
+        go.Scatter(x=dataframe_input.loc[:,"stock_date"],
+                   y=dataframe_input.loc[:,f"{keyword} Mentions Rolling Average"], name=f"{keyword} Mention Percentage"),
         secondary_y=True,
     )
     # Add figure title

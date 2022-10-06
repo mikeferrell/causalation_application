@@ -24,23 +24,22 @@ order by keyword_count desc'''
 
 def keyword_table(keyword, start_date, end_date):
     keyword_count = f'''with keyword_words as (SELECT
-date(filing_date) as filing_date,
-  round(
-    length(risk_factors) - length(REPLACE(risk_factors, '{keyword}', ''))
-  ) / length('{keyword}') AS keyword_count
-FROM
-  public.edgar_data
-WHERE filing_date >= '{start_date}'
-and filing_date <= '{end_date}'
-)
-  
-select '{keyword}' as keywords,
-sum(keyword_count) as keyword_count
-from keyword_words
-where keyword_count > 0
-group by 1'''
+            date(filing_date) as filing_date,
+              round(
+                length(risk_factors) - length(REPLACE(risk_factors, '{keyword}', ''))
+              ) / length('{keyword}') AS keyword_count
+            FROM
+              public.edgar_data
+            WHERE filing_date >= '{start_date}'
+            and filing_date <= '{end_date}'
+            )
+              
+            select '{keyword}' as keywords,
+            sum(keyword_count) as keyword_count
+            from keyword_words
+            where keyword_count > 0
+            group by 1'''
     keyword_count_df = pd.read_sql(keyword_count, con=connect)
-    keyword_count_df= keyword_count_df.iloc[:, 0]
     return keyword_count_df
 
 def stock_crypto_correlation_filtered(stock_symbol):
@@ -67,6 +66,7 @@ def stock_crypto_correlation_filtered(stock_symbol):
                 limit 1
                 '''
     df_results = pd.read_sql(query_results, con=connect)
+    df_results = df_results.round({'correlation': 4})
     return df_results
 
 
@@ -105,25 +105,30 @@ def change_stock_on_chart(stock_symbol):
     df_results = pd.read_sql(query_results, con=connect)
     return df_results
 
-def inflation_mention_correlation(stock_symbol, keyword):
-    query_results = f'''with keyword_information as (with keyword_data as (with count_keyword_mentions as (select date(filing_date) as filing_date, filing_url,
+def inflation_mention_correlation(stock_symbol, start_date, end_date, filing_type, keyword, time_delay):
+    query_results = f'''
+            with keyword_information as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
         case when risk_factors ilike '%%{keyword}%%' then 1
         when risk_disclosures ilike '%%{keyword}%%' then 1
         else 0 
-        end as keyword_count
+        end as inflation_count
         from public.edgar_data 
         where risk_factors != ''
         and risk_disclosures != ''
-        order by keyword_count desc)
+        and filing_type = '{filing_type}'
+        order by inflation_count desc)
         
-        select sum(keyword_count) as keyword_mentions, count(filing_url) as total_filings, DATE_TRUNC('month',filing_date) as filing_month
-        from count_keyword_mentions
-        group by filing_month
-        order by filing_month asc
-        ),
+        select sum(inflation_count) as inflation_mentions, 
+        count(filing_url) as total_filings, 
+        DATE_TRUNC('week',filing_date) as filing_week
+        from count_inflation_mentions
+        group by filing_week
+        order by filing_week asc
+        )
+        ,
         
-        stock_monthly_opening as (with temp_table as (
-        select date(created_at) as created_at, close_price, stock_symbol
+        stock_weekly_opening as (with temp_table as (
+        select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol
         from public.ticker_data
         order by stock_symbol, date(created_at)  asc
         )
@@ -135,33 +140,36 @@ def inflation_mention_correlation(stock_symbol, keyword):
             LAG(created_at,1) OVER (
                 ORDER BY stock_symbol, created_at
             ) as next_date,
-                case when split_part(LAG(created_at,1) OVER (
+                case when LAG(created_at) OVER (
                 ORDER BY stock_symbol, created_at
-            )::TEXT, '-', 2) = 
-        split_part(created_at::TEXT, '-', 2) then null else created_at
-            end as first_price_in_month
+            ) = created_at then null else created_at
+            end as first_price_in_week
         FROM
             temp_table)
         
-        select first_price_in_month as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
-        from stock_monthly_opening join keyword_data on stock_monthly_opening.first_price_in_month = keyword_data.filing_month  + interval '1 month'
+        select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * inflation_mentions / total_filings as keyword_percentage
+        from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delay} week'
+        where first_price_in_week >= '{start_date}'
+        and first_price_in_week <= '{end_date}'
         )
         
-        select stock_symbol, '{keyword} mentions' as keyword_mentions, corr(close_price, keyword_percentage) * 1.000 as correlation
+        
+        select stock_symbol, '{keyword} mentions' as "{keyword} Mentions", corr(close_price, keyword_percentage) * 1.000 as correlation
         from keyword_information
         where stock_symbol = '{stock_symbol}'
         group by 1, 2
         order by correlation desc
         '''
     df_results = pd.read_sql(query_results, con=connect)
+    df_results = df_results.round({'correlation': 4})
     return df_results
 
 
-def top_inflation_correlations_with_rolling_avg(asc_or_desc):
+def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, end_date, time_delay):
     query_results = f'''
             with top_correlations as (with rolling_average_calculation as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
-            case when risk_factors ilike '%%inflat%%' then 1
-            when risk_disclosures ilike '%%inflat%%' then 1
+            case when risk_factors ilike '%%{keyword}%%' then 1
+            when risk_disclosures ilike '%%{keyword}%%' then 1
             else 0 
             end as inflation_count
             from public.edgar_data 
@@ -199,38 +207,43 @@ def top_inflation_correlations_with_rolling_avg(asc_or_desc):
                 temp_table)
             
             select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * inflation_mentions / total_filings as inflation_percentage
-            from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week
+            from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delay} week'
             )
             
             select stock_date, stock_symbol,
             close_price,
             'Inflation Mentions' as inflation_mentions,
-            avg(inflation_percentage) over(order by stock_symbol, stock_date rows 10 preceding) as inflation_mentions_rolling_avg
+            avg(inflation_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as inflation_mentions_rolling_avg
             from rolling_average_calculation
             order by stock_symbol, stock_date
             )
             
-            select stock_symbol, inflation_mentions, corr(close_price, inflation_mentions_rolling_avg) * 1.000 as correlation
+            select stock_symbol as "Stock Symbol", inflation_mentions as "Keyword Mentions",
+             corr(close_price, inflation_mentions_rolling_avg) * 1.000 as Correlation
             from top_correlations
-            where stock_date >= '2017-03-06'
+            where stock_date >= '{start_date}'
+            and stock_date <= '{end_date}'
             group by 1, 2
-            order by correlation {asc_or_desc}
+            order by Correlation {asc_or_desc}
             limit 10
                 '''
     df_results = pd.read_sql(query_results, con=connect)
+    df_results = df_results.round({'correlation': 4})
     return df_results
 
-
-def inflation_mention_chart(stock_symbol, start_date, end_date):
+#main chart. stock & keyword correlations. No time delay since it's a chart and not a correlation calculation
+#all other fitlers work. Includes a 12 week rolling average
+def inflation_mention_chart(stock_symbol, start_date, end_date, filing_type, keyword):
     query_results = f'''
         with rolling_average_calculation as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
-        case when risk_factors ilike '%%inflat%%' then 1
-        when risk_disclosures ilike '%%inflat%%' then 1
+        case when risk_factors ilike '%%{keyword}%%' then 1
+        when risk_disclosures ilike '%%{keyword}%%' then 1
         else 0 
         end as inflation_count
         from public.edgar_data 
         where risk_factors != ''
         and risk_disclosures != ''
+        and filing_type = '{filing_type}'
         order by inflation_count desc)
         
         select sum(inflation_count) as inflation_mentions, 
@@ -268,8 +281,8 @@ def inflation_mention_chart(stock_symbol, start_date, end_date):
         
         select stock_date, stock_symbol,
         close_price as stock_price,
-        'Inflation Mentions' as inflation_mentions,
-        avg(inflation_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as inflation_mentions_rolling_avg
+        '{keyword} Mentions' as "{keyword} Mentions",
+        avg(inflation_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as "{keyword} Mentions Rolling Average"
         from rolling_average_calculation
         where stock_symbol = '{stock_symbol}'
         and stock_date >= '{start_date}'
@@ -277,6 +290,7 @@ def inflation_mention_chart(stock_symbol, start_date, end_date):
         order by stock_symbol, stock_date
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
+    query_results_df = query_results_df.round({f'{keyword} Mentions Rolling Average': 4})
     return query_results_df
 
 
@@ -357,33 +371,6 @@ and date(created_at) >= '2022-01-01'
 '''
 
 
-#count the top 10 keywords. then, count all the keywords found in 'risk factors' grouped by filing date
-#return filing date, keyword count
-# select count(keywords) as keyword_count, filing_date from edgar_data where keywords in (select keyword_list) group by 2
-# with keyword_list as (select count(keywords), keywords as keyword_count from rake_data group by 2 order by keyword_count desc limit 10)
-# with keywords as (select risk_factors, keywords from edgar_data where risk_factors ilike (select keywords from keyword_list))
-
-# def keyword_count_df():
-#     keywords = "select count(keywords) as keyword_count, keywords from rake_data group by 2 order by keyword_count desc limit 10"
-#     keywords_df = pd.read_sql(keywords, columns = ['keywords'], con=connect)
-#     keywords_list = keywords_df.to_list()
-#
-#     keyword_query_results = []
-#
-#     for keyword in keywords_list:
-#             keyword_count = f"""select filing date,
-#                 round(length(risk_factors) - length(replace(risk_factors, "{keyword}", "")) / length"{keyword}") as keyword_count
-#                 from edgar_data
-#                 group by 1"""
-#             sql_keywords_df = pd.read_sql(keyword_count, con=connect)
-#             sql_keywords_list = sql_keywords_df.to_list()
-#             keyword_query_results.append(sql_keywords_list)
-#
-#     return keyword_query_results
-
-#this definition above won't work. try testing the above query with one keyword. If the query works, then
-# need to figure out how to return it as a dataframe, then append that dataframe each time through the for loop
-
 
 # output is pandas dataframe
 ticker_data_frame = pd.read_sql(average_close_price, con=connect)
@@ -392,7 +379,4 @@ stock_symbol_dropdown_list_df = pd.read_sql(stock_dropdown_list_query, con=conne
 
 
 stock_symbol_dropdown_list = stock_symbol_dropdown_list_df['stock_symbol'].tolist()
-# keyword_count_data_frame = keyword_count_df()
-# top_correlated_coin_and_stock_data_frame = pd.read_sql(top_correlated_coin_and_stock, con=connect)
-# top_stock_and_coin_close_prices_over_time_data_frame = pd.read_sql(top_stock_and_coin_close_prices_over_time, con=connect)
 

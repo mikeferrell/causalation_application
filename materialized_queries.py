@@ -1,7 +1,7 @@
 import dataframes_from_queries
 
 
-print(dataframes_from_queries.top_inflation_correlations_with_rolling_avg('asc'))
+print(dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc'))
 
 
 def stock_crypto_correlation_filtered(stock_symbol):
