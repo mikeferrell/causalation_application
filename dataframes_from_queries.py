@@ -218,7 +218,7 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
             order by stock_symbol, stock_date
             )
             
-            select stock_symbol as "Stock Symbol", inflation_mentions as "Keyword Mentions",
+            select stock_symbol as "Stock Symbol", '{keyword} Mentions' as "Keyword Mentions",
              corr(close_price, inflation_mentions_rolling_avg) * 1.000 as Correlation
             from top_correlations
             where stock_date >= '{start_date}'

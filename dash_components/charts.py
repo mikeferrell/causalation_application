@@ -57,10 +57,10 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name, keyword):
         title_text="Stock Most Correlated with Mentions of Inflation in 10K Filings"
     )
     # Set x-axis title
-    fig.update_xaxes(title_text="xaxis title")
+    fig.update_xaxes(title_text="Date")
     # Set y-axes titles
-    fig.update_yaxes(title_text="<b>primary</b> yaxis title", secondary_y=False)
-    fig.update_yaxes(title_text="<b>secondary</b> yaxis title", secondary_y=True)
+    fig.update_yaxes(title_text=f"<b>{stock_name}</b> Closing Price", secondary_y=False)
+    fig.update_yaxes(title_text=f"<b>{keyword}</b> Count", secondary_y=True)
 
     return fig
 
