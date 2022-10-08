@@ -1,1 +1,6 @@
 venv
+templates
+older_versions
+cron_jobs.py
+query_graveyard.py
+Scratchpad.py
