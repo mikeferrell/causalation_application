@@ -1,5 +1,5 @@
 import dash
-from dash import Dash, dcc, html, Input, Output, State, exceptions, callback
+from dash import dcc, html, Input, Output, State, exceptions, callback
 import dash_bootstrap_components as dbc
 from datetime import date
 import dataframes_from_queries

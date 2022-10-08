@@ -8,7 +8,7 @@ url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-
+# running once
 def weekly_stock_opening_cron_job():
     query_results = f'''
         with temp_table as (

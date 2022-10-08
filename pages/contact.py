@@ -1,5 +1,5 @@
 import dash
-from dash import html
+from dash import html, Input, Output
 import dash_bootstrap_components as dbc
 
 import assets.images as my_images

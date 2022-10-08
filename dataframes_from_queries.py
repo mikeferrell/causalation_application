@@ -168,7 +168,7 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
     df_results = df_results.round({'correlation': 4})
     return df_results
 
-#main chart. stock & keyword correlations. No time delay since it's a chart and not a correlation calculation
+#main chart. stock & keyword correlations. No time delay since it's a chart and not a correlation calculations
 #all other fitlers work. Includes a 12 week rolling average
 def inflation_mention_chart(stock_symbol, start_date, end_date, filing_type, keyword, limit):
     query_results = f'''
