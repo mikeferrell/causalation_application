@@ -13,7 +13,8 @@ def close_prices(stock_symbol, start_date, end_date):
     where stock_symbol = '{stock_symbol}'
     and close_date >= '{start_date}'
     and close_date <= '{end_date}'
-    order by date(created_at) desc limit 30'''
+    order by date(created_at) desc 
+    limit 30'''
     recent_prices_df = pd.read_sql(recent_prices, con=connect)
     return recent_prices_df
 
@@ -169,7 +170,7 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
 
 #main chart. stock & keyword correlations. No time delay since it's a chart and not a correlation calculation
 #all other fitlers work. Includes a 12 week rolling average
-def inflation_mention_chart(stock_symbol, start_date, end_date, filing_type, keyword):
+def inflation_mention_chart(stock_symbol, start_date, end_date, filing_type, keyword, limit):
     query_results = f'''
         with rolling_average_calculation as (with keyword_data as (with count_inflation_mentions as (select date(filing_date) as filing_date, filing_url,
         case when risk_factors ilike '%%{keyword}%%' then 1
@@ -206,9 +207,11 @@ def inflation_mention_chart(stock_symbol, start_date, end_date, filing_type, key
         and stock_date >= '{start_date}'
         and stock_date <= '{end_date}'
         order by stock_symbol, stock_date
+        {limit}
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
     query_results_df = query_results_df.round({f'{keyword} Mentions Rolling Average': 4})
+    query_results_df = query_results_df.round({'stock_price': 2})
     return query_results_df
 
 

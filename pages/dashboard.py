@@ -102,7 +102,7 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
         print(n_clicks)
         edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, filing_type_value, keyword_dropdown_value),
+                                                            end_date, filing_type_value, keyword_dropdown_value, ''),
             stock_dropdown_value, keyword_dropdown_value)
         # dropdown_table = my_dash_charts.generate_table(
         #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
@@ -120,7 +120,7 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
                                                                     start_date, end_date, week_delay_dropdown_value)),
         data_from_chart = my_dash_charts.generate_table(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, filing_type_value, keyword_dropdown_value))
+                                                            end_date, filing_type_value, keyword_dropdown_value, 'limit 30'))
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate

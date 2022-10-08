@@ -1,4 +1,3 @@
-venv
 templates
 older_versions
 cron_jobs.py
