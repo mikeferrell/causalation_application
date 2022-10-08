@@ -51,7 +51,7 @@ def keyword_table(keyword, start_date, end_date):
     keyword_count_df = pd.read_sql(keyword_count, con=connect)
     return keyword_count_df
 
-# def stock_crypto_correlation_filtered(stock_symbol):
+#def stock_crypto_correlation_filtered(stock_symbol):
 #     query_results = f'''
 #                 with a as (
 #                 with new_dates as (
