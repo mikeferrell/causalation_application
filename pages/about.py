@@ -55,8 +55,8 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div([
             html.P(
-                '''The dashboard is bringing together weekly stock closes from S&P 500 companies- as well as a few popular meme stocks-
-                with keywords extracted from 10-K and 10-Q filings over the same time period.''')
+                '''The dashboard is bringing together weekly stock openings from S&P 500 companies
+                with keywords extracted from 10-K filings over the same time period.''')
         ]),
             style={'textAlign': 'center'},
             width={"size": 8, "offset": 2},

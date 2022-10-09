@@ -39,8 +39,8 @@ layout = html.Div(children=
                                            id='filing_type_dropdown_input', value='10-K')
                               ],
                              ), width={"size": 1}),
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.keyword_dropdown(),
-                                           id='keyword_dropdown_input', placeholder='Choose a Keyword', value='cloud')
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.keyword_list,
+                                           id='keyword_dropdown_input', value='cloud')
                               ],
                              ), width={"size": 2}),
             dbc.Col(html.Div(dbc.Button("Apply Filters", id='my_button', color="primary", className="me-1", n_clicks=0)
@@ -102,13 +102,13 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
         print(n_clicks)
         edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, filing_type_value, keyword_dropdown_value, ''),
+                                                            end_date, keyword_dropdown_value, ''),
             stock_dropdown_value, keyword_dropdown_value)
         # dropdown_table = my_dash_charts.generate_table(
         #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
         keyword_correlation_table = my_dash_charts.generate_table(
             dataframes_from_queries.inflation_mention_correlation(stock_dropdown_value, start_date,
-                                                                  end_date, filing_type_value, keyword_dropdown_value,
+                                                                  end_date, keyword_dropdown_value,
                                                                   week_delay_dropdown_value))
         keyword_count_table = my_dash_charts.generate_table(
             dataframes_from_queries.keyword_table(keyword_dropdown_value, start_date, end_date))
@@ -120,7 +120,7 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
                                                                     start_date, end_date, week_delay_dropdown_value)),
         data_from_chart = my_dash_charts.generate_table(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, filing_type_value, keyword_dropdown_value, 'limit 30'))
+                                                            end_date, keyword_dropdown_value, 'limit 30'))
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
