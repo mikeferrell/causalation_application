@@ -3,6 +3,8 @@ import passwords
 from sqlalchemy import create_engine
 import psycopg2
 import dataframes_from_queries
+import schedule
+import time
 
 url = passwords.rds_access
 
@@ -40,41 +42,44 @@ def keyword_count_cron_job():
         full_df = full_df.append(query_results_df, ignore_index=True)
     return full_df
 
-# def weekly_stock_opening_cron_job():
-#     query_results = f'''
-#         with temp_table as (
-#         select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol
-#         from public.ticker_data
-#         order by stock_symbol, date(created_at)  asc
-#         )
-#
-#       SELECT
-#           created_at,
-#           close_price,
-#           stock_symbol,
-#           LAG(created_at,1) OVER (
-#               ORDER BY stock_symbol, created_at
-#           ) as next_date,
-#               case when LAG(created_at) OVER (
-#               ORDER BY stock_symbol, created_at
-#           ) = created_at then null else created_at
-#           end as first_price_in_week
-#       FROM
-#           temp_table
-#         '''
-#     query_results_df = pd.read_sql(query_results, con=connect)
-#     return query_results_df
+def weekly_stock_opening_cron_job():
+    query_results = f'''
+        with temp_table as (
+        select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol
+        from public.ticker_data
+        order by stock_symbol, date(created_at)  asc
+        )
 
-df = keyword_count_cron_job()
-df.head()
-conn_string = passwords.rds_access
-db = create_engine(conn_string)
-conn = db.connect()
-df.to_sql('keyword_weekly_counts', con=conn, if_exists='replace',
-          index=False)
-conn = psycopg2.connect(conn_string)
-conn.autocommit = True
-cursor = conn.cursor()
-conn.close()
-print('done')
+      SELECT
+          created_at,
+          close_price,
+          stock_symbol,
+          LAG(created_at,1) OVER (
+              ORDER BY stock_symbol, created_at
+          ) as next_date,
+              case when LAG(created_at) OVER (
+              ORDER BY stock_symbol, created_at
+          ) = created_at then null else created_at
+          end as first_price_in_week
+      FROM
+          temp_table
+        '''
+    query_results_df = pd.read_sql(query_results, con=connect)
+    return query_results_df
 
+def update_daily_cron_job(which_task, which_table):
+    df = which_task
+    df.head()
+    conn_string = passwords.rds_access
+    db = create_engine(conn_string)
+    conn = db.connect()
+    df.to_sql(which_table, con=conn, if_exists='replace',
+              index=False)
+    conn = psycopg2.connect(conn_string)
+    conn.autocommit = True
+    cursor = conn.cursor()
+    conn.close()
+    print('done')
+
+keyword_schedule = schedule.every(1).day.at("05:30").do(update_daily_cron_job(keyword_count_cron_job(), 'keyword_weekly_counts'))
+stock_schedule = schedule.every(1).day.at("06:00").do(update_daily_cron_job(weekly_stock_opening_cron_job(), 'weekly_stock_openings'))
