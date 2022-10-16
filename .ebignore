@@ -1,5 +1,5 @@
-templates
-older_versions
-cron_jobs.py
-query_graveyard.py
-Scratchpad.py
+/venv
+/templates
+/older_versions
+/cron_jobs.py
+/Scratchpad.py

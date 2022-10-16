@@ -1,12 +1,10 @@
 import dash
-from dash import Dash, dcc, html, Input, Output, State, exceptions, callback
+from dash import dcc, html, Input, Output, State, exceptions, callback
 import dash_bootstrap_components as dbc
 from datetime import date
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
-import assets.images as my_images
-import base64
-import assets.sidebar as sidebar
+import sidebar as sidebar
 
 dash.register_page(__name__, path='/', name="Home")
 

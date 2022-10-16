@@ -2,27 +2,21 @@ import dash
 from flask import Flask
 from dash import Dash, dcc, html
 import dash_bootstrap_components as dbc
-from sqlalchemy import create_engine
-import passwords
-import assets.images as my_images
+import images as my_images
 import base64
-import assets.sidebar as sidebar
-import cron_jobs
-
-url = passwords.rds_access
-engine = create_engine(url)
-connect = engine.connect()
+import sidebar as sidebar
 
 
-app = Dash(__name__, use_pages=True, title='Causalation', serve_locally=False, external_stylesheets=[dbc.themes.LITERA])
+app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static", assets_url_path="static",
+           external_stylesheets=[dbc.themes.LITERA])
 server = Flask(__name__)
 application = app.server
 
-
-logo_image = my_images.logo
-small_logo_image = my_images.small_logo
-encoded_logo = base64.b64encode(open(logo_image, 'rb').read())
-encoded_small_logo = base64.b64encode(open(small_logo_image, 'rb').read())
+logo_image_direct = 'static/causalation-logo-no-background.png'
+# logo_image = my_images.logo
+# small_logo_image = my_images.small_logo
+# encoded_logo = base64.b64encode(open(logo_image, 'rb').read())
+# encoded_small_logo = base64.b64encode(open(small_logo_image, 'rb').read())
 
 colors = {
     'background': '#FFFFFF',
@@ -30,7 +24,7 @@ colors = {
 }
 
 app.layout = dbc.Container([
-    dbc.Row(dbc.Col(html.Div(html.Img(src='data:image/png;base64,{}'.format(encoded_logo.decode()),
+    dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
                                       style={'height': '5%', 'width': '70%'})),
                     width={"size": 6, "offset": 4})),
     dbc.Row(dbc.Col(html.Div(html.H4(children='Is it Correlation? Causation? Who knows, I just want to some alpha',
@@ -42,15 +36,13 @@ app.layout = dbc.Container([
 )
 
 
-#
-# @server.route("/")
-# def my_dash_app():
-#     return app.index()
+@server.route("/")
+def my_dash_app():
+    return app.index()
 
-
-
-# if __name__ == '__main__':
-#     application.run(debug=False)
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    application.run(port=8000, debug=False)
+#
+# if __name__ == '__main__':
+#     app.run_server(port=8000, debug=False)

@@ -1,12 +1,8 @@
 from dash import html
 import dash_bootstrap_components as dbc
-import assets.images as my_images
 import base64
 
-logo_image = my_images.logo
-small_logo_image = my_images.small_logo
-encoded_logo = base64.b64encode(open(logo_image, 'rb').read())
-encoded_small_logo = base64.b64encode(open(small_logo_image, 'rb').read())
+small_logo_image_direct = 'static/small_logo.png'
 
 SIDEBAR_STYLE = {
     "position": "fixed",
@@ -28,7 +24,7 @@ CONTENT_STYLE = {
 
 sidebar = html.Div(
     [
-        html.Img(src='data:image/png;base64,{}'.format(encoded_small_logo.decode()),
+        html.Img(src=small_logo_image_direct,
                  style={'height': '15%', 'width': '95%'}),
         html.Hr(),
         html.P(

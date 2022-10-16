@@ -12,20 +12,10 @@
 #     app.run_server()
 
 
-from flask import Flask
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
-import pandas as pd
-from datetime import date
 import dataframes_from_queries
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from sqlalchemy import create_engine
-import passwords
 import dash_components.charts as my_dash_charts
-import assets.images as my_images
-import base64
-
 
 app = Dash(__name__)
 app.layout = html.Div(children=[
@@ -70,9 +60,5 @@ def update_output(dropdown_value):
 if __name__ == '__main__':
     app.run_server(debug=True)
 
-
-import pandas as pd
-import passwords
-from sqlalchemy import create_engine
 # import dataframes_from_queries
 # print(dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc'))

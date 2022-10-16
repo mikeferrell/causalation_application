@@ -81,5 +81,7 @@ def update_daily_cron_job(which_task, which_table):
     conn.close()
     print('done')
 
-keyword_schedule = schedule.every(1).day.at("05:30").do(update_daily_cron_job(keyword_count_cron_job(), 'keyword_weekly_counts'))
-stock_schedule = schedule.every(1).day.at("06:00").do(update_daily_cron_job(weekly_stock_opening_cron_job(), 'weekly_stock_openings'))
+# keyword_schedule = schedule.every(1).day.at("05:30").do(
+#     update_daily_cron_job(keyword_count_cron_job(), 'keyword_weekly_counts'))
+# stock_schedule = schedule.every(1).day.at("06:00").do(
+#     update_daily_cron_job(weekly_stock_opening_cron_job(), 'weekly_stock_openings'))
