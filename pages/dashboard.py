@@ -6,7 +6,7 @@ import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
 
-dash.register_page(__name__, path='/', name="Home")
+dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
 colors = {
     'background': '#FFFFFF',

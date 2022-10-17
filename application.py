@@ -27,9 +27,6 @@ app.layout = dbc.Container([
     dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
                                       style={'height': '5%', 'width': '70%'})),
                     width={"size": 6, "offset": 4})),
-    dbc.Row(dbc.Col(html.Div(html.H4(children='Is it Correlation? Causation? Who knows, I just want to some alpha',
-                                     style={'textAlign': 'center'})),
-                    width={"size": 8, "offset": 2})),
     dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(dbc.Col(dash.page_container)),
 ]
