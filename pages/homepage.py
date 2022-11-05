@@ -11,7 +11,7 @@ colors = {
 
 
 layout = dbc.Container([
-    dbc.Row(dbc.Col(html.Div(html.H4(children='Is it Correlation? Causation? Who knows, I just want to some alpha',
+    dbc.Row(dbc.Col(html.Div(html.H4(children='Is it Correlation? Causation? Who knows, I just want some alpha',
                                      style={'textAlign': 'center'})),
                     width={"size": 8, "offset": 2})),
     dbc.Row(

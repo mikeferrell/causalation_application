@@ -1,15 +1,64 @@
-import pandas as pd
-import passwords
-from sqlalchemy import create_engine
-import psycopg2
 import dataframes_from_queries
 import schedule
+import pandas as pd
+from pandas_datareader import data
+from datetime import datetime, date, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
+import os
 import time
+from sqlalchemy import create_engine
+import psycopg2
+import passwords
 
 url = passwords.rds_access
 
 engine = create_engine(url)
 connect = engine.connect()
+
+today = date.today()
+yesterdays_date = today - timedelta(days=1)
+yesterdays_date = str(yesterdays_date)
+year = int(yesterdays_date[0:4])
+month = int(yesterdays_date[5:7])
+day = int(yesterdays_date[8:10])
+
+start_date = str(date(year, month, day))
+end_date = str(date(year, month, day))
+
+symbols_list = dataframes_from_queries.stock_dropdown()
+# symbols_list = ['COIN', 'AAPL', 'AMC', 'GME', 'F', 'AAL', 'AMZN', 'GOOGL', 'GE', 'CRM', 'DDOG']
+
+def append_to_postgres(df, table, append_or_replace):
+    conn_string = passwords.rds_access
+    db = create_engine(conn_string)
+    conn = db.connect()
+    df.to_sql(table, con=conn, if_exists=append_or_replace,
+              index=False)
+    conn = psycopg2.connect(conn_string
+                            )
+    conn.autocommit = True
+    cursor = conn.cursor()
+    conn.close()
+
+
+def update_stock_data():
+    symbols = []
+    for ticker in symbols_list:
+        try:
+            downloaded_data = data.DataReader(ticker, 'yahoo', f'{start_date}', f'{end_date}')
+        except (ValueError, KeyError) as error:
+            print(f"{error} for {ticker}")
+            continue
+        downloaded_data['Symbol'] = ticker
+        symbols.append(downloaded_data)
+    df = pd.concat(symbols)
+    df = df.reset_index()
+    df = df[['Date', 'Close', 'Symbol']]
+    df.columns = ['created_at', 'close_price', 'stock_symbol']
+    df.head()
+    append_to_postgres(df, 'stock_daily_test', 'append')
+    print("Stock Done")
+
 
 def keyword_count_cron_job():
     keyword_list = dataframes_from_queries.keyword_list
@@ -40,7 +89,8 @@ def keyword_count_cron_job():
             '''
         query_results_df = pd.read_sql(query_results, con=connect)
         full_df = full_df.append(query_results_df, ignore_index=True)
-    return full_df
+    append_to_postgres(full_df, 'keyword_weekly_counts', 'replace')
+    print("Keywords Done")
 
 def weekly_stock_opening_cron_job():
     query_results = f'''
@@ -65,23 +115,23 @@ def weekly_stock_opening_cron_job():
           temp_table
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
-    return query_results_df
+    append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
+    print("Stock Window Functions Done")
 
-def update_daily_cron_job(which_task, which_table):
-    df = which_task
-    df.head()
-    conn_string = passwords.rds_access
-    db = create_engine(conn_string)
-    conn = db.connect()
-    df.to_sql(which_table, con=conn, if_exists='replace',
-              index=False)
-    conn = psycopg2.connect(conn_string)
-    conn.autocommit = True
-    cursor = conn.cursor()
-    conn.close()
-    print('done')
 
-# keyword_schedule = schedule.every(1).day.at("05:30").do(
-#     update_daily_cron_job(keyword_count_cron_job(), 'keyword_weekly_counts'))
-# stock_schedule = schedule.every(1).day.at("06:00").do(
-#     update_daily_cron_job(weekly_stock_opening_cron_job(), 'weekly_stock_openings'))
+# if __name__ == '__main__':
+#     scheduler = BackgroundScheduler()
+#     scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
+#     scheduler.add_job(keyword_count_cron_job, 'cron', hour=7, minute=13)
+#     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=7, minute=14)
+#     scheduler.start()
+#     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
+# # day_of_week='tue-sat'
+#
+#     try:
+#         # This is here to simulate application activity (which keeps the main thread alive).
+#         while True:
+#             time.sleep(2)
+#     except (KeyboardInterrupt, SystemExit):
+#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
+#         scheduler.shutdown()

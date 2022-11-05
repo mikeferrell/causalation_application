@@ -1,15 +1,20 @@
 import pandas as pd
 import passwords
 from sqlalchemy import create_engine
+from static.stock_list import stock_list
 
 url = passwords.rds_access
 
 engine = create_engine(url)
 connect = engine.connect()
 
-keyword_list = ['blockchain', 'cloud', 'climate change', 'covid', 'cryptocurrency', 'currency exchange',
-                'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation', 'politic',
-                'profitability', 'recession', 'security', 'smartphone', 'supply chain', 'uncertainty', 'war']
+# keyword_list = ['blockchain', 'cloud', 'climate change', 'covid', 'cryptocurrency',
+#                 'currency exchange', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
+#                 'politic', 'profitability', 'recession', 'security', 'smartphone', 'supply chain', 'tax rate', 'uncertainty', 'war']
+
+keyword_list = ['blockchain', 'cloud', 'covid', 'cryptocurrency',
+                'currency exchange', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
+                'politic', 'profitability', 'recession', 'security', 'smartphone', 'supply chain', 'uncertainty', 'war']
 
 def close_prices(stock_symbol, start_date, end_date):
     recent_prices = f'''select stock_symbol, close_price, date(created_at) as close_date
@@ -23,9 +28,10 @@ def close_prices(stock_symbol, start_date, end_date):
     return recent_prices_df
 
 def stock_dropdown():
-    stock_dropdown_list_query = 'select distinct stock_symbol from ticker_data order by stock_symbol asc'
-    stock_symbol_dropdown_list_df = pd.read_sql(stock_dropdown_list_query, con=connect)
-    stock_symbol_dropdown_list = stock_symbol_dropdown_list_df['stock_symbol'].tolist()
+    # stock_dropdown_list_query = 'select distinct stock_symbol from ticker_data order by stock_symbol asc'
+    # stock_symbol_dropdown_list_df = pd.read_sql(stock_dropdown_list_query, con=connect)
+    # stock_symbol_dropdown_list = stock_symbol_dropdown_list_df['stock_symbol'].tolist()
+    stock_symbol_dropdown_list = stock_list
     return stock_symbol_dropdown_list
 
 # def keyword_dropdown():
@@ -175,6 +181,3 @@ def inflation_mention_chart(stock_symbol, start_date, end_date, keyword, limit):
     query_results_df = query_results_df.round({f'{keyword} Mentions Rolling Average': 4})
     query_results_df = query_results_df.round({'stock_price': 2})
     return query_results_df
-
-
-
