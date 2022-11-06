@@ -1,4 +1,5 @@
 stock_list = [
+    'CVNA',
     'BBBY',
     'GME',
     'AMC',

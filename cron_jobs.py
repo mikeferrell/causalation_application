@@ -56,7 +56,7 @@ def update_stock_data():
     df = df[['Date', 'Close', 'Symbol']]
     df.columns = ['created_at', 'close_price', 'stock_symbol']
     df.head()
-    append_to_postgres(df, 'stock_daily_test', 'append')
+    append_to_postgres(df, 'ticker_data', 'append')
     print("Stock Done")
 
 

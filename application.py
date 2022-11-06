@@ -42,7 +42,8 @@ app.layout = dbc.Container([
 def my_dash_app():
     return app.index()
 
-scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=8, minute=7)
+
+scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=4, minute=20)
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=4, minute=10)
 scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=4, minute=15)
 scheduler.start()
