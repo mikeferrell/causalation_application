@@ -1,21 +1,14 @@
 import dataframes_from_queries
-import schedule
 import pandas as pd
 from pandas_datareader import data
-from datetime import datetime, date, timedelta
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
-import os
+from datetime import date, timedelta
 import time
 from sqlalchemy import create_engine
 import psycopg2
 import passwords
-from sec_edgar_downloader import Downloader
-import edgar_data_to_rds
 import edgar_jobs
 
 url = passwords.rds_access
-
 engine = create_engine(url)
 connect = engine.connect()
 
@@ -33,6 +26,7 @@ symbols_list = dataframes_from_queries.stock_dropdown()
 # symbols_list = ['COIN', 'AAPL', 'AMC', 'GME', 'F', 'AAL', 'AMZN', 'GOOGL', 'GE', 'CRM', 'DDOG']
 
 def append_to_postgres(df, table, append_or_replace):
+    df = df
     conn_string = passwords.rds_access
     db = create_engine(conn_string)
     conn = db.connect()
@@ -93,7 +87,7 @@ def keyword_count_cron_job():
             '''
         query_results_df = pd.read_sql(query_results, con=connect)
         full_df = full_df.append(query_results_df, ignore_index=True)
-    append_to_postgres(full_df, 'keyword_weekly_counts', 'replace')
+    append_to_postgres(full_df, 'keyword_weekly_counts_new', 'replace')
     print("Keywords Done")
 
 def weekly_stock_opening_cron_job():
@@ -119,7 +113,7 @@ def weekly_stock_opening_cron_job():
           temp_table
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
-    append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
+    append_to_postgres(query_results_df, 'weekly_stock_openings_new', 'replace')
     print("Stock Window Functions Done")
 
 # def listener(event):
@@ -131,30 +125,36 @@ def weekly_stock_opening_cron_job():
 #             print("finished edgar jobs")
 #     print("done with listener", datetime.now())
 
-def full_edgar_job():
+def full_edgar_job_10ks():
     edgar_jobs.update_edgar_10ks()
     time.sleep(10)
-    edgar_jobs.analyze_edgar_files_10k()
+    edgar_jobs.analyze_edgar_files('10k')
+
+def full_edgar_job_10qs():
+    edgar_jobs.update_edgar_10qs()
+    time.sleep(10)
+    edgar_jobs.analyze_edgar_files('10q')
 
 
-if __name__ == '__main__':
-    scheduler = BackgroundScheduler()
-    # scheduler.add_listener(execution_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-    # scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-    scheduler.add_job(full_edgar_job, 'cron', hour=10, minute=45, name='download_10ks')
-#     scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
-#     scheduler.add_job(keyword_count_cron_job, 'cron', hour=7, minute=13)
-#     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=7, minute=14)
-    scheduler.start()
-    print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
-# # day_of_week='tue-sat'
-
-    try:
-        # This is here to simulate application activity (which keeps the main thread alive).
-        while True:
-            time.sleep(2)
-    except (KeyboardInterrupt, SystemExit):
-        # Not strictly necessary if daemonic mode is enabled but should be done if possible
-        scheduler.shutdown()
+# if __name__ == '__main__':
+#     scheduler = BackgroundScheduler()
+#     # scheduler.add_listener(execution_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+#     # scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+#     # scheduler.add_job(full_edgar_job_10ks('cron', hour=10, minute=45, name='full_edgar_10ks')
+#     # scheduler.add_job(full_edgar_job_10qs('cron', hour=10, minute=45, name='full_edgar_10qs')
+#     # scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
+#     scheduler.add_job(keyword_count_cron_job, 'cron', hour=11, minute=15)
+# #     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=11, minute=2)
+#     scheduler.start()
+#     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
+# # # day_of_week='tue-sat'
+#
+#     try:
+#         # This is here to simulate application activity (which keeps the main thread alive).
+#         while True:
+#             time.sleep(2)
+#     except (KeyboardInterrupt, SystemExit):
+#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
+#         scheduler.shutdown()
 #
 

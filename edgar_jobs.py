@@ -10,9 +10,7 @@ import time
 
 from sec_edgar_downloader import Downloader
 import dataframes_from_queries
-from datetime import datetime, date, timedelta
-from apscheduler.schedulers.background import BackgroundScheduler
-import os
+from datetime import datetime
 
 ticker_list = dataframes_from_queries.stock_dropdown()
 
@@ -99,7 +97,7 @@ def analyze_edgar_files_10q():
     # append_postgres('edgar_test_data', df)
     return df
 
-def analyze_edgar_files_10k():
+def analyze_edgar_files(filing_type):
     print("starting file finder", datetime.now())
     file_names = finding_files.naming_files()
     file_names = file_names[0]
@@ -131,29 +129,44 @@ def analyze_edgar_files_10k():
 
     for files in file_names:
         # print("files", files)
-        try:
-            item1a = extract_risk_factors_v2.extract_text_from_sections_10k(files)
-            item1a = item1a[0]
-        except (KeyError, ValueError) as error1:
-            print(error1)
-            continue
-        try:
-            ten_k_file_dict[files].append(item1a)
-        except (KeyError, ValueError) as error2:
-            print(error2)
-            continue
-        try:
-            item7 = extract_risk_factors_v2.extract_text_from_sections_10k(files)
-            item7 = item7[1]
-        except (KeyError, ValueError) as error1:
-            print(error1)
-            continue
-        try:
-            ten_k_file_dict[files].append(item7)
-        except ValueError:
-            continue
-        # print(finding_files.ten_k_file_dict)
-        time.sleep(0.2)
+        if filing_type == '10k':
+            try:
+                item1a = extract_risk_factors_v2.extract_text_from_sections_10k(files)
+                item1a = item1a[0]
+            except (KeyError, ValueError) as error1:
+                print(error1)
+                continue
+            try:
+                ten_k_file_dict[files].append(item1a)
+            except (KeyError, ValueError) as error2:
+                print(error2)
+                continue
+            try:
+                item7 = extract_risk_factors_v2.extract_text_from_sections_10k(files)
+                item7 = item7[1]
+            except (KeyError, ValueError) as error1:
+                print(error1)
+                continue
+            try:
+                ten_k_file_dict[files].append(item7)
+            except ValueError:
+                continue
+            time.sleep(0.2)
+        else:
+            try:
+                item1a = extract_risk_factors_v2.extract_text_from_sections_10q(files)
+                item1a = item1a[0]
+            except (KeyError, ValueError) as error1:
+                print(error1)
+                continue
+            try:
+                ten_k_file_dict[files].append(item1a)
+            except (KeyError, ValueError) as error2:
+                print(error2)
+                continue
+            time.sleep(0.2)
+
+
     print("ending analyzer", datetime.now())
 
     # print(list(finding_files.ten_k_file_dict.items()))

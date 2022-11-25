@@ -1,13 +1,8 @@
 import requests
-import urllib
 from bs4 import BeautifulSoup
 import re
 import finding_files
 import pandas as pd
-import passwords
-from datetime import datetime
-from sqlalchemy import create_engine
-import psycopg2
 
 headers = {'User-Agent': 'causalation, causalation@gmail.com'}
 
