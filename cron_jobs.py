@@ -4,11 +4,15 @@ import pandas as pd
 from pandas_datareader import data
 from datetime import datetime, date, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 import os
 import time
 from sqlalchemy import create_engine
 import psycopg2
 import passwords
+from sec_edgar_downloader import Downloader
+import edgar_data_to_rds
+import edgar_jobs
 
 url = passwords.rds_access
 
@@ -22,7 +26,7 @@ year = int(yesterdays_date[0:4])
 month = int(yesterdays_date[5:7])
 day = int(yesterdays_date[8:10])
 
-start_date = str(date(year, month, day))
+yesterday = str(date(year, month, day))
 end_date = str(date(year, month, day))
 
 symbols_list = dataframes_from_queries.stock_dropdown()
@@ -45,8 +49,8 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = data.DataReader(ticker, 'yahoo', f'{start_date}', f'{end_date}')
-        except (ValueError, KeyError) as error:
+            downloaded_data = data.DataReader(ticker, 'yahoo', f'{yesterday}', f'{yesterday}')
+        except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
         downloaded_data['Symbol'] = ticker
@@ -71,16 +75,16 @@ def keyword_count_cron_job():
             filing_type,
             case when risk_factors ilike '%%{keywords}%%' then 1
             when risk_disclosures ilike '%%{keywords}%%' then 1
-            else 0 
+            else 0
             end as inflation_count
-            from public.edgar_data 
+            from public.edgar_data
             where risk_factors != ''
             and risk_disclosures != ''
             order by inflation_count desc)
-    
-            select sum(inflation_count) as keyword_mentions, 
+
+            select sum(inflation_count) as keyword_mentions,
             '{keywords}' as "keyword",
-            count(filing_url) as total_filings, 
+            count(filing_url) as total_filings,
             filing_type,
             DATE_TRUNC('week',filing_date) as filing_week
             from count_inflation_mentions
@@ -99,7 +103,7 @@ def weekly_stock_opening_cron_job():
         from public.ticker_data
         order by stock_symbol, date(created_at)  asc
         )
-
+    
       SELECT
           created_at,
           close_price,
@@ -118,20 +122,39 @@ def weekly_stock_opening_cron_job():
     append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
     print("Stock Window Functions Done")
 
+# def listener(event):
+#     print("starting listener", datetime.now())
+#     if not event.exception:
+#         job = scheduler.get_job(event.job_id)
+#         if job.name == 'download_10ks':
+#             scheduler.add_job(lambda: edgar_jobs.analyze_edgar_files_10k())
+#             print("finished edgar jobs")
+#     print("done with listener", datetime.now())
 
-# if __name__ == '__main__':
-#     scheduler = BackgroundScheduler()
+def full_edgar_job():
+    edgar_jobs.update_edgar_10ks()
+    time.sleep(10)
+    edgar_jobs.analyze_edgar_files_10k()
+
+
+if __name__ == '__main__':
+    scheduler = BackgroundScheduler()
+    # scheduler.add_listener(execution_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+    # scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+    scheduler.add_job(full_edgar_job, 'cron', hour=10, minute=45, name='download_10ks')
 #     scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
 #     scheduler.add_job(keyword_count_cron_job, 'cron', hour=7, minute=13)
 #     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=7, minute=14)
-#     scheduler.start()
-#     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
+    scheduler.start()
+    print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
 # # day_of_week='tue-sat'
+
+    try:
+        # This is here to simulate application activity (which keeps the main thread alive).
+        while True:
+            time.sleep(2)
+    except (KeyboardInterrupt, SystemExit):
+        # Not strictly necessary if daemonic mode is enabled but should be done if possible
+        scheduler.shutdown()
 #
-#     try:
-#         # This is here to simulate application activity (which keeps the main thread alive).
-#         while True:
-#             time.sleep(2)
-#     except (KeyboardInterrupt, SystemExit):
-#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
-#         scheduler.shutdown()
+

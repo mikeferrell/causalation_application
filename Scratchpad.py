@@ -77,21 +77,35 @@ import passwords
 # start_date = date(start_year, start_month, start_day)
 # end_date = date(end_year, end_month, end_day)
 # symbols_list = dataframes_from_queries.stock_dropdown()
-symbols_list = ['DDOG', 'AAPL']
-start_date = '2022-11-01'
-end_date = '2022-11-01'
+# symbols_list = ['DDOG', 'AAPL']
+# start_date = '2022-11-01'
+# end_date = '2022-11-01'
+#
+# symbols = []
+# for ticker in symbols_list:
+#     try:
+#         downloaded_data = data.DataReader(ticker, 'yahoo', start_date, end_date)
+#     except ValueError:
+#         continue
+#     downloaded_data['Symbol'] = ticker
+#     symbols.append(downloaded_data)
+# df = pd.concat(symbols)
+# df = df.reset_index()
+# df = df[['Date', 'Close', 'Symbol']]
+# df.columns = ['created_at', 'close_price', 'stock_symbol']
+# df.head()
+# print(df)
 
-symbols = []
-for ticker in symbols_list:
-    try:
-        downloaded_data = data.DataReader(ticker, 'yahoo', start_date, end_date)
-    except ValueError:
-        continue
-    downloaded_data['Symbol'] = ticker
-    symbols.append(downloaded_data)
-df = pd.concat(symbols)
-df = df.reset_index()
-df = df[['Date', 'Close', 'Symbol']]
-df.columns = ['created_at', 'close_price', 'stock_symbol']
-df.head()
-print(df)
+import pandas as pd
+# from pandas_datareader import data
+# from datetime import datetime, date
+# from apscheduler.schedulers.background import BackgroundScheduler
+# import os
+# import time
+# from sqlalchemy import create_engine
+# import psycopg2
+# import passwords
+# import sandp500V2
+# from sec_edgar_downloader import Downloader
+# import edgar_data_to_rds as edgar_analysis
+

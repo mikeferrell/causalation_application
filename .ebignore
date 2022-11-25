@@ -1,6 +1,5 @@
 /venv
 /templates
 /older_versions
-/cron_jobs.py
 /Scratchpad.py
 /top_correlations.py
