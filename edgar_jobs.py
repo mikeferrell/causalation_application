@@ -7,20 +7,21 @@ import passwords
 from sqlalchemy import create_engine
 import psycopg2
 import time
-
 from sec_edgar_downloader import Downloader
 import dataframes_from_queries
 from datetime import datetime
 
 ticker_list = dataframes_from_queries.stock_dropdown()
+symbols_list = ['DDOG', 'ETSY']
+# "/Users/michaelferrell/Desktop/edgar_files/")
 
 def update_edgar_10ks():
     print("starting updates", datetime.now())
-    for ticker in ticker_list:
-        dl = Downloader("/Users/michaelferrell/Desktop/edgar_files/")
+    for ticker in symbols_list:
+        dl = Downloader()
         # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
         try:
-            dl.get("10-K", ticker, after="2022-10-20", before="2022-11-05")
+            dl.get("10-K", ticker, after="2021-11-05", before="2022-11-05")
         except Exception as error:
             print(error)
             continue

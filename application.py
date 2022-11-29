@@ -43,9 +43,10 @@ def my_dash_app():
     return app.index()
 
 
+# scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=15, minute=21, name='full_edgar_10ks')
 scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=4, minute=20)
-scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=4, minute=10)
-scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=4, minute=15)
+# scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=4, minute=10)
+# scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=4, minute=15)
 scheduler.start()
 
 

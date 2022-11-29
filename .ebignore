@@ -3,3 +3,7 @@
 /older_versions
 /Scratchpad.py
 /top_correlations.py
+/edgar_jobs.py
+/edgar_date_pull.py
+/extract_risk_factors_v2.py
+/finding_files.py

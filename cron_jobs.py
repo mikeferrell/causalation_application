@@ -1,4 +1,5 @@
 import dataframes_from_queries
+import os
 import pandas as pd
 from pandas_datareader import data
 from datetime import date, timedelta
@@ -87,7 +88,7 @@ def keyword_count_cron_job():
             '''
         query_results_df = pd.read_sql(query_results, con=connect)
         full_df = full_df.append(query_results_df, ignore_index=True)
-    append_to_postgres(full_df, 'keyword_weekly_counts_new', 'replace')
+    append_to_postgres(full_df, 'keyword_weekly_counts', 'replace')
     print("Keywords Done")
 
 def weekly_stock_opening_cron_job():
@@ -134,14 +135,16 @@ def full_edgar_job_10qs():
     edgar_jobs.update_edgar_10qs()
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10q')
+    time.sleep(5)
+    os.remove('sec-edgar-filings/')
 
 
 # if __name__ == '__main__':
 #     scheduler = BackgroundScheduler()
 #     # scheduler.add_listener(execution_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 #     # scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-#     # scheduler.add_job(full_edgar_job_10ks('cron', hour=10, minute=45, name='full_edgar_10ks')
-#     # scheduler.add_job(full_edgar_job_10qs('cron', hour=10, minute=45, name='full_edgar_10qs')
+#     # scheduler.add_job(full_edgar_job_10ks, 'cron', hour=10, minute=45, name='full_edgar_10ks')
+#     # scheduler.add_job(full_edgar_job_10qs, 'cron', hour=10, minute=45, name='full_edgar_10qs')
 #     # scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
 #     scheduler.add_job(keyword_count_cron_job, 'cron', hour=11, minute=15)
 # #     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=11, minute=2)
@@ -158,3 +161,4 @@ def full_edgar_job_10qs():
 #         scheduler.shutdown()
 #
 
+full_edgar_job_10ks()

@@ -109,3 +109,6 @@ import passwords
 # from sec_edgar_downloader import Downloader
 # import edgar_data_to_rds as edgar_analysis
 
+import shutil
+shutil.rmtree('sec-edgar-filings/', ignore_errors=False, onerror=None, *, dir_fd=None)
+
