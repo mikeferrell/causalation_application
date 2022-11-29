@@ -1,7 +1,9 @@
-import os, re
+import os
+import pathlib
 
 def naming_files():
-    top_folder = 'sec-edgar-filings'
+    parent_file_path = pathlib.PurePath(__file__).parent
+    top_folder = f'{parent_file_path}/sec-edgar-filings'
     company_name_folders = []
     file_type_per_company = []
     company_filing_type_folders = []
@@ -13,7 +15,7 @@ def naming_files():
     #creates a new link for each company folder
     company_names = [companies for companies in os.listdir(top_folder) if os.path.isdir(os.path.join(top_folder, companies))]
     for companies in company_names:
-        new_folder = 'sec-edgar-filings/'+"/"+companies
+        new_folder = f'{parent_file_path}/sec-edgar-filings/'+"/"+companies
         company_name_folders.append(new_folder)
     # print(company_name_folders)
 

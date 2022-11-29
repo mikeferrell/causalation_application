@@ -1,6 +1,8 @@
 import extract_risk_factors_v2
 import finding_files
 import re
+import os
+import shutil
 import pandas as pd
 import edgar_date_pull
 import passwords
@@ -12,8 +14,20 @@ import dataframes_from_queries
 from datetime import datetime
 
 ticker_list = dataframes_from_queries.stock_dropdown()
-symbols_list = ['DDOG', 'ETSY']
+symbols_list = ['KOSS', 'COIN', 'AMZN']
 # "/Users/michaelferrell/Desktop/edgar_files/")
+
+def delete_edgar_file_paths():
+    folder = 'sec-edgar-filings/'
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 def update_edgar_10ks():
     print("starting updates", datetime.now())
@@ -194,7 +208,7 @@ def analyze_edgar_files(filing_type):
     conn.autocommit = True
     cursor = conn.cursor()
     conn.close()
-    print("done")
+    print("done with upload")
 
 # analyze_edgar_files_10k()
 # analyze_edgar_files_10q()

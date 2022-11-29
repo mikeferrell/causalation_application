@@ -130,13 +130,17 @@ def full_edgar_job_10ks():
     edgar_jobs.update_edgar_10ks()
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10k')
+    time.sleep(5)
+    edgar_jobs.delete_edgar_file_paths()
+    print("done with edgar cron job")
 
 def full_edgar_job_10qs():
     edgar_jobs.update_edgar_10qs()
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10q')
     time.sleep(5)
-    os.remove('sec-edgar-filings/')
+    edgar_jobs.delete_edgar_file_paths()
+    print("done with edgar cron job")
 
 
 # if __name__ == '__main__':
@@ -160,5 +164,3 @@ def full_edgar_job_10qs():
 #         # Not strictly necessary if daemonic mode is enabled but should be done if possible
 #         scheduler.shutdown()
 #
-
-full_edgar_job_10ks()
