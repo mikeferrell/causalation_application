@@ -9,12 +9,11 @@ import passwords
 from sqlalchemy import create_engine
 import psycopg2
 import time
-from sec_edgar_downloader import Downloader
 import dataframes_from_queries
 from datetime import datetime
 
 ticker_list = dataframes_from_queries.stock_dropdown()
-symbols_list = ['KOSS', 'COIN', 'AMZN']
+# symbols_list = ['KOSS', 'COIN', 'AMZN']
 # "/Users/michaelferrell/Desktop/edgar_files/")
 
 def delete_edgar_file_paths():
@@ -29,27 +28,6 @@ def delete_edgar_file_paths():
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
-def update_edgar_10ks():
-    print("starting updates", datetime.now())
-    for ticker in symbols_list:
-        dl = Downloader()
-        # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
-        try:
-            dl.get("10-K", ticker, after="2021-11-05", before="2022-11-05")
-        except Exception as error:
-            print(error)
-            continue
-    print("ending updates", datetime.now())
-
-def update_edgar_10qs():
-    for ticker in dataframes_from_queries.stock_dropdown():
-        dl = Downloader("/Users/michaelferrell/Desktop/edgar_files/")
-        # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
-        try:
-            dl.get("10-Q", ticker, after="2022-10-20", before="2022-11-05")
-        except Exception as error:
-            print(error)
-            continue
 
 def analyze_edgar_files_10q():
     finding_files.naming_files()
@@ -186,12 +164,13 @@ def analyze_edgar_files(filing_type):
 
     # print(list(finding_files.ten_k_file_dict.items()))
     print("starting df changes", datetime.now())
+    df_with_dates = edgar_date_pull.edgar_filing_dates()
     df = pd.DataFrame(list(ten_k_file_dict.items()))
     df.columns = ['file_location', 'nested_data']
     df_with_risk_data = pd.DataFrame(df['nested_data'].to_list(),
                                      columns=['company_name', 'filing_type', 'filing_number',
                                               'risk_factors', 'risk_disclosures'])
-    df = pd.merge(df_with_risk_data, edgar_date_pull.df_with_dates, how='left', on=['filing_number'])
+    df = pd.merge(df_with_risk_data, df_with_dates, how='inner', on=['filing_number'])
     df = df.drop_duplicates()
     print("ending df changes", datetime.now())
     # print(df)
@@ -201,7 +180,7 @@ def analyze_edgar_files(filing_type):
     conn_string = passwords.rds_access
     db = create_engine(conn_string)
     conn = db.connect()
-    df.to_sql('edgar_test_data', con=conn, if_exists='replace',
+    df.to_sql('edgar_test_data', con=conn, if_exists='append',
               index=False)
     conn = psycopg2.connect(conn_string
                             )

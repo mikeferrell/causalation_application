@@ -89,23 +89,19 @@ def extract_text_from_sections_10k(link_to_10k):
     item_7_raw = document['10-K'][pos_dat['start'].loc['item7']:pos_dat['start'].loc['item7a']]
 
     #item_7a_raw = document['10-K'][pos_dat['start'].loc['item7a']:pos_dat['start'].loc['item8']]
-
-    item_1a_content = BeautifulSoup(item_1a_raw, 'lxml')
+    try:
+        item_1a_content = BeautifulSoup(item_1a_raw, 'lxml')
+    except Exception:
+        print(Exception)
+        pass
     # item_3_content = BeautifulSoup(item_3_raw, 'lxml')
-    item_7_content = BeautifulSoup(item_7_raw, 'lxml')
+    try:
+        item_7_content = BeautifulSoup(item_7_raw, 'lxml')
+    except Exception:
+        print(Exception)
+        pass
     # print(item_1a_content.get_text("\n\n")[0:10], item_7_content.get_text("\n\n")[0:10])
 
     return item_1a_content.get_text("\n\n"), item_7_content.get_text("\n\n")
 
-# the defined function above works. Below is an example of giving it a file and then writing that new text somewhere
-# to continue, use a for loop to pull of the available file links from finding_files
-# then write that cleaned text to a df, alonside the df with all the other metadata from finding_files
-# then, write that to RDS
-
-
-##Here is functioning code for 1 file
-# amc_10k = "/Users/michaelferrell/Desktop/edgar_files/sec-edgar-filings/AMC/10-K/0001514991-22-000007/full-submission.txt"
-# f = open("/Users/michaelferrell/Desktop/edgar_files/sec-edgar-filings/AMC/10-K/0001514991-22-000007/full-submission_cleaned2.txt", "w")
-# (item1a, item7a) = extract_text_from_sections_10k(amc_10k)
-# f.write(item7a)
 

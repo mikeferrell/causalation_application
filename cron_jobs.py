@@ -2,9 +2,10 @@ import dataframes_from_queries
 import os
 import pandas as pd
 from pandas_datareader import data
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import time
 from sqlalchemy import create_engine
+from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
@@ -21,10 +22,31 @@ month = int(yesterdays_date[5:7])
 day = int(yesterdays_date[8:10])
 
 yesterday = str(date(year, month, day))
-end_date = str(date(year, month, day))
 
 symbols_list = dataframes_from_queries.stock_dropdown()
-# symbols_list = ['COIN', 'AAPL', 'AMC', 'GME', 'F', 'AAL', 'AMZN', 'GOOGL', 'GE', 'CRM', 'DDOG']
+# symbols_list = ['COIN', 'AAPL']
+
+def update_edgar_10ks():
+    print("starting updates", datetime.now())
+    for ticker in symbols_list:
+        dl = Downloader()
+        # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
+        try:
+            dl.get("10-K", ticker, after=f"{yesterday}", before=f"{yesterday}")
+        except Exception as error:
+            print(error)
+            continue
+    print("ending updates", datetime.now())
+
+def update_edgar_10qs():
+    for ticker in symbols_list:
+        dl = Downloader("/Users/michaelferrell/Desktop/edgar_files/")
+        # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
+        try:
+            dl.get("10-Q", ticker, after=f"{yesterday}", before=f"{yesterday}")
+        except Exception as error:
+            print(error)
+            continue
 
 def append_to_postgres(df, table, append_or_replace):
     df = df
@@ -127,7 +149,7 @@ def weekly_stock_opening_cron_job():
 #     print("done with listener", datetime.now())
 
 def full_edgar_job_10ks():
-    edgar_jobs.update_edgar_10ks()
+    update_edgar_10ks()
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10k')
     time.sleep(5)
@@ -135,7 +157,7 @@ def full_edgar_job_10ks():
     print("done with edgar cron job")
 
 def full_edgar_job_10qs():
-    edgar_jobs.update_edgar_10qs()
+    update_edgar_10qs()
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10q')
     time.sleep(5)
@@ -163,4 +185,3 @@ def full_edgar_job_10qs():
 #     except (KeyboardInterrupt, SystemExit):
 #         # Not strictly necessary if daemonic mode is enabled but should be done if possible
 #         scheduler.shutdown()
-#
