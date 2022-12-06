@@ -42,8 +42,11 @@ def extract_text_from_sections_10q(link_to_10k):
 
     item_1a_raw = document['10-Q'][pos_dat['start'].loc['item1a']:pos_dat['start'].loc['item2']]
 
-
-    item_1a_content = BeautifulSoup(item_1a_raw, 'lxml')
+    try:
+        item_1a_content = BeautifulSoup(item_1a_raw, 'lxml')
+    except Exception:
+        print(Exception)
+        pass
 
     return item_1a_content.get_text("\n\n")
 

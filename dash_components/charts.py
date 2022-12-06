@@ -54,7 +54,7 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name, keyword):
     )
     # Add figure title
     fig.update_layout(
-        title_text="Stock Most Correlated with Mentions of Inflation in 10K Filings"
+        title_text="Stock Most Correlated with Keyword Mentions in Public Filings"
     )
     # Set x-axis title
     fig.update_xaxes(title_text="Date")

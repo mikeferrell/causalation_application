@@ -5,6 +5,7 @@ from datetime import date
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
+from cron_jobs import get_dates
 
 dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
@@ -25,7 +26,7 @@ layout = html.Div(children=
                              ), width={"size": 1, "offset": 2}),
             dbc.Col(html.Div([dcc.DatePickerRange(id='date_picker_range',
                                                   start_date=date(2017, 1, 1),
-                                                  end_date=date(2022, 8, 1),
+                                                  end_date=get_dates(),
                                                   clearable=False)], ),
                     width={"size": 3}),
             dbc.Col(html.Div([dcc.Dropdown(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14',
@@ -33,7 +34,7 @@ layout = html.Div(children=
                                            id='week_delay_dropdown_input', value='4')
                               ],
                              ), width={"size": 1}),
-            dbc.Col(html.Div([dcc.Dropdown(['10-K'],
+            dbc.Col(html.Div([dcc.Dropdown(['10-K', '10-Q'],
                                            id='filing_type_dropdown_input', value='10-K')
                               ],
                              ), width={"size": 1}),

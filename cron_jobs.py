@@ -9,44 +9,39 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
+import top_correlations
+
 
 url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-today = date.today()
-yesterdays_date = today - timedelta(days=1)
-yesterdays_date = str(yesterdays_date)
-year = int(yesterdays_date[0:4])
-month = int(yesterdays_date[5:7])
-day = int(yesterdays_date[8:10])
-
-yesterday = str(date(year, month, day))
-
 symbols_list = dataframes_from_queries.stock_dropdown()
-# symbols_list = ['COIN', 'AAPL']
+ # symbols_list = ['COIN', 'AAPL']
 
-def update_edgar_10ks():
+def get_dates():
+    today = date.today()
+    yesterdays_date = today - timedelta(days=1)
+    yesterdays_date = str(yesterdays_date)
+    year = int(yesterdays_date[0:4])
+    month = int(yesterdays_date[5:7])
+    day = int(yesterdays_date[8:10])
+
+    yesterday = str(date(year, month, day))
+    return yesterday
+
+
+def update_edgar_files(filing_type):
     print("starting updates", datetime.now())
     for ticker in symbols_list:
         dl = Downloader()
-        # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
         try:
-            dl.get("10-K", ticker, after=f"{yesterday}", before=f"{yesterday}")
+            dl.get(f"{filing_type}", ticker, after=f"{get_dates()}", before=f"{get_dates()}")
         except Exception as error:
             print(error)
             continue
     print("ending updates", datetime.now())
 
-def update_edgar_10qs():
-    for ticker in symbols_list:
-        dl = Downloader("/Users/michaelferrell/Desktop/edgar_files/")
-        # dl.get("10-K", ticker, after="2017-01-01", before="2022-08-20")
-        try:
-            dl.get("10-Q", ticker, after=f"{yesterday}", before=f"{yesterday}")
-        except Exception as error:
-            print(error)
-            continue
 
 def append_to_postgres(df, table, append_or_replace):
     df = df
@@ -66,7 +61,7 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = data.DataReader(ticker, 'yahoo', f'{yesterday}', f'{yesterday}')
+            downloaded_data = data.DataReader(ticker, 'yahoo', f'{get_dates()}', f'{get_dates()}')
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -110,7 +105,8 @@ def keyword_count_cron_job():
             '''
         query_results_df = pd.read_sql(query_results, con=connect)
         full_df = full_df.append(query_results_df, ignore_index=True)
-    append_to_postgres(full_df, 'keyword_weekly_counts', 'replace')
+    print("df_ready_to_write")
+    append_to_postgres(full_df, 'keyword_weekly_counts', 'append')
     print("Keywords Done")
 
 def weekly_stock_opening_cron_job():
@@ -139,6 +135,117 @@ def weekly_stock_opening_cron_job():
     append_to_postgres(query_results_df, 'weekly_stock_openings_new', 'replace')
     print("Stock Window Functions Done")
 
+
+def top_correlation_scores():
+    # grab the keywords we want to test
+    keywords_dict = dataframes_from_queries.keyword_list
+    # time delays to test
+    time_delay_dict = ['4', '8', '12']
+    # grab the first date of each week within the time bound we're interested in
+    dates_dict = f'''
+            with first_week_dates as (
+            with temp_table as (
+            select DATE_TRUNC('month',created_at) as created_at, close_price, stock_symbol
+            from public.ticker_data
+            order by stock_symbol, date(created_at)  asc
+            )
+
+            SELECT
+              created_at,
+              close_price,
+              stock_symbol,
+              LAG(created_at,1) OVER (
+                  ORDER BY stock_symbol, created_at
+              ) as next_date,
+                  case when LAG(created_at) OVER (
+                  ORDER BY stock_symbol, created_at
+              ) = created_at then null else created_at
+              end as first_price_in_week
+            FROM
+              temp_table
+              where stock_symbol = 'CRM')
+
+            select to_char(first_price_in_week, 'YYYY-MM-DD') as date_strings from first_week_dates
+            where first_price_in_week is not null
+            and first_price_in_week >= '2018-01-01'
+            and first_price_in_week <= '2022-01-01'
+        '''
+    dates_dict = pd.read_sql(dates_dict, con=connect)
+    dates_dict = dates_dict['date_strings'].tolist()
+
+    list_of_all_correlations = []
+    print("starting correlation for loop")
+
+    for dates in dates_dict:
+        for time_delays in time_delay_dict:
+            for keywords in keywords_dict:
+                query_results = f'''
+                    with top_correlations as (with rolling_average_calculation as (
+                     with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
+                    stock_weekly_opening as (select * from weekly_stock_openings)
+
+                    select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
+                    from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delays} week'
+                    where first_price_in_week >= '{dates}'
+                    and first_price_in_week <= '{get_dates()}'
+                    )
+
+                    select stock_date, stock_symbol,
+                    close_price,
+                    'keyword Mentions' as keyword_mentions,
+                    avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                    from rolling_average_calculation
+                    order by stock_symbol, stock_date
+                    )
+
+                    select stock_symbol as "Stock Symbol", '{keywords} Mentions' as "Keyword",
+                    '{dates}' as "Start Date",
+                    '2022-08-29' as "End Date",
+                    {time_delays} as time_delay,
+                    corr(close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
+                    from top_correlations
+                    where stock_date >= '{dates}'
+                    and stock_date <= '{get_dates()}'
+                    group by 1, 2
+                    order by Correlation desc
+                    limit 10
+                        '''
+                df_results = pd.read_sql(query_results, con=connect)
+                df_results = df_results.round({'correlation': 4})
+                list_of_all_correlations.append(df_results)
+
+    list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
+    print("finished correlation for loop")
+    df = pd.DataFrame(list_of_all_correlations)
+    conn_string = passwords.rds_access
+    db = create_engine(conn_string)
+    conn = db.connect()
+    df.to_sql('all_correlation_scores', con=conn, if_exists='replace',
+              index=False)
+    conn = psycopg2.connect(conn_string)
+    conn.autocommit = True
+    cursor = conn.cursor()
+    conn.close()
+    print("done with top correlations")
+
+
+def full_edgar_job_10ks():
+    update_edgar_files('10-K')
+    time.sleep(10)
+    edgar_jobs.analyze_edgar_files('10k')
+    time.sleep(5)
+    edgar_jobs.delete_edgar_file_paths()
+    print("done with edgar cron job")
+
+def full_edgar_job_10qs():
+    update_edgar_files('10-Q')
+    time.sleep(10)
+    edgar_jobs.analyze_edgar_files('10q')
+    time.sleep(5)
+    edgar_jobs.delete_edgar_file_paths()
+    print("done with edgar cron job")
+
+
 # def listener(event):
 #     print("starting listener", datetime.now())
 #     if not event.exception:
@@ -147,23 +254,6 @@ def weekly_stock_opening_cron_job():
 #             scheduler.add_job(lambda: edgar_jobs.analyze_edgar_files_10k())
 #             print("finished edgar jobs")
 #     print("done with listener", datetime.now())
-
-def full_edgar_job_10ks():
-    update_edgar_10ks()
-    time.sleep(10)
-    edgar_jobs.analyze_edgar_files('10k')
-    time.sleep(5)
-    edgar_jobs.delete_edgar_file_paths()
-    print("done with edgar cron job")
-
-def full_edgar_job_10qs():
-    update_edgar_10qs()
-    time.sleep(10)
-    edgar_jobs.analyze_edgar_files('10q')
-    time.sleep(5)
-    edgar_jobs.delete_edgar_file_paths()
-    print("done with edgar cron job")
-
 
 # if __name__ == '__main__':
 #     scheduler = BackgroundScheduler()

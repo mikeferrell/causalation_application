@@ -148,7 +148,6 @@ def analyze_edgar_files(filing_type):
         else:
             try:
                 item1a = extract_risk_factors_v2.extract_text_from_sections_10q(files)
-                item1a = item1a[0]
             except (KeyError, ValueError) as error1:
                 print(error1)
                 continue
@@ -158,19 +157,22 @@ def analyze_edgar_files(filing_type):
                 print(error2)
                 continue
             time.sleep(0.2)
-
-
     print("ending analyzer", datetime.now())
 
-    # print(list(finding_files.ten_k_file_dict.items()))
     print("starting df changes", datetime.now())
     df_with_dates = edgar_date_pull.edgar_filing_dates()
     df = pd.DataFrame(list(ten_k_file_dict.items()))
     df.columns = ['file_location', 'nested_data']
-    df_with_risk_data = pd.DataFrame(df['nested_data'].to_list(),
-                                     columns=['company_name', 'filing_type', 'filing_number',
-                                              'risk_factors', 'risk_disclosures'])
-    df = pd.merge(df_with_risk_data, df_with_dates, how='inner', on=['filing_number'])
+    if filing_type == '10k':
+        df_with_risk_data = pd.DataFrame(df['nested_data'].to_list(),
+                                         columns=['company_name', 'filing_type', 'filing_number',
+                                                  'risk_factors', 'risk_disclosures'])
+        df = pd.merge(df_with_risk_data, df_with_dates, how='inner', on=['filing_number'])
+    else:
+        df_with_risk_data = pd.DataFrame(df['nested_data'].to_list(),
+                                         columns=['company_name', 'filing_type', 'filing_number',
+                                                  'risk_factors'])
+        df = pd.merge(df_with_risk_data, df_with_dates, how='inner', on=['filing_number'])
     df = df.drop_duplicates()
     print("ending df changes", datetime.now())
     # print(df)
@@ -180,7 +182,7 @@ def analyze_edgar_files(filing_type):
     conn_string = passwords.rds_access
     db = create_engine(conn_string)
     conn = db.connect()
-    df.to_sql('edgar_test_data', con=conn, if_exists='append',
+    df.to_sql('edgar_data', con=conn, if_exists='append',
               index=False)
     conn = psycopg2.connect(conn_string
                             )
