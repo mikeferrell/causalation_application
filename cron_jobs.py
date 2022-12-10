@@ -36,7 +36,7 @@ def update_edgar_files(filing_type):
     for ticker in symbols_list:
         dl = Downloader()
         try:
-            dl.get(f"{filing_type}", ticker, after=f"{get_dates()}", before=f"{get_dates()}")
+            dl.get(f"{filing_type}", ticker, after=f"2022-12-07", before=f"{get_dates()}")
         except Exception as error:
             print(error)
             continue
@@ -45,16 +45,20 @@ def update_edgar_files(filing_type):
 
 def append_to_postgres(df, table, append_or_replace):
     df = df
-    conn_string = passwords.rds_access
-    db = create_engine(conn_string)
-    conn = db.connect()
-    df.to_sql(table, con=conn, if_exists=append_or_replace,
-              index=False)
-    conn = psycopg2.connect(conn_string
-                            )
-    conn.autocommit = True
-    cursor = conn.cursor()
-    conn.close()
+    try:
+        conn_string = passwords.rds_access
+        db = create_engine(conn_string)
+        conn = db.connect()
+        df.to_sql(table, con=conn, if_exists=append_or_replace,
+                  index=False)
+        conn = psycopg2.connect(conn_string
+                                )
+        conn.autocommit = True
+        cursor = conn.cursor()
+        conn.close()
+    except Exception as e:
+        print('Error: ', e)
+        conn.rollback()
 
 
 def update_stock_data():
@@ -132,7 +136,7 @@ def weekly_stock_opening_cron_job():
           temp_table
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
-    append_to_postgres(query_results_df, 'weekly_stock_openings_new', 'replace')
+    append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
     print("Stock Window Functions Done")
 
 
@@ -232,18 +236,30 @@ def top_correlation_scores():
 def full_edgar_job_10ks():
     update_edgar_files('10-K')
     time.sleep(10)
-    edgar_jobs.analyze_edgar_files('10k')
-    time.sleep(5)
-    edgar_jobs.delete_edgar_file_paths()
-    print("done with edgar cron job")
+    count = 0
+    for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
+        count += len(files)
+    if count > 1:
+        edgar_jobs.analyze_edgar_files('10k')
+        time.sleep(5)
+        edgar_jobs.delete_edgar_file_paths()
+    else:
+        print("no files to analyze")
+    print("done with 10k cron job")
 
 def full_edgar_job_10qs():
     update_edgar_files('10-Q')
     time.sleep(10)
-    edgar_jobs.analyze_edgar_files('10q')
-    time.sleep(5)
-    edgar_jobs.delete_edgar_file_paths()
-    print("done with edgar cron job")
+    count = 0
+    for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
+        count += len(files)
+    if count > 1:
+        edgar_jobs.analyze_edgar_files('10q')
+        time.sleep(5)
+        edgar_jobs.delete_edgar_file_paths()
+    else:
+        print("no files to analyze")
+    print("done with 10q cron job")
 
 
 # def listener(event):

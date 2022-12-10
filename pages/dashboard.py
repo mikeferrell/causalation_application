@@ -21,7 +21,7 @@ layout = html.Div(children=
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
-                                           id='dropdown_input', placeholder='Choose a Stock', value='AAPL')
+                                           id='dropdown_input', placeholder='GME', value='GME')
                               ],
                              ), width={"size": 1, "offset": 2}),
             dbc.Col(html.Div([dcc.DatePickerRange(id='date_picker_range',
