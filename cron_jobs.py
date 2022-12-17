@@ -44,11 +44,26 @@ def update_edgar_files(filing_type):
 
 
 def append_to_postgres(df, table, append_or_replace):
+    conn_string = passwords.rds_access
+    db = create_engine(conn_string)
+    conn = db.connect()
+    find_open_queries = f'''
+            SELECT pid FROM pg_locks l 
+            JOIN pg_class t ON l.relation = t.oid AND t.relkind = 'r' 
+            WHERE t.relname = '{table}'
+            '''
+    pid_list = pd.read_sql(find_open_queries, con=connect)
+    pid_list = pid_list.values.tolist()
+    for pids in pid_list:
+        for pid in pids:
+            kill_open_queries = f'''
+                SELECT pg_terminate_backend({pid});
+                '''
+            kill_list = pd.read_sql(kill_open_queries, con=connect)
+            print(kill_list)
+    print("query killed")
     df = df
     try:
-        conn_string = passwords.rds_access
-        db = create_engine(conn_string)
-        conn = db.connect()
         df.to_sql(table, con=conn, if_exists=append_or_replace,
                   index=False)
         conn = psycopg2.connect(conn_string
@@ -85,27 +100,25 @@ def keyword_count_cron_job():
     full_df = pd.DataFrame(columns=['keyword_mentions', 'keyword', 'total_filings', 'filing_type', 'filing_week'])
     for keywords in keyword_list:
         query_results = f'''
-            with count_inflation_mentions as (
-            select date(filing_date) as filing_date,
-            filing_url,
-            filing_type,
-            case when risk_factors ilike '%%{keywords}%%' then 1
-            when risk_disclosures ilike '%%{keywords}%%' then 1
-            else 0
-            end as inflation_count
-            from public.edgar_data
-            where risk_factors != ''
-            and risk_disclosures != ''
-            order by inflation_count desc)
-
-            select sum(inflation_count) as keyword_mentions,
-            '{keywords}' as "keyword",
-            count(filing_url) as total_filings,
-            filing_type,
-            DATE_TRUNC('week',filing_date) as filing_week
-            from count_inflation_mentions
-            group by filing_week, filing_type
-            order by filing_week asc
+          with count_inflation_mentions as (
+          select date(filing_date) as filing_date,
+          filing_url,
+          filing_type,
+          case when risk_factors ilike '%%{keywords}%%' then 1
+          when risk_disclosures ilike '%%{keywords}%%' then 1
+          else 0
+          end as inflation_count
+          from public.edgar_data
+          order by filing_date desc)
+        
+          select sum(inflation_count) as keyword_mentions,
+          '{keywords}' as "keyword",
+          count(filing_url) as total_filings,
+          filing_type,
+          DATE_TRUNC('week',filing_date) as filing_week
+          from count_inflation_mentions
+          group by filing_week, filing_type
+          order by filing_week desc
             '''
         query_results_df = pd.read_sql(query_results, con=connect)
         full_df = full_df.append(query_results_df, ignore_index=True)
@@ -113,7 +126,9 @@ def keyword_count_cron_job():
     append_to_postgres(full_df, 'keyword_weekly_counts', 'append')
     print("Keywords Done")
 
+
 def weekly_stock_opening_cron_job():
+    print("starting query")
     query_results = f'''
         with temp_table as (
         select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol
@@ -136,6 +151,7 @@ def weekly_stock_opening_cron_job():
           temp_table
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
+    print("query done")
     append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
     print("Stock Window Functions Done")
 
@@ -145,6 +161,7 @@ def top_correlation_scores():
     keywords_dict = dataframes_from_queries.keyword_list
     # time delays to test
     time_delay_dict = ['4', '8', '12']
+    filing_type = ['10-K', '10-Q']
     # grab the first date of each week within the time bound we're interested in
     dates_dict = f'''
             with first_week_dates as (
@@ -171,8 +188,8 @@ def top_correlation_scores():
 
             select to_char(first_price_in_week, 'YYYY-MM-DD') as date_strings from first_week_dates
             where first_price_in_week is not null
-            and first_price_in_week >= '2018-01-01'
-            and first_price_in_week <= '2022-01-01'
+            and first_price_in_week >= '2022-11-01'
+            and first_price_in_week <= '{get_dates()}'
         '''
     dates_dict = pd.read_sql(dates_dict, con=connect)
     dates_dict = dates_dict['date_strings'].tolist()
@@ -183,40 +200,47 @@ def top_correlation_scores():
     for dates in dates_dict:
         for time_delays in time_delay_dict:
             for keywords in keywords_dict:
-                query_results = f'''
-                    with top_correlations as (with rolling_average_calculation as (
-                     with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
-                    stock_weekly_opening as (select * from weekly_stock_openings)
+                for filings in filing_type:
+                    query_results = f'''
+                        with top_correlations as (with rolling_average_calculation as (
+                         with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
+                        stock_weekly_opening as (select * from weekly_stock_openings)
 
-                    select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
-                    from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delays} week'
-                    where first_price_in_week >= '{dates}'
-                    and first_price_in_week <= '{get_dates()}'
-                    )
+                        select 
+                        distinct first_price_in_week as stock_date
+                        , close_price
+                        , stock_symbol
+                        , 1.00 * keyword_mentions / total_filings as keyword_percentage
+                        from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delays} week'
+                        where first_price_in_week >= '{dates}'
+                        and first_price_in_week <= '{get_dates()}'
+                        and filing_type = '{filings}'
+                        )
 
-                    select stock_date, stock_symbol,
-                    close_price,
-                    'keyword Mentions' as keyword_mentions,
-                    avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
-                    from rolling_average_calculation
-                    order by stock_symbol, stock_date
-                    )
+                        select stock_date, stock_symbol,
+                        close_price,
+                        'keyword Mentions' as keyword_mentions,
+                        avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                        from rolling_average_calculation
+                        order by stock_symbol, stock_date
+                        )
 
-                    select stock_symbol as "Stock Symbol", '{keywords} Mentions' as "Keyword",
-                    '{dates}' as "Start Date",
-                    '2022-08-29' as "End Date",
-                    {time_delays} as time_delay,
-                    corr(close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
-                    from top_correlations
-                    where stock_date >= '{dates}'
-                    and stock_date <= '{get_dates()}'
-                    group by 1, 2
-                    order by Correlation desc
-                    limit 10
+                        select stock_symbol as "Stock Symbol", '{keywords} Mentions' as "Keyword",
+                        '{dates}' as "Start Date",
+                        '{get_dates()}' as "End Date",
+                        {time_delays} as time_delay,
+                        '{filings}' as filing_type,
+                        corr(close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
+                        from top_correlations
+                        where stock_date >= '{dates}'
+                        and stock_date <= '{get_dates()}'
+                        group by 1, 2
+                        order by Correlation desc
+                        limit 10
                         '''
-                df_results = pd.read_sql(query_results, con=connect)
-                df_results = df_results.round({'correlation': 4})
-                list_of_all_correlations.append(df_results)
+                    df_results = pd.read_sql(query_results, con=connect)
+                    df_results = df_results.round({'correlation': 4})
+                    list_of_all_correlations.append(df_results)
 
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
     print("finished correlation for loop")

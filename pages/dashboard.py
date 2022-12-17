@@ -34,7 +34,10 @@ layout = html.Div(children=
                                            id='week_delay_dropdown_input', value='4')
                               ],
                              ), width={"size": 1}),
-            dbc.Col(html.Div([dcc.Dropdown(['10-K', '10-Q'],
+            dbc.Col(html.Div([dcc.Dropdown(options=[
+                {'label': '10-K', 'value': '10-Q'},
+                {'label': '10-Q', 'value': '10-K'},
+                {'label': 'Both', 'value': ''}],
                                            id='filing_type_dropdown_input', value='10-K')
                               ],
                              ), width={"size": 1}),
@@ -101,25 +104,24 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
         print(n_clicks)
         edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, keyword_dropdown_value, ''),
+                                                            end_date, keyword_dropdown_value, '', filing_type_value),
             stock_dropdown_value, keyword_dropdown_value)
         # dropdown_table = my_dash_charts.generate_table(
         #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
         keyword_correlation_table = my_dash_charts.generate_table(
-            dataframes_from_queries.inflation_mention_correlation(stock_dropdown_value, start_date,
-                                                                  end_date, keyword_dropdown_value,
-                                                                  week_delay_dropdown_value))
+            dataframes_from_queries.inflation_mention_correlation(stock_dropdown_value, start_date, end_date,
+                                                    keyword_dropdown_value, week_delay_dropdown_value, filing_type_value))
         keyword_count_table = my_dash_charts.generate_table(
             dataframes_from_queries.keyword_table(keyword_dropdown_value, start_date, end_date))
         descending_correlation_table = my_dash_charts.generate_table(
                 dataframes_from_queries.top_keyword_correlations_with_rolling_avg('desc', keyword_dropdown_value,
-                                                                    start_date, end_date, week_delay_dropdown_value)),
+                                                    start_date, end_date, week_delay_dropdown_value, filing_type_value)),
         ascending_correlation_table = my_dash_charts.generate_table(
                 dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc', keyword_dropdown_value,
-                                                                    start_date, end_date, week_delay_dropdown_value)),
+                                                    start_date, end_date, week_delay_dropdown_value, filing_type_value)),
         data_from_chart = my_dash_charts.generate_table(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, keyword_dropdown_value, 'limit 30'))
+                                                    end_date, keyword_dropdown_value, 'limit 30', filing_type_value))
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
