@@ -14,6 +14,38 @@ url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
+def append_to_postgres(df, table, append_or_replace):
+    conn_string = passwords.rds_access
+    db = create_engine(conn_string)
+    conn = db.connect()
+    find_open_queries = f'''
+            SELECT pid FROM pg_locks l 
+            JOIN pg_class t ON l.relation = t.oid AND t.relkind = 'r' 
+            WHERE t.relname = '{table}'
+            '''
+    pid_list = pd.read_sql(find_open_queries, con=connect)
+    pid_list = pid_list.values.tolist()
+    for pids in pid_list:
+        for pid in pids:
+            kill_open_queries = f'''
+                SELECT pg_terminate_backend({pid});
+                '''
+            kill_list = pd.read_sql(kill_open_queries, con=connect)
+            print(kill_list)
+    print("query killed")
+    df = df
+    try:
+        df.to_sql(table, con=conn, if_exists=append_or_replace,
+                  index=False)
+        conn = psycopg2.connect(conn_string
+                                )
+        conn.autocommit = True
+        cursor = conn.cursor()
+        conn.close()
+    except Exception as e:
+        print('Error: ', e)
+        conn.rollback()
+
 
 filing_weeks = f'''
         with matched_dates as (
@@ -53,9 +85,10 @@ filing_weeks = f'''
         on md1.stock_date = md2.filing_week + interval '1 week'
         where md2.filing_week >= '2022-10-01'
         '''
-datetime_list = []
 df_filing_weeks = pd.read_sql(filing_weeks, con=connect)
 df_filing_weeks = df_filing_weeks['filing_week'].tolist()
+
+datetime_list = []
 for timestamp in df_filing_weeks:
     datetime_list.append(timestamp.strftime("%Y-%m-%d"))
 
@@ -101,14 +134,14 @@ training_dataset = f'''
     , keyword_mentions_rolling_avg, close_price
     from prepped_data
         '''
-df_results = pd.read_sql(training_dataset, con=connect)
-
-# load the data into a Pandas DataFrame
-# df = pd.read_csv('/Users/michaelferrell/PycharmProjects/causalation_dashboard/ml_models/stock_and_keywords.csv')
+df_training_data = pd.read_sql(training_dataset, con=connect)
 
 # select the target variable and input features
-X = df_results.drop(columns=['filing_week', 'keyword_mentions_rolling_avg'])
-y = df_results['close_price']
+X = df_training_data
+# X = df_training_data.drop(columns=['close_price'])
+y = df_training_data['close_price']
+print(X)
+print(y)
 
 # split the data into a training set and a test set
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -172,7 +205,6 @@ for dates in datetime_list:
         '''
     df_test_full = pd.read_sql(test_dataset, con=connect)
     df_test = df_test_full.drop(columns=['filing_week', 'stock_date'])
-    # df_test['stock_date'] = sum(int(dates), int(7))
     test_results.append(df_test)
     full_test_data.append(df_test_full)
 
@@ -184,7 +216,8 @@ df_full = pd.DataFrame(full_results_df)
 
 
 # select the input features for the prediction
-X_pred = df_test.drop(columns=['filing_week_int', 'keyword_mentions_rolling_avg'])
+X_pred = df_test.drop(columns=['close_price'])
+# X_pred = df_test.drop(columns=['filing_week_int', 'keyword_mentions_rolling_avg'])
 
 # use the trained model to make a prediction
 prediction = model.predict(X_pred)
@@ -192,6 +225,7 @@ print('Predicted stock price:', prediction)
 
 df_full['predictions'] = prediction
 print(df_full)
+# append_to_postgres(df_full, 'prediction_results', 'append')
 
 
 

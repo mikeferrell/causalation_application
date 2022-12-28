@@ -155,7 +155,6 @@ def weekly_stock_opening_cron_job():
     append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
     print("Stock Window Functions Done")
 
-
 def top_correlation_scores():
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
