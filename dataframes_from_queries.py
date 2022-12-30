@@ -93,17 +93,17 @@ def inflation_mention_correlation(stock_symbol, start_date, end_date, keyword, t
     query_results = f'''
             with top_correlations as (with rolling_average_calculation as (
                  with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}'),
-                stock_weekly_opening as (select * from weekly_stock_openings where first_price_in_week is not null)
+                stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null)
             
                 select 
-                first_price_in_week as stock_date
+                weekly_closing_price as stock_date
                 , close_price
                 , stock_symbol
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
                 from stock_weekly_opening 
-                inner join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delay} week'
-                where first_price_in_week >= '{start_date}'
-                and first_price_in_week <= '{end_date}'
+                inner join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delay} week'
+                where weekly_closing_price >= '{start_date}'
+                and weekly_closing_price <= '{end_date}'
                 and filing_type != '{filing_type}'
                 )
 
@@ -132,17 +132,17 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
     query_results = f'''
             with top_correlations as (with rolling_average_calculation as (
                  with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}'),
-                stock_weekly_opening as (select * from weekly_stock_openings where first_price_in_week is not null)
+                stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null)
             
                 select 
-                first_price_in_week as stock_date
+                weekly_closing_price as stock_date
                 , close_price
                 , stock_symbol
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
                 from stock_weekly_opening 
-                inner join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delay} week'
-                where first_price_in_week >= '{start_date}'
-                and first_price_in_week <= '{end_date}'
+                inner join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delay} week'
+                where weekly_closing_price >= '{start_date}'
+                and weekly_closing_price <= '{end_date}'
                 and filing_type != '{filing_type}'
                 )
 
@@ -173,7 +173,7 @@ def inflation_mention_chart(stock_symbol, start_date, end_date, keyword, limit, 
     query_results = f'''
             with rolling_average_calculation as (
                 with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}')
-                , stock_weekly_opening as (select * from weekly_stock_openings where first_price_in_week is not null)
+                , stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null)
                 
                 select 
                 distinct created_at as stock_date

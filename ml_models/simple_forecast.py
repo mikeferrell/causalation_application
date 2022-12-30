@@ -19,17 +19,17 @@ training_dataset = f'''
         with prepped_data as (with matched_dates as (
       with rolling_average_calculation as (
         with keyword_data as (select * from keyword_weekly_counts where keyword = 'war'),
-      stock_weekly_opening as (select * from weekly_stock_openings where first_price_in_week is not null )
+      stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
     
       select 
-      distinct first_price_in_week as stock_date
+      distinct weekly_closing_price as stock_date
       , filing_week
       , close_price
       , stock_symbol
       , 1.00 * keyword_mentions / total_filings as keyword_percentage
-      from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week 
-      where first_price_in_week >= '2021-02-01'
-      and first_price_in_week <= '2022-12-05'
+      from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
+      where weekly_closing_price >= '2021-02-01'
+      and weekly_closing_price <= '2022-12-05'
       and filing_type = '10-Q'
       and stock_symbol = 'CPT'
       order by stock_symbol, stock_date asc
@@ -87,18 +87,18 @@ test_dataset = f'''
     with matched_dates as (
       with rolling_average_calculation as (
       with keyword_data as (select * from keyword_weekly_counts where keyword = 'war'),
-      stock_weekly_opening as (select * from weekly_stock_openings where first_price_in_week is not null )
+      stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
     
       select 
-      distinct first_price_in_week as stock_date
+      distinct weekly_closing_price as stock_date
       , filing_week
       , close_price
       , stock_symbol
       , 1.00 * keyword_mentions / total_filings as keyword_percentage
-      from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week 
+      from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
       -- - interval '1 week'
-      where first_price_in_week >= '2021-02-01'
-      and first_price_in_week <= '2022-12-12'
+      where weekly_closing_price >= '2021-02-01'
+      and weekly_closing_price <= '2022-12-12'
       and filing_type = '10-Q'
       and stock_symbol = 'CPT'
       order by stock_symbol, stock_date asc

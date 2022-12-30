@@ -33,15 +33,15 @@
 #                   case when LAG(created_at) OVER (
 #                   ORDER BY stock_symbol, created_at
 #               ) = created_at then null else created_at
-#               end as first_price_in_week
+#               end as weekly_closing_price
 #             FROM
 #               temp_table
 #               where stock_symbol = 'CRM')
 #
-#             select to_char(first_price_in_week, 'YYYY-MM-DD') as date_strings from first_week_dates
-#             where first_price_in_week is not null
-#             and first_price_in_week >= '2018-01-01'
-#             and first_price_in_week <= '2022-01-01'
+#             select to_char(weekly_closing_price, 'YYYY-MM-DD') as date_strings from first_week_dates
+#             where weekly_closing_price is not null
+#             and weekly_closing_price >= '2018-01-01'
+#             and weekly_closing_price <= '2022-01-01'
 #         '''
 #     dates_dict = pd.read_sql(dates_dict, con=connect)
 #     dates_dict = dates_dict['date_strings'].tolist()
@@ -57,10 +57,10 @@
 #                      with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
 #                     stock_weekly_opening as (select * from weekly_stock_openings)
 #
-#                     select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
-#                     from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delays} week'
-#                     where first_price_in_week >= '{dates}'
-#                     and first_price_in_week <= '2022-12-29'
+#                     select weekly_closing_price as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
+#                     from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delays} week'
+#                     where weekly_closing_price >= '{dates}'
+#                     and weekly_closing_price <= '2022-12-29'
 #                     )
 #
 #                     select stock_date, stock_symbol,
@@ -107,10 +107,10 @@
 # #                  with keyword_data as (select * from keyword_weekly_counts where keyword = 'cloud'),
 # #                 stock_weekly_opening as (select * from weekly_stock_openings)
 # #
-# #                 select first_price_in_week as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
-# #                 from stock_weekly_opening join keyword_data on stock_weekly_opening.first_price_in_week = keyword_data.filing_week + interval '{time_delays} week'
-# #                 where first_price_in_week >= '2022-01-01'
-# #                 and first_price_in_week <= '2022-08-29'
+# #                 select weekly_closing_price as stock_date, close_price, stock_symbol, 1.00 * keyword_mentions / total_filings as keyword_percentage
+# #                 from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delays} week'
+# #                 where weekly_closing_price >= '2022-01-01'
+# #                 and weekly_closing_price <= '2022-08-29'
 # #                 )
 # #
 # #                 select stock_date, stock_symbol,
