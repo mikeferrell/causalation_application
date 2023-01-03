@@ -5,6 +5,7 @@ from datetime import date, timedelta, datetime
 import time
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
 from sqlalchemy import create_engine
@@ -164,11 +165,12 @@ for dates in datetime_list:
     y = y.interpolate()
 
     # split the data into a training set and a test set
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=12)
 
     # create the random forest model
-    # model = DecisionTreeRegressor()
-    model = RandomForestRegressor(n_estimators=200, max_depth=10)
+    # model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
+    # model = RandomForestRegressor(n_estimators=200, max_depth=20)
+    model = LinearRegression()
 
     # fit the model to the training data
     model.fit(X_train, y_train)
@@ -246,7 +248,7 @@ mae_df = pd.DataFrame(mae_data, columns=['mae'])
 
 df_full['predicted_price'] = df_test
 # df_full['mae'] = mae_df
-print(df_full)
 df_full = df_full.drop_duplicates()
+print(df_full)
 append_to_postgres(df_full, 'prediction_results', 'replace')
 

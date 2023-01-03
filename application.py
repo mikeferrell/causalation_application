@@ -11,6 +11,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import one_time_edgar_pull
 import time
 import os
+import logging
 
 
 app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static", assets_url_path="static",
@@ -18,7 +19,8 @@ app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static"
 server = Flask(__name__)
 scheduler = BackgroundScheduler()
 application = app.server
-
+log_file = 'application.log'
+logging.basicConfig(filename=log_file, format='%(asctime)s - %(message)s', level=logging.INFO)
 
 logo_image_direct = 'static/causalation-logo-no-background.png'
 # logo_image = my_images.logo
@@ -44,6 +46,12 @@ app.layout = dbc.Container([
 @server.route("/")
 def my_dash_app():
     return app.index()
+
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(console_handler)
+logging.info('Admin logged in')
 
 
 scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name='full_edgar_10ks')
