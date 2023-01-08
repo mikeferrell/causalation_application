@@ -81,7 +81,7 @@ nltk==3.7
 numpy==1.23.2
 packaging==21.3
 pandas==1.4.4
-pandas-datareader==0.10.0
+pandas-datareader @ git+https://github.com/raphi6/pandas-datareader.git@ea66d6b981554f9d0262038aef2106dda7138316
 paramiko==2.11.0
 parse==1.19.0
 pathlib==1.0.1
@@ -96,6 +96,7 @@ psycopg==3.0.14
 psycopg2-binary==2.9.3
 pycoingecko==2.2.0
 pycparser==2.21
+pycryptodome==3.16.0
 pyee==8.2.2
 PyMeeus==0.5.11
 PyNaCl==1.5.0

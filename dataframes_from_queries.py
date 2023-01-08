@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 from static.stock_list import stock_list
 
 url = passwords.rds_access
-
 engine = create_engine(url)
 connect = engine.connect()
 

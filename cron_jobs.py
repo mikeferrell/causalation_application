@@ -2,6 +2,8 @@ import dataframes_from_queries
 import os
 import pandas as pd
 from pandas_datareader import data
+import yfinance as yf
+import pandas_datareader as pdr
 from datetime import date, timedelta, datetime
 import time
 from sqlalchemy import create_engine
@@ -19,6 +21,7 @@ connect = engine.connect()
 symbols_list = dataframes_from_queries.stock_dropdown()
  # symbols_list = ['COIN', 'AAPL']
 
+#returns a string
 def get_dates():
     today = date.today()
     yesterdays_date = today - timedelta(days=1)
@@ -28,6 +31,18 @@ def get_dates():
     day = int(yesterdays_date[8:10])
 
     yesterday = str(date(year, month, day))
+    return yesterday
+
+
+def get_dates_date_format():
+    today = date.today()
+    yesterdays_date = today - timedelta(days=1)
+    yesterdays_date = str(yesterdays_date)
+    year = int(yesterdays_date[0:4])
+    month = int(yesterdays_date[5:7])
+    day = int(yesterdays_date[8:10])
+
+    yesterday = datetime(year, month, day)
     return yesterday
 
 
@@ -48,18 +63,18 @@ def append_to_postgres(df, table, append_or_replace):
     db = create_engine(conn_string)
     conn = db.connect()
     find_open_queries = f'''
-            SELECT pid FROM pg_locks l 
-            JOIN pg_class t ON l.relation = t.oid AND t.relkind = 'r' 
+            SELECT pid FROM pg_locks l
+            JOIN pg_class t ON l.relation = t.oid AND t.relkind = 'r'
             WHERE t.relname = '{table}'
             '''
-    pid_list = pd.read_sql(find_open_queries, con=connect)
+    pid_list = pd.read_sql(find_open_queries, con=conn)
     pid_list = pid_list.values.tolist()
     for pids in pid_list:
         for pid in pids:
             kill_open_queries = f'''
                 SELECT pg_terminate_backend({pid});
                 '''
-            kill_list = pd.read_sql(kill_open_queries, con=connect)
+            kill_list = pd.read_sql(kill_open_queries, con=conn)
             print(kill_list)
     print("query killed")
     df = df
@@ -80,7 +95,8 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = data.DataReader(ticker, 'yahoo', f'{get_dates()}', f'{get_dates()}')
+            downloaded_data = data.DataReader(ticker, 'yahoo', f'{get_dates_date_format()}', f'{get_dates_date_format()}')
+            # downloaded_data = data.get_data_yahoo(ticker, start='2023-01-04', end= '2023-01-06')
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -91,7 +107,7 @@ def update_stock_data():
     df = df[['Date', 'Close', 'Symbol']]
     df.columns = ['created_at', 'close_price', 'stock_symbol']
     df.head()
-    append_to_postgres(df, 'ticker_data', 'append')
+    append_to_postgres(df, 'ticker_data_test', 'append')
     print("Stock Done")
 
 
