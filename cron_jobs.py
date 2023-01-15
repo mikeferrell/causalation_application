@@ -95,8 +95,10 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = data.DataReader(ticker, 'yahoo', f'{get_dates_date_format()}', f'{get_dates_date_format()}')
-            # downloaded_data = data.get_data_yahoo(ticker, start='2023-01-04', end= '2023-01-06')
+            # downloaded_data = data.DataReader(ticker, 'yahoo', f'{get_dates_date_format()}', f'{get_dates_date_format()}')
+            downloaded_data = data.get_data_yahoo(ticker, start=f'{get_dates()}', end=f'{get_dates()}')
+            # downloaded_data = data.get_data_yahoo(ticker, start='2023-01-11', end='2023-01-11')
+            print(downloaded_data)
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -106,8 +108,9 @@ def update_stock_data():
     df = df.reset_index()
     df = df[['Date', 'Close', 'Symbol']]
     df.columns = ['created_at', 'close_price', 'stock_symbol']
+    df = df.drop_duplicates()
     df.head()
-    append_to_postgres(df, 'ticker_data_test', 'append')
+    append_to_postgres(df, 'ticker_data', 'append')
     print("Stock Done")
 
 

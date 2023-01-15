@@ -34,6 +34,7 @@ sidebar = html.Div(
             [
                 dbc.NavLink("Home", href="/", active="exact"),
                 dbc.NavLink("Dashboard", href="/dashboard", active="exact"),
+                # dbc.NavLink("Predictions", href="/predictions", active="exact"),
                 dbc.NavLink("About", href="/about", active="exact"),
                 dbc.NavLink("Contact", href="/contact", active="exact")
             ],

@@ -201,3 +201,44 @@ def inflation_mention_chart(stock_symbol, start_date, end_date, keyword, limit, 
     query_results_df = query_results_df.round({f'{keyword} Mentions Rolling Average': 4})
     query_results_df = query_results_df.round({'stock_price': 2})
     return query_results_df
+
+
+def ml_accuracy_table():
+    query_results = f'''
+    with prices as (
+    select current_week, current_close_price
+    , stock_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
+    , case when next_week_close_price > current_close_price then 'price increased'
+        when next_week_close_price < current_close_price then 'price decreased'
+        when next_week_close_price is null then 'no price comparison'
+        else 'price the same'
+        end as actual_price_movement
+    , next_week_close_price - current_close_price as actual_price_change
+    , (next_week_close_price / current_close_price) - 1 as actual_price_change_percentage
+    , case when current_close_price < predicted_price then 'price increased'
+        when current_close_price > predicted_price then 'price decreased'
+        when predicted_price is null then 'no price comparison'
+        else 'price the same'
+        end as predicted_price_movement
+    , predicted_price - current_close_price as predicted_price_change 
+    , (current_close_price / predicted_price) - 1 as predicted_price_change_percentage 
+    from prediction_results
+    order by current_week asc
+    )
+    
+    SELECT
+    prediction_date 
+    , actual_price_change
+    , predicted_price_change
+    , case when actual_price_movement = 'no price comparison' then 'no price comparison'
+        when actual_price_movement = predicted_price_movement then 'correct prediction'
+        else 'incorrect prediction'
+        end as prediction_validation
+    , case when actual_price_change = 0 then null else (actual_price_change - predicted_price_change) / current_close_price end as actual_prediction_percentage_delta
+    from prices
+    '''
+    query_results_df = pd.read_sql(query_results, con=connect)
+    query_results_df = query_results_df.round({'actual_price_change': 2})
+    query_results_df = query_results_df.round({'predicted_price_change': 2})
+    query_results_df = query_results_df.round({'actual_prediction_percentage_delta': 4})
+    return query_results_df
