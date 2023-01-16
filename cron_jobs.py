@@ -139,7 +139,7 @@ def keyword_count_cron_job():
         query_results_df = pd.read_sql(query_results, con=connect)
         full_df = full_df.append(query_results_df, ignore_index=True)
     print("df_ready_to_write")
-    append_to_postgres(full_df, 'keyword_weekly_counts', 'append')
+    append_to_postgres(full_df, 'keyword_weekly_counts', 'replace')
     print("Keywords Done")
 
 

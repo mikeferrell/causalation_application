@@ -66,7 +66,7 @@ def window_input_output(input_length: int, data: pd.DataFrame) -> pd.DataFrame:
 filing_weeks = f'''
         with matched_dates as (
           with rolling_average_calculation as (
-          with keyword_data as (select * from keyword_weekly_counts where keyword = 'war'),
+          with keyword_data as (select * from keyword_weekly_counts where keyword = 'war' and filing_type = '10-Q'),
           stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
 
           select 
@@ -78,7 +78,6 @@ filing_weeks = f'''
           from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
           -- - interval '1 week'
           where weekly_closing_price >= '2021-02-01'
-          and weekly_closing_price <= '2022-12-12'
           and filing_type = '10-Q'
           and stock_symbol = 'CPT'
           order by stock_symbol, stock_date asc
@@ -116,7 +115,7 @@ for dates in datetime_list:
     training_dataset = f'''
                     with matched_dates as (
                     with rolling_average_calculation as (
-                      with keyword_data as (select * from keyword_weekly_counts where keyword = 'war'),
+                      with keyword_data as (select * from keyword_weekly_counts where keyword = 'war' and filing_type = '10-Q'),
                     stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
     
                     select 
@@ -186,7 +185,7 @@ for dates in datetime_list:
     test_dataset = f'''
                 with matched_dates as (
                 with rolling_average_calculation as (
-                  with keyword_data as (select * from keyword_weekly_counts where keyword = 'war'),
+                  with keyword_data as (select * from keyword_weekly_counts where keyword = 'war' and filing_type = '10-Q'),
                 stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
 
                 select 
