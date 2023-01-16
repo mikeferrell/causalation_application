@@ -352,10 +352,8 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            yf.pdr_override()
-            downloaded_data = data.DataReader(ticker, 'yahoo', start='2023-01-11', end='2023-01-11')
+            downloaded_data = yf.download(ticker, start=start, end=date.today())
             # downloaded_data = data.DataReader(ticker, 'google', start='2023-01-11', end='2023-01-11')
-            print(downloaded_data)
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -366,8 +364,7 @@ def update_stock_data():
     df = df[['Date', 'Close', 'Symbol']]
     df.columns = ['created_at', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    print(df)
-    # append_to_postgres(df, 'ticker_data', 'append')
+    append_to_postgres(df, 'ticker_data', 'append')
     print("Stock Done")
 
 update_stock_data()

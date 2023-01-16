@@ -7,9 +7,6 @@ url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-# keyword_list = ['blockchain', 'cloud', 'climate change', 'covid', 'cryptocurrency',
-#                 'currency exchange', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
-#                 'politic', 'profitability', 'recession', 'security', 'smartphone', 'supply chain', 'tax rate', 'uncertainty', 'war']
 
 keyword_list = ['blockchain', 'cloud', 'covid', 'cryptocurrency',
                 'currency exchange', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',

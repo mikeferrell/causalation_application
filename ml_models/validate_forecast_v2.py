@@ -127,7 +127,6 @@ for dates in datetime_list:
                     , 1.00 * keyword_mentions / total_filings as keyword_percentage
                     from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
                     where weekly_closing_price >= '2021-02-01'
-                    and weekly_closing_price <= '2022-12-05'
                     and filing_type = '10-Q'
                     and stock_symbol = 'CPT'
                     order by stock_symbol, stock_date asc
@@ -198,7 +197,6 @@ for dates in datetime_list:
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
                 from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
                 where weekly_closing_price >= '2021-02-01'
-                and weekly_closing_price <= '2022-12-05'
                 and filing_type = '10-Q'
                 and stock_symbol = 'CPT'
                 order by stock_symbol, stock_date asc

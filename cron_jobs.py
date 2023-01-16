@@ -51,7 +51,7 @@ def update_edgar_files(filing_type):
     for ticker in symbols_list:
         dl = Downloader()
         try:
-            dl.get(f"{filing_type}", ticker, after=f"2022-12-07", before=f"{get_dates()}")
+            dl.get(f"{filing_type}", ticker, after=f"{get_dates()}", before=f"{get_dates()}")
         except Exception as error:
             print(error)
             continue
@@ -95,10 +95,8 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            # downloaded_data = data.DataReader(ticker, 'yahoo', f'{get_dates_date_format()}', f'{get_dates_date_format()}')
-            downloaded_data = data.get_data_yahoo(ticker, start=f'{get_dates()}', end=f'{get_dates()}')
-            # downloaded_data = data.get_data_yahoo(ticker, start='2023-01-11', end='2023-01-11')
-            print(downloaded_data)
+            # downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
+            downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -109,8 +107,7 @@ def update_stock_data():
     df = df[['Date', 'Close', 'Symbol']]
     df.columns = ['created_at', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    df.head()
-    append_to_postgres(df, 'ticker_data', 'append')
+    append_to_postgres(df, 'ticker_data', 'replace')
     print("Stock Done")
 
 
