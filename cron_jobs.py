@@ -34,18 +34,6 @@ def get_dates():
     return yesterday
 
 
-def get_dates_date_format():
-    today = date.today()
-    yesterdays_date = today - timedelta(days=1)
-    yesterdays_date = str(yesterdays_date)
-    year = int(yesterdays_date[0:4])
-    month = int(yesterdays_date[5:7])
-    day = int(yesterdays_date[8:10])
-
-    yesterday = datetime(year, month, day)
-    return yesterday
-
-
 def update_edgar_files(filing_type):
     print("starting updates", datetime.now())
     for ticker in symbols_list:
@@ -95,7 +83,7 @@ def update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            # downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
+            # downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
             downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
@@ -107,7 +95,7 @@ def update_stock_data():
     df = df[['Date', 'Close', 'Symbol']]
     df.columns = ['created_at', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    append_to_postgres(df, 'ticker_data', 'replace')
+    append_to_postgres(df, 'ticker_data', 'append')
     print("Stock Done")
 
 
@@ -205,7 +193,7 @@ def top_correlation_scores():
 
             select to_char(weekly_closing_price, 'YYYY-MM-DD') as date_strings from first_week_dates
             where weekly_closing_price is not null
-            and weekly_closing_price >= '2022-11-01'
+            and weekly_closing_price >= '2022-01-01'
             and weekly_closing_price <= '{get_dates()}'
         '''
     dates_dict = pd.read_sql(dates_dict, con=connect)
