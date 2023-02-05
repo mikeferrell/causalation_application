@@ -1,5 +1,6 @@
 from flask import Flask
 from dash import Dash, dcc, html
+from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import pandas as pd
 import dataframes_from_queries
@@ -71,3 +72,21 @@ def generate_table(dataframe):
     table = dbc.Table.from_dataframe(dataframe, striped=True, bordered=True, hover=True, responsive=True)
     return table
 
+
+def generate_table_with_filters(dataframe):
+    table = DataTable(data=dataframe.to_dict('records'), columns=[{"name": i, "id": i} for i in dataframe.columns],
+                      filter_action='native',
+                      style_data={
+                        'width': '150px', 'minWidth': '50px', 'maxWidth': '100px',
+                        'overflow': 'hidden',
+                        'textOverflow': 'ellipsis',
+                          'font-family': 'Times New Roman'
+                      },
+                      style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
+                      style_as_list_view=True,
+                      style_cell={'padding': '5px'},
+                      style_header={
+        'backgroundColor': 'grey',
+        'fontWeight': 'bold'
+                      })
+    return table

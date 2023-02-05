@@ -275,16 +275,19 @@ def calculate_ml_model_accuracy():
     order by correlation desc
     limit 10
     '''
-    query_df = pd.read_sql(top_correlation_query_results, con=connect)
+    df_of_top_six_correlations = pd.read_sql(top_correlation_query_results, con=connect)
 
     row_range = range(0, 6)
     for rows in row_range:
-        df_row = query_df.iloc[rows]
+        df_row = df_of_top_six_correlations.iloc[rows]
         stock_symbol = df_row['stock_symbol']
         keyword = df_row['keyword']
         correlation_start_date = df_row['start_date']
         interval = df_row['time_delay']
         filing_type = df_row['filing_type']
+        correlation_list = f'Stock Symbol: {stock_symbol}, Keyword: {keyword}, Start Date: {correlation_start_date}, ' \
+                           f'Time Lag: {interval}, Filing Type: {filing_type}'
+        top_correlation_list.append(correlation_list)
 
         query_results = f'''
                         with prices as (
@@ -338,6 +341,6 @@ def calculate_ml_model_accuracy():
         df_full['current_week'] = pd.to_datetime(df_full['current_week'], format='%Y%m%d').apply(lambda x: x.date())
         df_full['prediction_date'] = pd.to_datetime(df_full['prediction_date']).apply(lambda x: x.date())
         query_results_df = query_results_df.append(df_full, ignore_index=True)
-    return query_results_df
+    return query_results_df, top_correlation_list, df_of_top_six_correlations
 
-calculate_ml_model_accuracy()
+# calculate_ml_model_accuracy()
