@@ -6,6 +6,8 @@ import dataframes_from_queries
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
+from dash.dash_table import DataTable
+from dash.dash_table.Format import Format, Group
 import passwords
 
 url = passwords.rds_access
@@ -66,6 +68,6 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name, keyword):
 
 
 def generate_table(dataframe):
-    table = dbc.Table.from_dataframe(dataframe, striped=True, bordered=True, hover=True)
+    table = dbc.Table.from_dataframe(dataframe, striped=True, bordered=True, hover=True, responsive=True)
     return table
 

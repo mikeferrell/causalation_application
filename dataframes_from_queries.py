@@ -12,6 +12,13 @@ keyword_list = ['blockchain', 'cloud', 'covid', 'cryptocurrency',
                 'currency exchange', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
                 'politic', 'profitability', 'recession', 'security', 'smartphone', 'supply chain', 'uncertainty', 'war']
 
+#format percentages in query results
+def format_percent(value):
+    return "{:.0%}".format(value)
+
+def format_dollar(value):
+    return "${:.2f}".format(value)
+
 def close_prices(stock_symbol, start_date, end_date):
     recent_prices = f'''select stock_symbol, close_price, date(created_at) as close_date
     from ticker_data 
@@ -121,6 +128,7 @@ def inflation_mention_correlation(stock_symbol, start_date, end_date, keyword, t
         '''
     df_results = pd.read_sql(query_results, con=connect)
     df_results = df_results.round({'correlation': 4})
+    df_results['correlation'] = df_results['correlation'].apply(format_percent)
     return df_results
 
 
@@ -161,6 +169,7 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
                 '''
     df_results = pd.read_sql(query_results, con=connect)
     df_results = df_results.round({'correlation': 4})
+    df_results['correlation'] = df_results['correlation'].apply(format_percent)
     return df_results
 
 #main chart. stock & keyword correlations. No time delay since it's a chart and not a correlation calculations
@@ -242,13 +251,13 @@ def ml_accuracy_table():
 
 
 def calculate_ml_model_accuracy():
-    query_results_df = pd.DataFrame(columns=['stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type',
+    query_results_df = pd.DataFrame(columns=['stock_symbol', 'keyword', 'time_delay', 'filing_type', 'start_date',
                                              'current_week', 'prediction_date', 'current_close_price',
                                              'next_week_close_price', 'next_week_predicted_close',
                                              'actual_price_change',
-                                             'predicted_price_change', 'predicted_validation',
-                                             'actual_prediction_delta',
-                                             'actual_predicted_percentage_delta'])
+                                             'predicted_price_change'])
+
+    top_correlation_list = []
 
     top_correlation_query_results = f'''
     select "Stock Symbol" as stock_symbol
@@ -261,7 +270,7 @@ def calculate_ml_model_accuracy():
     from public.all_correlation_scores
     where correlation is not null
       and date("Start Date") <= current_date - interval '40 week'
-      and "Stock Symbol" != 'GEHC'
+      and "Stock Symbol" not in ('GEHC', 'CAH')
       and "Keyword" != 'cryptocurrency Mentions'
     order by correlation desc
     limit 10
@@ -318,5 +327,17 @@ def calculate_ml_model_accuracy():
                         '''
         validationd_df = pd.read_sql(query_results, con=connect)
         df_full = pd.DataFrame(validationd_df)
+        df_full['actual_prediction_percentage_delta'] = df_full['actual_prediction_percentage_delta'].apply(format_percent)
+        df_full['current_close_price'] = df_full['current_close_price'].apply(format_dollar)
+        df_full['next_week_close_price'] = df_full['next_week_close_price'].apply(format_dollar)
+        df_full['next_week_predicted_close'] = df_full['next_week_predicted_close'].apply(format_dollar)
+        df_full['actual_price_change'] = df_full['actual_price_change'].apply(format_dollar)
+        df_full['predicted_price_change'] = df_full['predicted_price_change'].apply(format_dollar)
+        df_full['actual_prediction_delta'] = df_full['actual_prediction_delta'].apply(format_dollar)
+        df_full['start_date'] = pd.to_datetime(df_full['start_date']).apply(lambda x: x.date())
+        df_full['current_week'] = pd.to_datetime(df_full['current_week'], format='%Y%m%d').apply(lambda x: x.date())
+        df_full['prediction_date'] = pd.to_datetime(df_full['prediction_date']).apply(lambda x: x.date())
         query_results_df = query_results_df.append(df_full, ignore_index=True)
     return query_results_df
+
+calculate_ml_model_accuracy()

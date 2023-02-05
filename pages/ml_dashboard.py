@@ -54,10 +54,7 @@ layout = dbc.Container([
     ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_2', figure={})), width={"size": 9, "offset": 2})),
     dbc.Row(
-        dbc.Col(html.Div(id="ml_accuracy_table"), width={"size": 6, "offset": 2})
-    ),
-    dbc.Row(
-        dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 6, "offset": 2})
+        dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 12, "offset": 1})
     ),
 
 ])
@@ -65,7 +62,6 @@ layout = dbc.Container([
 
 @callback(
     Output('date_and_stock_for_chart_2', 'figure'),
-    Output('ml_accuracy_table', 'children'),
     Output('ml_top_five_accuracy_table', 'children'),
     Input('my_button_2', 'n_clicks'),
     [State('dropdown_input_2', 'value'),
@@ -81,12 +77,11 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
     if len(stock_dropdown_value) > 0:
         print(n_clicks)
         date_and_stock_for_chart_2 = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
-            dataframes_from_queries.inflation_mention_chart('CPT', '2021-02-01',
-                                                            '2022-12-05', 'war', '', '10-K'),
-            'CPT', 'war'),
-        ml_accuracy_table = my_dash_charts.generate_table(dataframes_from_queries.ml_accuracy_table()),
+            dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
+                                                            end_date, keyword_dropdown_value, '', filing_type_value),
+            stock_dropdown_value, keyword_dropdown_value)
         ml_top_five_accuracy_table = my_dash_charts.generate_table(dataframes_from_queries.calculate_ml_model_accuracy()),
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
-    return date_and_stock_for_chart_2, ml_accuracy_table, ml_top_five_accuracy_table
+    return date_and_stock_for_chart_2, ml_top_five_accuracy_table
