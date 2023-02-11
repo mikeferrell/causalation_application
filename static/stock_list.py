@@ -1,4 +1,5 @@
 stock_list = [
+    '^GSPC',
     'CVNA',
     'BBBY',
     'GME',

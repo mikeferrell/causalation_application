@@ -252,21 +252,13 @@
 # top_correlation_scores()
 
 
-import dataframes_from_queries
-import os
 import pandas as pd
-from pandas_datareader import data
 import yfinance as yf
-import pandas_datareader as pdr
 from datetime import date, timedelta, datetime
-import time
 from sqlalchemy import create_engine
 from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
-import edgar_jobs
-import top_correlations
-
 
 url = passwords.rds_access
 engine = create_engine(url)

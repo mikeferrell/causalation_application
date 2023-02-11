@@ -74,7 +74,7 @@ def append_to_postgres(df, table, append_or_replace):
         conn.rollback()
 
 
-def calculate_top_five_forecasts():
+def calculate_top_ten_forecasts():
     df_for_pg_upload = pd.DataFrame(columns=['current_week', 'stock_date', 'keyword_mentions_rolling_avg',
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
                                              'stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type'])
@@ -97,7 +97,7 @@ def calculate_top_five_forecasts():
     '''
     query_df = pd.read_sql(top_correlation_query_results, con=connect)
 
-    row_range = range(0, 6)
+    row_range = range(0, 10)
     for rows in row_range:
         df_row = query_df.iloc[rows]
         stock_symbol = df_row['stock_symbol']
@@ -282,7 +282,7 @@ def calculate_top_five_forecasts():
         df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
     return df_for_pg_upload
 
-# full_df_for_upload = calculate_top_five_forecasts()
+# full_df_for_upload = calculate_top_ten_forecasts()
 # append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 

@@ -35,8 +35,8 @@ layout = dbc.Container([
         dbc.Col(html.Div([
         html.P('''Causalation is a way to spot correlations between stock prices and what companies are discussing in their public filings.'''),
         html.P(
-                '''The dashboard is bringing together weekly stock openings from S&P 500 companies
-                with keywords extracted from 10-K filings over the same time period.'''),
+                '''The dashboard is bringing together keywords extracted from 10-K & 10-Q filings
+                with weekly stock closings from S&P 500 companies (and some meme stocks) over the same time period.'''),
         ]),
             style={'textAlign': 'center'},
             width={"size": 8, "offset": 2},

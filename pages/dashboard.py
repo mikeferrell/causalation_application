@@ -1,11 +1,11 @@
 import dash
 from dash import dcc, html, Input, Output, State, exceptions, callback
 import dash_bootstrap_components as dbc
-from datetime import date
+from datetime import date, datetime
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
-from cron_jobs import get_dates
+from cron_jobs import get_dates, get_datestoo
 
 dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
@@ -69,6 +69,9 @@ layout = html.Div(children=
             dbc.Col(html.Div(id="asc_correlation_table"), width={"size": 3, "offset": 1})
         ]
     ),
+    html.Div(style={'display': 'none'}, children=[
+        dcc.Input(id='trigger_on_pageload', value=0, style={'display': 'none'})
+    ])
       # html.Div(html.H1(
       #     children='Data from Chart Above',
       #     style={
@@ -81,6 +84,21 @@ layout = html.Div(children=
         ])
                   ])
 
+#trying to make it work so that the daterange default is always today. not quite working
+# @callback(
+#     Output('date_picker_range', 'end_date'),
+#     [Input('trigger_on_pageload', 'value'),
+#     Input('date_picker_range', 'start_date'),
+#      Input('date_picker_range', 'end_date')])
+# def update_date_picker(trigger_on_pageload, start_date, end_date):
+#     today = datetime.now().date()
+#     if trigger_on_pageload is not None:
+#         return get_datestoo()
+#     elif end_date is None or end_date != today:
+#         return today
+#     return end_date
+
+
 @callback(
     Output('date_and_stock_for_chart', 'figure'),
     # Output('correlation_table', 'children'),
@@ -88,6 +106,7 @@ layout = html.Div(children=
     Output('keyword_count_table', 'children'),
     Output('desc_correlation_table', 'children'),
     Output('asc_correlation_table', 'children'),
+    # Output('date_picker_range', 'end_date'),
     # Output('data_from_chart', 'children'),
     Input('my_button', 'n_clicks'),
     [State('dropdown_input', 'value'),

@@ -247,5 +247,5 @@ df_full['predicted_price'] = df_test
 # df_full['mae'] = mae_df
 df_full = df_full.drop_duplicates()
 print(df_full)
-append_to_postgres(df_full, 'prediction_results', 'replace')
+# append_to_postgres(df_full, 'prediction_results', 'replace')
 

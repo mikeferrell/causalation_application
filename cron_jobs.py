@@ -1,9 +1,7 @@
 import dataframes_from_queries
 import os
 import pandas as pd
-from pandas_datareader import data
 import yfinance as yf
-import pandas_datareader as pdr
 from datetime import date, timedelta, datetime
 import time
 from sqlalchemy import create_engine
@@ -11,8 +9,7 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
-import top_correlations
-
+import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -31,6 +28,11 @@ def get_dates():
     day = int(yesterdays_date[8:10])
 
     yesterday = str(date(year, month, day))
+    return yesterday
+
+def get_datestoo():
+    today = date.today()
+    yesterday = today - timedelta(days=3)
     return yesterday
 
 
@@ -290,6 +292,9 @@ def full_edgar_job_10qs():
         print("no files to analyze")
     print("done with 10q cron job")
 
+def ml_calculate_top_ten_forecasts():
+    full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts()
+    append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 # def listener(event):
 #     print("starting listener", datetime.now())
