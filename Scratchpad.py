@@ -336,27 +336,3 @@ def append_to_postgres(df, table, append_or_replace):
         print('Error: ', e)
         conn.rollback()
 
-start = '2023-01-11'
-end = '2023-01-11'
-
-
-def update_stock_data():
-    symbols = []
-    for ticker in symbols_list:
-        try:
-            downloaded_data = yf.download(ticker, start=start, end=date.today())
-            # downloaded_data = data.DataReader(ticker, 'google', start='2023-01-11', end='2023-01-11')
-        except (ValueError, KeyError, Exception) as error:
-            print(f"{error} for {ticker}")
-            continue
-        downloaded_data['Symbol'] = ticker
-        symbols.append(downloaded_data)
-    df = pd.concat(symbols)
-    df = df.reset_index()
-    df = df[['Date', 'Close', 'Symbol']]
-    df.columns = ['created_at', 'close_price', 'stock_symbol']
-    df = df.drop_duplicates()
-    append_to_postgres(df, 'ticker_data', 'append')
-    print("Stock Done")
-
-update_stock_data()

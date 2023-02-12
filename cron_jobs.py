@@ -296,6 +296,26 @@ def ml_calculate_top_ten_forecasts():
     full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts()
     append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
+
+def one_time_update_stock_data():
+    symbols = []
+    for ticker in symbols_list:
+        try:
+            downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
+        except (ValueError, KeyError, Exception) as error:
+            print(f"{error} for {ticker}")
+            continue
+        downloaded_data['Symbol'] = ticker
+        symbols.append(downloaded_data)
+    df = pd.concat(symbols)
+    print(df)
+    df = df.reset_index()
+    df = df[['Date', 'Open', 'Close', 'Symbol']]
+    df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
+    df = df.drop_duplicates()
+    append_to_postgres(df, 'ticker_data', 'replace')
+    print("stocks done")
+
 # def listener(event):
 #     print("starting listener", datetime.now())
 #     if not event.exception:

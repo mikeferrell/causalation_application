@@ -8,7 +8,7 @@ import sidebar as sidebar
 import cron_jobs
 import edgar_jobs
 from apscheduler.schedulers.background import BackgroundScheduler
-import one_time_edgar_pull
+import one_time_jobs
 import time
 import os
 import logging
@@ -57,12 +57,12 @@ logging.info('Admin logged in')
 scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name='full_edgar_10ks')
 scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=30, name='full_edgar_10qs')
 scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=10)
-scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', day_of_week='wed', hour=3, minute=30)
-scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', day_of_week='fri', hour=3, minute=30)
+scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', hour=3, minute=30)
 # scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
 # scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'interval', minutes=3)
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=10)
-scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', day_of_week='fri', hour=4, minute=10)
+scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', hour=4, minute=10)
+scheduler.add_job(cron_jobs.one_time_update_stock_data, 'cron', day_of_week='sat', hour=11, minute=25)
 
 # scheduler.add_job(one_time_edgar_pull.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=15, minute=1, name='one_time_edgar_10ks')
 # scheduler.add_job(one_time_edgar_pull.full_edgar_job_10qs, 'cron', day_of_week='sun', hour=20, minute=1, name='one_time_edgar_10qs')

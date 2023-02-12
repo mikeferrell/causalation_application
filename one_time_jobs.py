@@ -8,7 +8,7 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
-from older_versions import top_correlations
+import top_correlations
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -99,6 +99,29 @@ def full_edgar_job_10qs():
 def top_correlation_score_cron():
     top_correlations.top_correlation_scores()
     print("done with top correlation scores")
+
+
+def update_stock_data():
+    symbols = []
+    for ticker in symbols_list:
+        try:
+            downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
+        except (ValueError, KeyError, Exception) as error:
+            print(f"{error} for {ticker}")
+            continue
+        downloaded_data['Symbol'] = ticker
+        symbols.append(downloaded_data)
+    df = pd.concat(symbols)
+    print(df)
+    df = df.reset_index()
+    df = df[['Date', 'Open', 'Close', 'Symbol']]
+    df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
+    df = df.drop_duplicates()
+    append_to_postgres(df, 'ticker_data', 'replace')
+    print("stocks done")
+# update_stock_data()
+
+
 
 # def listener(event):
 #     print("starting listener", datetime.now())
