@@ -316,6 +316,7 @@ def one_time_update_stock_data():
     append_to_postgres(df, 'ticker_data', 'replace')
     print("stocks done")
 
+
 # def listener(event):
 #     print("starting listener", datetime.now())
 #     if not event.exception:

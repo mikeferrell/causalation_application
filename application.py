@@ -62,7 +62,6 @@ scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', hour=3, minute=30)
 # scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'interval', minutes=3)
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=10)
 scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', hour=4, minute=10)
-scheduler.add_job(cron_jobs.one_time_update_stock_data, 'cron', day_of_week='sat', hour=11, minute=25)
 
 # scheduler.add_job(one_time_edgar_pull.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=15, minute=1, name='one_time_edgar_10ks')
 # scheduler.add_job(one_time_edgar_pull.full_edgar_job_10qs, 'cron', day_of_week='sun', hour=20, minute=1, name='one_time_edgar_10qs')
@@ -70,7 +69,7 @@ scheduler.start()
 
 
 if __name__ == '__main__':
-    application.run(port=8000, debug=False)
+    application.run(port=8000, debug=True)
 #
 # if __name__ == '__main__':
 #     app.run_server(port=8000, debug=False)
