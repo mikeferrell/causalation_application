@@ -167,7 +167,7 @@ def top_correlation_scores():
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
     # time delays to test
-    time_delay_dict = ['4', '8', '12']
+    time_delay_dict = ['1', '2', '4', '8', '12']
     filing_type = ['10-K', '10-Q']
     # grab the first date of each week within the time bound we're interested in
     dates_dict = f'''
@@ -195,7 +195,7 @@ def top_correlation_scores():
 
             select to_char(weekly_closing_price, 'YYYY-MM-DD') as date_strings from first_week_dates
             where weekly_closing_price is not null
-            and weekly_closing_price >= '2022-01-01'
+            and weekly_closing_price >= '2021-08-01'
             and weekly_closing_price <= '{get_dates()}'
         '''
     dates_dict = pd.read_sql(dates_dict, con=connect)

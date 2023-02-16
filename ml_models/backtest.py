@@ -81,10 +81,7 @@ def append_to_postgres(df, table, append_or_replace):
         conn.rollback()
 
 def backtesting():
-    df_for_pg_upload = pd.DataFrame(columns=[
-        'stock_symbol', 'buy_week', 'buy_price', 'prediction_date', 'predicted_close_price', 'predicted_price_change'
-    , 'cashout_price', 'predicted_price_change_percentage', 'keyword', 'time_delay', 'filing_type', 'start_date'
-    ])
+    df_recommended_buys = []
 
     top_correlation_query_results = f'''
     select "Stock Symbol" as stock_symbol
@@ -130,7 +127,7 @@ def backtesting():
                   else 'price the same'
                   end as predicted_price_movement
               , predicted_price - current_close_price as predicted_price_change 
-              , (current_close_price / predicted_price) - 1 as predicted_price_change_percentage 
+              , 1 - (current_close_price / predicted_price) as predicted_price_change_percentage 
               from top_five_prediction_results
               where 
               stock_symbol = '{stock_symbol}'
@@ -187,9 +184,13 @@ def backtesting():
             and predicted_close_price > current_close_price
             '''
         buy_df_results = pd.read_sql(buy_recommendation, con=connect)
-        buy_df_results['predicted_price_change_percentage'] = buy_df_results['predicted_price_change_percentage'].apply(format_percent)
-        df_for_pg_upload.append(buy_df_results, ignore_index=True)
-        print(buy_df_results)
-    print(df_for_pg_upload)
-
+        if buy_df_results.empty:
+            continue
+        else:
+            buy_df_results['predicted_price_change_percentage'] = buy_df_results['predicted_price_change_percentage'].apply(format_percent)
+            df_recommended_buys.append(buy_df_results)
+    df_for_pg_upload = pd.concat(df_recommended_buys, ignore_index=True)
+    df_for_pg_upload = df_for_pg_upload.sort_values(by=['buy_week', 'stock_symbol'])
+    # append_to_postgres(df_for_pg_upload, 'backtest_buys_test', 'replace')
+    return df_for_pg_upload
 # backtesting()

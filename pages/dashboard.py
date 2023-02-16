@@ -58,11 +58,17 @@ layout = html.Div(children=
         dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 3, "offset": 1})
     ]),
     html.Div(html.H1(
-        children='Top Stock Correlations',
+        children='Top Stocks Correlated',
         style={
             'textAlign': 'center',
             'color': colors['text']
-        })),
+        }),
+    ),
+    dbc.Row(dbc.Col(html.Div([html.P('''With the Filters Applied''')]),
+                  style={'textAlign': 'center'},
+                  width={"size": 8, "offset": 2},
+                  )
+    ),
     dbc.Row(
         [
             dbc.Col(html.Div(id="desc_correlation_table"), width={"size": 3, "offset": 2}),
