@@ -7,5 +7,4 @@
 /ml_models/simple_forecast_v2.py
 /ml_models/validate_forecast.py
 /ml_models/simple_forecast_v2.py
-/ml_models/backtest.py
 /ml_models/rnn_forecast.py
