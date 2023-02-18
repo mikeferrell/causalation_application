@@ -7,6 +7,7 @@ import pandas as pd
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
 from cron_jobs import get_dates
+import ml_models.backtest as backtest
 
 import images as my_images
 import base64
@@ -54,6 +55,7 @@ layout = dbc.Container([
         className="g-2"
     ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_2', figure={})), width={"size": 9, "offset": 2})),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
     html.Div(html.H1(
         children='Top Stock Correlations',
         style={
@@ -79,6 +81,7 @@ layout = dbc.Container([
 
 @callback(
     Output('date_and_stock_for_chart_2', 'figure'),
+    Output('date_and_stock_for_chart_backtest', 'figure'),
     Output('ml_top_five_accuracy_table', 'children'),
     # Output('ml_top_five_accuracy_list', 'children'),
     Output('ml_list_of_top_accuracy_table', 'children'),
@@ -99,6 +102,8 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
                                                             end_date, keyword_dropdown_value, '', filing_type_value),
             stock_dropdown_value, keyword_dropdown_value)
+        date_and_stock_for_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
+            backtest.comparing_returns_vs_sandp())
         ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
         ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
         ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
@@ -106,4 +111,5 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
-    return date_and_stock_for_chart_2, ml_top_five_accuracy_table, ml_list_of_top_accuracy_table
+    return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, \
+           ml_top_five_accuracy_table, ml_list_of_top_accuracy_table

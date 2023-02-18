@@ -8,9 +8,10 @@ engine = create_engine(url)
 connect = engine.connect()
 
 
-keyword_list = ['blockchain', 'cloud', 'covid', 'cryptocurrency',
-                'currency exchange', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
-                'politic', 'profitability', 'recession', 'security', 'smartphone', 'supply chain', 'uncertainty', 'war']
+keyword_list = ['advertising', 'blockchain', 'cloud', 'COVID', 'credit', 'currency exchange',
+                'digital', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
+                'insurance', 'politic', 'profitability', 'recession',
+                'security', 'software', 'soft landing', 'supply chain', 'uncertainty', 'war']
 
 #format percentages in query results
 def format_percent(value):
@@ -96,33 +97,33 @@ def inflation_mention_correlation(stock_symbol, start_date, end_date, keyword, t
     query_results = f'''
             with top_correlations as (with rolling_average_calculation as (
                  with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}'),
-                stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null)
+                stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null)
             
                 select 
-                weekly_closing_price as stock_date
-                , close_price
+                week_opening_date
+                , week_close_price
                 , stock_symbol
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
                 from stock_weekly_opening 
-                inner join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delay} week'
-                where weekly_closing_price >= '{start_date}'
-                and weekly_closing_price <= '{end_date}'
+                inner join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week + interval '{time_delay} week'
+                where week_opening_date >= '{start_date}'
+                and week_opening_date <= '{end_date}'
                 and filing_type != '{filing_type}'
                 )
 
-                select stock_date, stock_symbol,
-                close_price,
+                select week_opening_date, stock_symbol,
+                week_close_price,
                 'keyword Mentions' as keyword_mentions,
-                avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                 from rolling_average_calculation
-                order by stock_symbol, stock_date asc
+                order by stock_symbol, week_opening_date asc
                 )
             
             select stock_symbol as "Stock Symbol", '{keyword} Mentions' as "Keyword Mentions",
-             corr(close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
+             corr(week_close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
             from top_correlations
-            where stock_date >= '{start_date}'
-            and stock_date <= '{end_date}'
+            where week_opening_date >= '{start_date}'
+            and week_opening_date <= '{end_date}'
             and stock_symbol = '{stock_symbol}'
             group by 1, 2
         '''
@@ -136,33 +137,33 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
     query_results = f'''
             with top_correlations as (with rolling_average_calculation as (
                  with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}'),
-                stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null)
+                stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null)
             
                 select 
-                weekly_closing_price as stock_date
-                , close_price
+                week_opening_date
+                , week_close_price
                 , stock_symbol
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
                 from stock_weekly_opening 
-                inner join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delay} week'
-                where weekly_closing_price >= '{start_date}'
-                and weekly_closing_price <= '{end_date}'
+                inner join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week + interval '{time_delay} week'
+                where week_opening_date >= '{start_date}'
+                and week_opening_date <= '{end_date}'
                 and filing_type != '{filing_type}'
                 )
 
-                select stock_date, stock_symbol,
-                close_price,
+                select week_opening_date, stock_symbol,
+                week_close_price,
                 '{keyword} Mentions' as keyword_mentions,
-                avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                 from rolling_average_calculation
-                order by stock_symbol, stock_date asc
+                order by stock_symbol, week_opening_date asc
                 )
             
             select stock_symbol as "Stock Symbol", '{keyword} Mentions' as "Keyword Mentions",
-             corr(close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
+             corr(week_close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
             from top_correlations
-            where stock_date >= '{start_date}'
-            and stock_date <= '{end_date}'
+            where week_opening_date >= '{start_date}'
+            and week_opening_date <= '{end_date}'
             group by 1, 2
             order by Correlation {asc_or_desc}
             limit 10
@@ -178,29 +179,29 @@ def inflation_mention_chart(stock_symbol, start_date, end_date, keyword, limit, 
     query_results = f'''
             with rolling_average_calculation as (
                 with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}')
-                , stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null)
+                , stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null)
                 
                 select 
-                distinct created_at as stock_date
-                , close_price
+                distinct week_opening_date
+                , week_close_price
                 , stock_symbol
                 , filing_type
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
                 from stock_weekly_opening 
-                inner join keyword_data on stock_weekly_opening.created_at = keyword_data.filing_week
+                inner join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week
                 where filing_type != '{filing_type}'
                 )
             
-            select stock_date, stock_symbol,
-            close_price as stock_price,
+            select week_opening_date, stock_symbol,
+            week_close_price,
             '{keyword} Mentions' as "{keyword} Mentions",
-            avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as "{keyword} Mentions Rolling Average"
+            avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as "{keyword} Mentions Rolling Average"
             from rolling_average_calculation
             where stock_symbol = '{stock_symbol}'
-            and stock_date >= '{start_date}'
-            and stock_date <= '{end_date}'
-            order by stock_date asc
-            offset 12
+            and week_opening_date >= '{start_date}'
+            and week_opening_date <= '{end_date}'
+            order by week_opening_date asc
+            offset 6
             {limit}
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
@@ -213,7 +214,7 @@ def ml_accuracy_table():
     query_results = f'''
     with prices as (
     select current_week, current_close_price
-    , stock_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
+    , week_opening_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
     , case when next_week_close_price > current_close_price then 'price increased'
         when next_week_close_price < current_close_price then 'price decreased'
         when next_week_close_price is null then 'no price comparison'
@@ -260,17 +261,17 @@ def calculate_ml_model_accuracy():
     top_correlation_list = []
 
     top_correlation_query_results = f'''
-    select "Stock Symbol" as stock_symbol
+    select stock_symbol
     , split_part("Keyword", ' Mentions', 1) as keyword
-    , "Start Date" as start_date
-    , "End Date" as end_date
+    , start_date
+    , end_date
     , time_delay
     , filing_type
     , correlation
     from public.all_correlation_scores
     where correlation is not null
-      and date("Start Date") <= current_date - interval '40 week'
-      and "Stock Symbol" not in ('GEHC', 'CAH')
+      and date(start_date) <= current_date - interval '40 week'
+      and stock_symbol not in ('GEHC', 'CAH')
       and "Keyword" != 'cryptocurrency Mentions'
     order by correlation desc
     limit 10
@@ -293,7 +294,7 @@ def calculate_ml_model_accuracy():
         query_results = f'''
                         with prices as (
                         select stock_symbol, start_date, keyword, time_delay, filing_type, current_week, current_close_price
-                        , stock_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
+                        , week_opening_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
                         , case when next_week_close_price > current_close_price then 'price increased'
                             when next_week_close_price < current_close_price then 'price decreased'
                             when next_week_close_price is null then 'no price comparison'

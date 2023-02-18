@@ -23,10 +23,7 @@ application = app.server
 # logging.basicConfig(filename=log_file, format='%(asctime)s - %(message)s', level=logging.INFO)
 
 logo_image_direct = 'static/causalation-logo-no-background.png'
-# logo_image = my_images.logo
-# small_logo_image = my_images.small_logo
-# encoded_logo = base64.b64encode(open(logo_image, 'rb').read())
-# encoded_small_logo = base64.b64encode(open(small_logo_image, 'rb').read())
+
 
 colors = {
     'background': '#FFFFFF',

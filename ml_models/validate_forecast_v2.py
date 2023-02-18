@@ -67,37 +67,37 @@ filing_weeks = f'''
         with matched_dates as (
           with rolling_average_calculation as (
           with keyword_data as (select * from keyword_weekly_counts where keyword = 'war' and filing_type = '10-Q'),
-          stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
+          stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
 
           select 
-          distinct weekly_closing_price as stock_date
+          distinct week_opening_date
           , filing_week
-          , close_price
+          , week_close_price
           , stock_symbol
           , 1.00 * keyword_mentions / total_filings as keyword_percentage
-          from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
+          from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
           -- - interval '1 week'
-          where weekly_closing_price >= '2021-02-01'
+          where week_opening_date >= '2021-02-01'
           and filing_type = '10-Q'
           and stock_symbol = 'CPT'
-          order by stock_symbol, stock_date asc
+          order by stock_symbol, week_opening_date asc
           )
 
-          select stock_date
+          select week_opening_date
           , stock_symbol
-          , close_price
+          , week_close_price
             , filing_week
           , 'war Mentions' as keyword_mentions
-          , avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+          , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
           from rolling_average_calculation
-          order by stock_symbol, stock_date asc
+          order by stock_symbol, week_opening_date asc
           )
 
         select
         md2.filing_week 
         from matched_dates as md1
         join matched_dates as md2 
-        on md1.stock_date = md2.filing_week + interval '1 week'
+        on md1.week_opening_date = md2.filing_week + interval '1 week'
         where md2.filing_week >= '2022-09-01'
         '''
 df_filing_weeks = pd.read_sql(filing_weeks, con=connect)
@@ -116,39 +116,39 @@ for dates in datetime_list:
                     with matched_dates as (
                     with rolling_average_calculation as (
                       with keyword_data as (select * from keyword_weekly_counts where keyword = 'war' and filing_type = '10-Q'),
-                    stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
+                    stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
     
                     select 
-                    distinct weekly_closing_price as stock_date
+                    distinct week_opening_date
                     , filing_week
-                    , close_price
+                    , week_close_price
                     , stock_symbol
                     , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                    from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
-                    where weekly_closing_price >= '2021-02-01'
+                    from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                    where week_opening_date >= '2021-02-01'
                     and filing_type = '10-Q'
                     and stock_symbol = 'CPT'
-                    order by stock_symbol, stock_date asc
+                    order by stock_symbol, week_opening_date asc
                     )
     
-                    select stock_date
+                    select week_opening_date
                     , stock_symbol
-                    , close_price
+                    , week_close_price
                       , filing_week
                     , 'war Mentions' as keyword_mentions
-                    , avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                    , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                     from rolling_average_calculation
-                    order by stock_symbol, stock_date asc
+                    order by stock_symbol, week_opening_date asc
                     )
     
                     select 
                     (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
                     , md2.keyword_mentions_rolling_avg
-                    , md2.close_price as current_close_price
-                    , md1.close_price as next_week_close_price
+                    , md2.week_close_price as current_close_price
+                    , md1.week_close_price as next_week_close_price
                     from matched_dates as md1
                     join matched_dates as md2 
-                    on md1.stock_date = md2.filing_week + interval '1 week'
+                    on md1.week_opening_date = md2.filing_week + interval '1 week'
                     where md2.filing_week < '{dates}'
                     offset 3
             '''
@@ -186,44 +186,44 @@ for dates in datetime_list:
                 with matched_dates as (
                 with rolling_average_calculation as (
                   with keyword_data as (select * from keyword_weekly_counts where keyword = 'war' and filing_type = '10-Q'),
-                stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
+                stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
 
                 select 
-                distinct weekly_closing_price as stock_date
+                distinct week_opening_date
                 , filing_week
-                , close_price
+                , week_close_price
                 , stock_symbol
                 , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
-                where weekly_closing_price >= '2021-02-01'
+                from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                where week_opening_date >= '2021-02-01'
                 and filing_type = '10-Q'
                 and stock_symbol = 'CPT'
-                order by stock_symbol, stock_date asc
+                order by stock_symbol, week_opening_date asc
                 )
 
-                select stock_date
+                select week_opening_date
                 , stock_symbol
-                , close_price
+                , week_close_price
                   , filing_week
                 , 'war Mentions' as keyword_mentions
-                , avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                 from rolling_average_calculation
-                order by stock_symbol, stock_date asc
+                order by stock_symbol, week_opening_date asc
                 )
 
                 select 
                 (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
-                , md1.stock_date
+                , md1.week_opening_date
                 , md2.keyword_mentions_rolling_avg
-                , md2.close_price as current_close_price
-                , md1.close_price as next_week_close_price
+                , md2.week_close_price as current_close_price
+                , md1.week_close_price as next_week_close_price
                 from matched_dates as md1
                 join matched_dates as md2 
-                on md1.stock_date = md2.filing_week + interval '1 week'
+                on md1.week_opening_date = md2.filing_week + interval '1 week'
                 where md2.filing_week = '{dates}'
                 '''
     df_test_full = pd.read_sql(test_dataset, con=connect)
-    df_test = df_test_full.drop(columns=['stock_date', 'next_week_close_price'])
+    df_test = df_test_full.drop(columns=['week_opening_date', 'next_week_close_price'])
     df_test_full = df_test_full.drop_duplicates()
     df_test = df_test.drop_duplicates()
     full_test_data.append(df_test_full)

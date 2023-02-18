@@ -79,22 +79,22 @@ def append_to_postgres(df, table, append_or_replace):
 #where clause to supress it
 
 def calculate_top_ten_forecasts():
-    df_for_pg_upload = pd.DataFrame(columns=['current_week', 'stock_date', 'keyword_mentions_rolling_avg',
+    df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
                                              'stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type'])
 
     top_correlation_query_results = f'''
-    select "Stock Symbol" as stock_symbol
+    select stock_symbol
     , split_part("Keyword", ' Mentions', 1) as keyword
-    , "Start Date" as start_date
-    , "End Date" as end_date
+    , start_date
+    , end_date
     , time_delay
     , filing_type
     , correlation
     from public.all_correlation_scores
     where correlation is not null
-      and date("Start Date") <= current_date - interval '40 week'
-      and "Stock Symbol" not in ('GEHC', 'CAH')
+      and date(start_date) <= current_date - interval '40 week'
+      and stock_symbol not in ('GEHC', 'CAH')
       and correlation != 1
       and "Keyword" != 'cryptocurrency Mentions'
     order by correlation desc
@@ -115,36 +115,36 @@ def calculate_top_ten_forecasts():
                 with matched_dates as (
                   with rolling_average_calculation as (
                   with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
-                  stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
+                  stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
         
                   select 
-                  distinct weekly_closing_price as stock_date
+                  distinct week_opening_date
                   , filing_week
-                  , close_price
+                  , week_close_price
                   , stock_symbol
                   , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                  from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
-                  where weekly_closing_price >= '2017-01-01'
+                  from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                  where week_opening_date >= '2017-01-01'
                   and filing_type = '{filing_type}'
                   and stock_symbol = '{stock_symbol}'
-                  order by stock_symbol, stock_date asc
+                  order by stock_symbol, week_opening_date asc
                   )
         
-                  select stock_date
+                  select week_opening_date
                   , stock_symbol
-                  , close_price
+                  , week_close_price
                     , filing_week
                   , '{keyword} Mentions' as keyword_mentions
-                  , avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                  , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                   from rolling_average_calculation
-                  order by stock_symbol, stock_date asc
+                  order by stock_symbol, week_opening_date asc
                   )
         
                 select
                 md2.filing_week 
                 from matched_dates as md1
                 join matched_dates as md2 
-                on md1.stock_date = md2.filing_week + interval '{interval} week'
+                on md1.week_opening_date = md2.filing_week + interval '{interval} week'
                 where md2.filing_week >= '{correlation_start_date}'
                 '''
         df_filing_weeks = pd.read_sql(filing_weeks, con=connect)
@@ -162,39 +162,39 @@ def calculate_top_ten_forecasts():
                             with matched_dates as (
                             with rolling_average_calculation as (
                               with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
-                            stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
+                            stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
         
                             select 
-                            distinct weekly_closing_price as stock_date
+                            distinct week_opening_date
                             , filing_week
-                            , close_price
+                            , week_close_price
                             , stock_symbol
                             , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                            from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
-                            where weekly_closing_price >= '2017-01-01'
+                            from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                            where week_opening_date >= '2017-01-01'
                             and filing_type = '{filing_type}'
                             and stock_symbol = '{stock_symbol}'
-                            order by stock_symbol, stock_date asc
+                            order by stock_symbol, week_opening_date asc
                             )
         
-                            select stock_date
+                            select week_opening_date
                             , stock_symbol
-                            , close_price
+                            , week_close_price
                               , filing_week
                             , '{keyword} Mentions' as keyword_mentions
-                            , avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                            , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                             from rolling_average_calculation
-                            order by stock_symbol, stock_date asc
+                            order by stock_symbol, week_opening_date asc
                             )
         
                             select 
                             (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
                             , md2.keyword_mentions_rolling_avg
-                            , md2.close_price as current_close_price
-                            , md1.close_price as next_week_close_price
+                            , md2.week_close_price as current_close_price
+                            , md1.week_close_price as next_week_close_price
                             from matched_dates as md1
                             join matched_dates as md2 
-                            on md1.stock_date = md2.filing_week + interval '{interval} week'
+                            on md1.week_opening_date = md2.filing_week + interval '{interval} week'
                             where md2.filing_week < '{dates}'
                             offset 3
                     '''
@@ -220,44 +220,44 @@ def calculate_top_ten_forecasts():
                             with matched_dates as (
                             with rolling_average_calculation as (
                               with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
-                            stock_weekly_opening as (select * from weekly_stock_openings where weekly_closing_price is not null )
+                            stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
             
                             select 
-                            distinct weekly_closing_price as stock_date
+                            distinct week_opening_date
                             , filing_week
-                            , close_price
+                            , week_close_price
                             , stock_symbol
                             , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                            from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week 
-                            where weekly_closing_price >= '2017-01-01'
+                            from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                            where week_opening_date >= '2017-01-01'
                             and filing_type = '{filing_type}'
                             and stock_symbol = '{stock_symbol}'
-                            order by stock_symbol, stock_date asc
+                            order by stock_symbol, week_opening_date asc
                             )
             
-                            select stock_date
+                            select week_opening_date
                             , stock_symbol
-                            , close_price
+                            , week_close_price
                               , filing_week
                             , '{keyword} Mentions' as keyword_mentions
-                            , avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                            , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                             from rolling_average_calculation
-                            order by stock_symbol, stock_date asc
+                            order by stock_symbol, week_opening_date asc
                             )
             
                             select 
                             (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
-                            , md1.stock_date
+                            , md1.week_opening_date
                             , md2.keyword_mentions_rolling_avg
-                            , md2.close_price as current_close_price
-                            , md1.close_price as next_week_close_price
+                            , md2.week_close_price as current_close_price
+                            , md1.week_close_price as next_week_close_price
                             from matched_dates as md1
                             join matched_dates as md2 
-                            on md1.stock_date = md2.filing_week + interval '{interval} week'
+                            on md1.week_opening_date = md2.filing_week + interval '{interval} week'
                             where md2.filing_week = '{dates}'
                             '''
                 df_test_full = pd.read_sql(test_dataset, con=connect)
-                df_test = df_test_full.drop(columns=['stock_date', 'next_week_close_price'])
+                df_test = df_test_full.drop(columns=['week_opening_date', 'next_week_close_price'])
                 df_test_full = df_test_full.drop_duplicates()
                 df_test = df_test.drop_duplicates()
                 full_test_data.append(df_test_full)
@@ -286,7 +286,7 @@ def calculate_top_ten_forecasts():
         df_full = df_full.drop_duplicates()
         df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
     return df_for_pg_upload
-
+#
 # full_df_for_upload = calculate_top_ten_forecasts()
 # append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 

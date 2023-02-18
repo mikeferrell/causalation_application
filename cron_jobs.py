@@ -66,7 +66,7 @@ def append_to_postgres(df, table, append_or_replace):
                 '''
             kill_list = pd.read_sql(kill_open_queries, con=conn)
             print(kill_list)
-    print("query killed")
+    print("query killed to prep for upload")
     df = df
     try:
         df.to_sql(table, con=conn, if_exists=append_or_replace,
@@ -134,33 +134,54 @@ def keyword_count_cron_job():
 
 
 def weekly_stock_opening_cron_job():
-    print("starting query")
+    print("starting weekly stock price query")
     query_results = f'''
-              with temp_table as (
-              select DATE_TRUNC('week',created_at) as created_at, close_price, stock_symbol, created_at as actual_date
-              from public.ticker_data
-              order by stock_symbol, date(created_at)  asc
-              )
+          with table_for_join as (
+          with temp_table as (
+          select DATE_TRUNC('week',created_at) as week_of_prices, close_price, open_price, 
+          stock_symbol, created_at as date_of_prices
+          from public.ticker_data
+          order by stock_symbol, date(created_at)  asc
+          )
+        
+        SELECT
+            date_of_prices,
+            week_of_prices,
+            close_price,
+            open_price,
+            stock_symbol,
+            LAG(week_of_prices,1) OVER (
+                ORDER BY stock_symbol, date_of_prices desc
+            ) as next_date
+                , case when LAG(week_of_prices) OVER (
+                ORDER BY stock_symbol, date_of_prices desc
+            ) = week_of_prices then null else week_of_prices
+            end as weekly_closing_date
+                , case when LAG(week_of_prices) OVER (
+                ORDER BY stock_symbol, date_of_prices asc
+            ) = week_of_prices then null else week_of_prices
+            end as weekly_opening_date
+        FROM
+            temp_table
+        Order by stock_symbol, date_of_prices asc
+            )
             
-            SELECT
-                actual_date,
-                created_at,
-                close_price,
-                stock_symbol,
-                LAG(created_at,1) OVER (
-                    ORDER BY stock_symbol, actual_date desc
-                ) as next_date,
-                    case when LAG(created_at) OVER (
-                    ORDER BY stock_symbol, actual_date desc
-                ) = created_at then null else created_at
-                end as weekly_closing_price
-            FROM
-                temp_table
+        select a.stock_symbol
+        , a.week_of_prices as week_opening_date
+        , a.open_price as week_open_price
+        , b.close_price as week_close_price
+        from table_for_join as a 
+        join table_for_join as b 
+        on a.weekly_opening_date = b.weekly_closing_date
+        and a.stock_symbol = b.stock_symbol
+        where a.weekly_opening_date is not NULL 
+        and b.weekly_closing_date is not null
+        order by stock_symbol, week_opening_date asc
             '''
     query_results_df = pd.read_sql(query_results, con=connect)
-    print("query done")
+    print("weekly stock price query done")
     append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
-    print("Stock Window Functions Done")
+    print("Weekly Stock Window Functions Done")
 
 
 def top_correlation_scores():
@@ -169,7 +190,7 @@ def top_correlation_scores():
     # time delays to test
     time_delay_dict = ['1', '2', '4', '8', '12']
     filing_type = ['10-K', '10-Q']
-    # grab the first date of each week within the time bound we're interested in
+    # grab the first date of each week within the time bound we're interested in. Right now, Aug 2021-Yesterday
     dates_dict = f'''
             with first_week_dates as (
             with temp_table as (
@@ -208,39 +229,42 @@ def top_correlation_scores():
         for time_delays in time_delay_dict:
             for keywords in keywords_dict:
                 for filings in filing_type:
+                    # Pulls the top 10 stock correlation scores with the applied filters
                     query_results = f'''
                         with top_correlations as (with rolling_average_calculation as (
                          with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
                         stock_weekly_opening as (select * from weekly_stock_openings)
 
                         select 
-                        distinct weekly_closing_price as stock_date
-                        , close_price
+                        distinct week_opening_date
+                        , week_close_price
                         , stock_symbol
                         , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                        from stock_weekly_opening join keyword_data on stock_weekly_opening.weekly_closing_price = keyword_data.filing_week + interval '{time_delays} week'
-                        where weekly_closing_price >= '{dates}'
-                        and weekly_closing_price <= '{get_dates()}'
+                        from stock_weekly_opening 
+                        join keyword_data 
+                        on stock_weekly_opening.week_opening_date = keyword_data.filing_week + interval '{time_delays} week'
+                        where week_opening_date >= '{dates}'
+                        and week_opening_date <= '{get_dates()}'
                         and filing_type = '{filings}'
                         )
 
-                        select stock_date, stock_symbol,
-                        close_price,
+                        select week_opening_date, stock_symbol,
+                        week_close_price,
                         'keyword Mentions' as keyword_mentions,
-                        avg(keyword_percentage) over(order by stock_symbol, stock_date rows 12 preceding) as keyword_mentions_rolling_avg
+                        avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                         from rolling_average_calculation
-                        order by stock_symbol, stock_date
+                        order by stock_symbol, week_opening_date
                         )
 
-                        select stock_symbol as "Stock Symbol", '{keywords} Mentions' as "Keyword",
-                        '{dates}' as "Start Date",
-                        '{get_dates()}' as "End Date",
+                        select stock_symbol, '{keywords} Mentions' as "Keyword",
+                        '{dates}' as start_date,
+                        '{get_dates()}' as end_date,
                         {time_delays} as time_delay,
                         '{filings}' as filing_type,
-                        corr(close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
+                        corr(week_close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
                         from top_correlations
-                        where stock_date >= '{dates}'
-                        and stock_date <= '{get_dates()}'
+                        where week_opening_date >= '{dates}'
+                        and week_opening_date <= '{get_dates()}'
                         group by 1, 2
                         order by Correlation desc
                         limit 10
@@ -315,34 +339,3 @@ def one_time_update_stock_data():
     df = df.drop_duplicates()
     append_to_postgres(df, 'ticker_data', 'replace')
     print("stocks done")
-
-
-# def listener(event):
-#     print("starting listener", datetime.now())
-#     if not event.exception:
-#         job = scheduler.get_job(event.job_id)
-#         if job.name == 'download_10ks':
-#             scheduler.add_job(lambda: edgar_jobs.analyze_edgar_files_10k())
-#             print("finished edgar jobs")
-#     print("done with listener", datetime.now())
-
-# if __name__ == '__main__':
-#     scheduler = BackgroundScheduler()
-#     # scheduler.add_listener(execution_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-#     # scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-#     # scheduler.add_job(full_edgar_job_10ks, 'cron', hour=10, minute=45, name='full_edgar_10ks')
-#     # scheduler.add_job(full_edgar_job_10qs, 'cron', hour=10, minute=45, name='full_edgar_10qs')
-#     # scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
-#     scheduler.add_job(keyword_count_cron_job, 'cron', hour=11, minute=15)
-# #     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=11, minute=2)
-#     scheduler.start()
-#     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
-# # # day_of_week='tue-sat'
-#
-#     try:
-#         # This is here to simulate application activity (which keeps the main thread alive).
-#         while True:
-#             time.sleep(2)
-#     except (KeyboardInterrupt, SystemExit):
-#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
-#         scheduler.shutdown()

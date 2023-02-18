@@ -47,11 +47,11 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name, keyword):
 
     # Add traces
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"stock_date"], y=dataframe_input.loc[:,"stock_price"], name=stock_name),
+        go.Scatter(x=dataframe_input.loc[:,"week_opening_date"], y=dataframe_input.loc[:,"week_close_price"], name=stock_name),
         secondary_y=False,
     )
     fig.add_trace(
-        go.Scatter(x=dataframe_input.loc[:,"stock_date"],
+        go.Scatter(x=dataframe_input.loc[:,"week_opening_date"],
                    y=dataframe_input.loc[:,f"{keyword} Mentions Rolling Average"], name=f"{keyword} Mention Percentage"),
         secondary_y=True,
     )
@@ -64,6 +64,32 @@ def Edgar_Mult_Y_Axis_Lines(dataframe_input, stock_name, keyword):
     # Set y-axes titles
     fig.update_yaxes(title_text=f"<b>{stock_name}</b> Closing Price", secondary_y=False)
     fig.update_yaxes(title_text=f"<b>{keyword}</b> Count", secondary_y=True)
+
+    return fig
+
+def backtest_Mult_Y_Axis_Lines(dataframe_input):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Add traces
+    fig.add_trace(
+        go.Scatter(x=dataframe_input.loc[:,"week_of_purchases"], y=dataframe_input.loc[:,"portfolio_value"],
+                   name="Value of my Portfolio"),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(x=dataframe_input.loc[:,"week_of_purchases"],
+                   y=dataframe_input.loc[:,"s_and_p_price"], name="S&P 500 Price"),
+        secondary_y=True,
+    )
+    # Add figure title
+    fig.update_layout(
+        title_text="Backtested Performance vs S&P 500"
+    )
+    # Set x-axis title
+    fig.update_xaxes(title_text="Date")
+    # Set y-axes titles
+    fig.update_yaxes(title_text=f"<b>Backtested Value", secondary_y=False)
+    fig.update_yaxes(title_text=f"<b>S&P 500 Value", secondary_y=True)
 
     return fig
 
