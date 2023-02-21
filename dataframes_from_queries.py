@@ -2,6 +2,7 @@ import pandas as pd
 import passwords
 from sqlalchemy import create_engine
 from static.stock_list import stock_list
+import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -11,7 +12,7 @@ connect = engine.connect()
 keyword_list = ['advertising', 'blockchain', 'cloud', 'COVID', 'credit', 'currency exchange',
                 'digital', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
                 'insurance', 'politic', 'profitability', 'recession',
-                'security', 'software', 'soft landing', 'supply chain', 'uncertainty', 'war']
+                'security', 'software', 'supply chain', 'uncertainty', 'war']
 
 #format percentages in query results
 def format_percent(value):
@@ -260,23 +261,7 @@ def calculate_ml_model_accuracy():
 
     top_correlation_list = []
 
-    top_correlation_query_results = f'''
-    select stock_symbol
-    , split_part("Keyword", ' Mentions', 1) as keyword
-    , start_date
-    , end_date
-    , time_delay
-    , filing_type
-    , correlation
-    from public.all_correlation_scores
-    where correlation is not null
-      and date(start_date) <= current_date - interval '40 week'
-      and stock_symbol not in ('GEHC', 'CAH')
-      and "Keyword" != 'cryptocurrency Mentions'
-    order by correlation desc
-    limit 10
-    '''
-    df_of_top_ten_correlations = pd.read_sql(top_correlation_query_results, con=connect)
+    df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results()
 
     row_range = range(0, 10)
     for rows in row_range:

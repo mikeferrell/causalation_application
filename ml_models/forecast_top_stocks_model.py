@@ -73,6 +73,35 @@ def append_to_postgres(df, table, append_or_replace):
         print('Error: ', e)
         conn.rollback()
 
+#this is the list of the top 10 correlations from the all_correlation_scores table, with some filtering
+def top_correlation_query_results():
+    top_correlation_query_results = f'''
+        with top_correlations as (
+        select stock_symbol
+        , split_part("Keyword", ' Mentions', 1) as keyword
+        , start_date
+        , end_date
+        , time_delay
+        , filing_type
+        , correlation
+        from public.all_correlation_scores
+        where correlation is not null
+          and date(start_date) <= current_date - interval '40 week'
+          and stock_symbol not in ('GEHC', 'CAH')
+          and correlation != 1
+          and "Keyword" != 'cryptocurrency Mentions'
+        order by correlation desc
+        limit 50
+        )
+        
+        select distinct on (stock_symbol) *
+        from top_correlations
+        order by stock_symbol, correlation desc
+        limit 10
+    '''
+    query_df = pd.read_sql(top_correlation_query_results, con=connect)
+    return query_df
+
 #if this is returning empty dataframes, then it's because there's some new stock that entered the S&P that doesn't have
 #enough data to create a 12 week rolling average (and therefore the later queries in this function return no results)
 #to fix, run top_correlation_query_results against the DB and see what the top results are, then add that stock to the
@@ -83,24 +112,7 @@ def calculate_top_ten_forecasts():
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
                                              'stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type'])
 
-    top_correlation_query_results = f'''
-    select stock_symbol
-    , split_part("Keyword", ' Mentions', 1) as keyword
-    , start_date
-    , end_date
-    , time_delay
-    , filing_type
-    , correlation
-    from public.all_correlation_scores
-    where correlation is not null
-      and date(start_date) <= current_date - interval '40 week'
-      and stock_symbol not in ('GEHC', 'CAH')
-      and correlation != 1
-      and "Keyword" != 'cryptocurrency Mentions'
-    order by correlation desc
-    limit 10
-    '''
-    query_df = pd.read_sql(top_correlation_query_results, con=connect)
+    query_df = top_correlation_query_results()
 
     row_range = range(0, 10)
     for rows in row_range:

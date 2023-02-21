@@ -11,6 +11,7 @@ from sklearn.metrics import mean_absolute_error
 from sqlalchemy import create_engine
 import psycopg2
 import passwords
+import forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -80,27 +81,9 @@ def append_to_postgres(df, table, append_or_replace):
         print('Error: ', e)
         conn.rollback()
 
-def buy_recommendation_list():
+def backtesting_buy_recommendation_list():
     df_recommended_buys = []
-
-    top_correlation_query_results = f'''
-    select stock_symbol
-    , split_part("Keyword", ' Mentions', 1) as keyword
-    , start_date
-    , end_date
-    , time_delay
-    , filing_type
-    , correlation
-    from public.all_correlation_scores
-    where correlation is not null
-      and date(start_date) <= current_date - interval '40 week'
-      and stock_symbol not in ('GEHC', 'CAH')
-      and correlation != 1
-      and "Keyword" != 'cryptocurrency Mentions'
-    order by correlation desc
-    limit 10
-    '''
-    query_df = pd.read_sql(top_correlation_query_results, con=connect)
+    query_df = forecast_top_stocks_model.top_correlation_query_results()
 
     row_range = range(0, 10)
     for rows in row_range:
@@ -201,7 +184,7 @@ def buy_recommendation_list():
     # append_to_postgres(df_for_pg_upload, 'backtest_buys_test', 'replace')
     return df_for_pg_upload
 
-# buy_recommendation_list()
+# backtesting_buy_recommendation_list()
 
 def calculate_returns():
     cash_in_hand = 1000

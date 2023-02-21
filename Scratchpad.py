@@ -260,79 +260,79 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 
-url = passwords.rds_access
-engine = create_engine(url)
-connect = engine.connect()
-
-# symbols_list = dataframes_from_queries.stock_dropdown()
-symbols_list = ['COIN', 'AAPL']
-
-#returns a string
-def get_dates():
-    today = date.today()
-    yesterdays_date = today - timedelta(days=1)
-    yesterdays_date = str(yesterdays_date)
-    year = int(yesterdays_date[0:4])
-    month = int(yesterdays_date[5:7])
-    day = int(yesterdays_date[8:10])
-
-    yesterday = str(date(year, month, day))
-    return yesterday
-
-
-def get_dates_date_format():
-    today = date.today()
-    yesterdays_date = today - timedelta(days=1)
-    yesterdays_date = str(yesterdays_date)
-    year = int(yesterdays_date[0:4])
-    month = int(yesterdays_date[5:7])
-    day = int(yesterdays_date[8:10])
-
-    yesterday = datetime(year, month, day)
-    return yesterday
-
-
-def update_edgar_files(filing_type):
-    print("starting updates", datetime.now())
-    for ticker in symbols_list:
-        dl = Downloader()
-        try:
-            dl.get(f"{filing_type}", ticker, after=f"2022-12-07", before=f"{get_dates()}")
-        except Exception as error:
-            print(error)
-            continue
-    print("ending updates", datetime.now())
-
-
-def append_to_postgres(df, table, append_or_replace):
-    conn_string = passwords.rds_access
-    db = create_engine(conn_string)
-    conn = db.connect()
-    find_open_queries = f'''
-            SELECT pid FROM pg_locks l
-            JOIN pg_class t ON l.relation = t.oid AND t.relkind = 'r'
-            WHERE t.relname = '{table}'
-            '''
-    pid_list = pd.read_sql(find_open_queries, con=conn)
-    pid_list = pid_list.values.tolist()
-    for pids in pid_list:
-        for pid in pids:
-            kill_open_queries = f'''
-                SELECT pg_terminate_backend({pid});
-                '''
-            kill_list = pd.read_sql(kill_open_queries, con=conn)
-            print(kill_list)
-    print("query killed")
-    df = df
-    try:
-        df.to_sql(table, con=conn, if_exists=append_or_replace,
-                  index=False)
-        conn = psycopg2.connect(conn_string
-                                )
-        conn.autocommit = True
-        cursor = conn.cursor()
-        conn.close()
-    except Exception as e:
-        print('Error: ', e)
-        conn.rollback()
-
+# url = passwords.rds_access
+# engine = create_engine(url)
+# connect = engine.connect()
+#
+# # symbols_list = dataframes_from_queries.stock_dropdown()
+# symbols_list = ['COIN', 'AAPL']
+#
+# #returns a string
+# def get_dates():
+#     today = date.today()
+#     yesterdays_date = today - timedelta(days=1)
+#     yesterdays_date = str(yesterdays_date)
+#     year = int(yesterdays_date[0:4])
+#     month = int(yesterdays_date[5:7])
+#     day = int(yesterdays_date[8:10])
+#
+#     yesterday = str(date(year, month, day))
+#     return yesterday
+#
+#
+# def get_dates_date_format():
+#     today = date.today()
+#     yesterdays_date = today - timedelta(days=1)
+#     yesterdays_date = str(yesterdays_date)
+#     year = int(yesterdays_date[0:4])
+#     month = int(yesterdays_date[5:7])
+#     day = int(yesterdays_date[8:10])
+#
+#     yesterday = datetime(year, month, day)
+#     return yesterday
+#
+#
+# def update_edgar_files(filing_type):
+#     print("starting updates", datetime.now())
+#     for ticker in symbols_list:
+#         dl = Downloader()
+#         try:
+#             dl.get(f"{filing_type}", ticker, after=f"2022-12-07", before=f"{get_dates()}")
+#         except Exception as error:
+#             print(error)
+#             continue
+#     print("ending updates", datetime.now())
+#
+#
+# def append_to_postgres(df, table, append_or_replace):
+#     conn_string = passwords.rds_access
+#     db = create_engine(conn_string)
+#     conn = db.connect()
+#     find_open_queries = f'''
+#             SELECT pid FROM pg_locks l
+#             JOIN pg_class t ON l.relation = t.oid AND t.relkind = 'r'
+#             WHERE t.relname = '{table}'
+#             '''
+#     pid_list = pd.read_sql(find_open_queries, con=conn)
+#     pid_list = pid_list.values.tolist()
+#     for pids in pid_list:
+#         for pid in pids:
+#             kill_open_queries = f'''
+#                 SELECT pg_terminate_backend({pid});
+#                 '''
+#             kill_list = pd.read_sql(kill_open_queries, con=conn)
+#             print(kill_list)
+#     print("query killed")
+#     df = df
+#     try:
+#         df.to_sql(table, con=conn, if_exists=append_or_replace,
+#                   index=False)
+#         conn = psycopg2.connect(conn_string
+#                                 )
+#         conn.autocommit = True
+#         cursor = conn.cursor()
+#         conn.close()
+#     except Exception as e:
+#         print('Error: ', e)
+#         conn.rollback()
+#
