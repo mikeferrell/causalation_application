@@ -79,7 +79,7 @@ def update_stock_data():
 
 
 def full_edgar_job_10ks():
-    update_edgar_files('10-K', "2022-08-18")
+    update_edgar_files('10-K', "2023-02-24")
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10k')
     time.sleep(5)
@@ -88,12 +88,16 @@ def full_edgar_job_10ks():
 
 
 def full_edgar_job_10qs():
-    update_edgar_files('10-Q', "2021-01-01")
+    update_edgar_files('10-Q', "2023-02-24")
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10q')
     time.sleep(5)
     edgar_jobs.delete_edgar_file_paths()
     print("done with edgar cron job")
+
+# full_edgar_job_10ks()
+# full_edgar_job_10qs()
+
 
 
 def top_correlation_score_cron():

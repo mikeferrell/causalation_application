@@ -319,7 +319,7 @@ def full_edgar_job_10qs():
     print("done with 10q cron job")
 
 def ml_calculate_top_ten_forecasts():
-    full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts()
+    full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts('backtest')
     append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 
