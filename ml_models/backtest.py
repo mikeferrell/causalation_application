@@ -11,7 +11,7 @@ from sklearn.metrics import mean_absolute_error
 from sqlalchemy import create_engine
 import psycopg2
 import passwords
-import forecast_top_stocks_model
+import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)

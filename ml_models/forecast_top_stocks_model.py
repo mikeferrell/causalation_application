@@ -24,21 +24,15 @@ def defined_dates():
     y_year = int(yesterdays_date[0:4])
     y_month = int(yesterdays_date[5:7])
     y_day = int(yesterdays_date[8:10])
-    one_month_ago = today - timedelta(months=1)
-    one_month_ago = str(one_month_ago)
-    oma_year = int(one_month_ago[0:4])
-    oma_month = int(one_month_ago[5:7])
-    oma_day = int(one_month_ago[8:10])
-    two_month_ago = today - timedelta(months=1)
-    two_month_ago = str(two_month_ago)
-    tma_year = int(two_month_ago[0:4])
-    tma_month = int(two_month_ago[5:7])
-    tma_day = int(two_month_ago[8:10])
+    one_year_ago = today - timedelta(days=365)
+    one_year_ago = str(one_year_ago)
+    oya_year = int(one_year_ago[0:4])
+    oya_month = int(one_year_ago[5:7])
+    oya_day = int(one_year_ago[8:10])
 
     yesterday = str(date(y_year, y_month, y_day))
-    one_month_ago = str(date(oma_year, oma_month, oma_day))
-    two_month_ago = str(date(tma_year, tma_month, tma_day))
-    return yesterday, one_month_ago, two_month_ago
+    one_year_ago = str(date(oya_year, oya_month, oya_day))
+    return yesterday, one_year_ago
 
 
 def append_to_postgres(df, table, append_or_replace):
@@ -73,7 +67,8 @@ def append_to_postgres(df, table, append_or_replace):
         print('Error: ', e)
         conn.rollback()
 
-#this is the list of the top 10 correlations from the all_correlation_scores table, with some filtering
+
+# this is the list of the top 10 correlations from the all_correlation_scores table, with some filtering
 def top_correlation_query_results():
     top_correlation_query_results = f'''
         with top_correlations as (
@@ -102,12 +97,167 @@ def top_correlation_query_results():
     query_df = pd.read_sql(top_correlation_query_results, con=connect)
     return query_df
 
-#if this is returning empty dataframes, then it's because there's some new stock that entered the S&P that doesn't have
-#enough data to create a 12 week rolling average (and therefore the later queries in this function return no results)
-#to fix, run top_correlation_query_results against the DB and see what the top results are, then add that stock to the
-#where clause to supress it
+#first, fix this to always return the most recent week, then fix the if/then 'yesterday' to pull the max date
+def list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol, interval, correlation_start_date):
+    filing_weeks = f'''
+            with matched_dates as (
+              with rolling_average_calculation as (
+              with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
+              stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
 
-def calculate_top_ten_forecasts():
+              select 
+              distinct week_opening_date
+              , filing_week
+              , week_close_price
+              , stock_symbol
+              , 1.00 * keyword_mentions / total_filings as keyword_percentage
+              from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+              where week_opening_date >= '2017-01-01'
+              and filing_type = '{filing_type}'
+              and stock_symbol = '{stock_symbol}'
+              order by stock_symbol, week_opening_date asc
+              )
+
+              select week_opening_date
+              , stock_symbol
+              , week_close_price
+                , filing_week
+              , '{keyword} Mentions' as keyword_mentions
+              , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
+              from rolling_average_calculation
+              order by stock_symbol, week_opening_date asc
+              )
+
+            select
+            md2.filing_week 
+            from matched_dates as md1
+            join matched_dates as md2 
+            on md1.week_opening_date = md2.filing_week + interval '{interval} week'
+            where md2.filing_week >= '{correlation_start_date}'
+            '''
+    df_filing_weeks = pd.read_sql(filing_weeks, con=connect)
+    df_filing_weeks = df_filing_weeks['filing_week'].tolist()
+
+    datetime_list = []
+    for timestamp in df_filing_weeks:
+        datetime_list.append(timestamp.strftime("%Y-%m-%d"))
+    return datetime_list
+
+
+def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
+    training_dataset = f'''
+                     with matched_dates as (
+                     with rolling_average_calculation as (
+                       with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
+                     stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
+
+                     select 
+                     distinct week_opening_date
+                     , filing_week
+                     , week_close_price
+                     , stock_symbol
+                     , 1.00 * keyword_mentions / total_filings as keyword_percentage
+                     from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                     where week_opening_date >= '2017-01-01'
+                     and filing_type = '{filing_type}'
+                     and stock_symbol = '{stock_symbol}'
+                     order by stock_symbol, week_opening_date asc
+                     )
+
+                     select week_opening_date
+                     , stock_symbol
+                     , week_close_price
+                       , filing_week
+                     , '{keyword} Mentions' as keyword_mentions
+                     , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
+                     from rolling_average_calculation
+                     order by stock_symbol, week_opening_date asc
+                     )
+
+                     select 
+                     (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
+                     , md2.keyword_mentions_rolling_avg
+                     , md2.week_close_price as current_close_price
+                     , md1.week_close_price as next_week_close_price
+                     from matched_dates as md1
+                     join matched_dates as md2 
+                     on md1.week_opening_date = md2.filing_week + interval '{interval} week'
+                     where md2.filing_week < '{dates}'
+                     offset 3
+             '''
+    df_results = pd.read_sql(training_dataset, con=connect)
+    try:
+        X = df_results.drop(columns=['next_week_close_price'])
+        y = df_results['next_week_close_price']
+        X = X.interpolate()
+        y = y.interpolate()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=12)
+
+        # choose your model
+        # model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
+        # model = RandomForestRegressor(n_estimators=200, max_depth=20)
+        model = LinearRegression()
+
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        mae = mean_absolute_error(y_test, y_pred)
+        print('Mean absolute error:', mae)
+
+        test_dataset = f'''
+                     with matched_dates as (
+                     with rolling_average_calculation as (
+                       with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
+                     stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
+
+                     select 
+                     distinct week_opening_date
+                     , filing_week
+                     , week_close_price
+                     , stock_symbol
+                     , 1.00 * keyword_mentions / total_filings as keyword_percentage
+                     from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                     where week_opening_date >= '2017-01-01'
+                     and filing_type = '{filing_type}'
+                     and stock_symbol = '{stock_symbol}'
+                     order by stock_symbol, week_opening_date asc
+                     )
+
+                     select week_opening_date
+                     , stock_symbol
+                     , week_close_price
+                       , filing_week
+                     , '{keyword} Mentions' as keyword_mentions
+                     , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
+                     from rolling_average_calculation
+                     order by stock_symbol, week_opening_date asc
+                     )
+
+                     select 
+                     (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
+                     , md1.week_opening_date
+                     , md2.keyword_mentions_rolling_avg
+                     , md2.week_close_price as current_close_price
+                     , md1.week_close_price as next_week_close_price
+                     from matched_dates as md1
+                     join matched_dates as md2 
+                     on md1.week_opening_date = md2.filing_week + interval '{interval} week'
+                     where md2.filing_week = '{dates}'
+                     '''
+        df_test_full = pd.read_sql(test_dataset, con=connect)
+        df_test = df_test_full.drop(columns=['week_opening_date', 'next_week_close_price'])
+        df_test_full = df_test_full.drop_duplicates()
+        df_test = df_test.drop_duplicates()
+    except (KeyError, ValueError) as error1:
+        print(error1)
+    return df_test_full, df_test, mae, model
+
+
+# if this is returning empty dataframes, then it's because there's some new stock that entered the S&P that doesn't have
+# enough data to create a 12 week rolling average (and therefore the later queries in this function return no results)
+# to fix, run top_correlation_query_results against the DB and see what the top results are, then add that stock to the
+# where clause to supress it
+def calculate_top_ten_forecasts(testing_timeline):
+    yesterday, one_year_ago = defined_dates()
     df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
                                              'stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type'])
@@ -123,168 +273,31 @@ def calculate_top_ten_forecasts():
         interval = df_row['time_delay']
         filing_type = df_row['filing_type']
 
-        filing_weeks = f'''
-                with matched_dates as (
-                  with rolling_average_calculation as (
-                  with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
-                  stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
-        
-                  select 
-                  distinct week_opening_date
-                  , filing_week
-                  , week_close_price
-                  , stock_symbol
-                  , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                  from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
-                  where week_opening_date >= '2017-01-01'
-                  and filing_type = '{filing_type}'
-                  and stock_symbol = '{stock_symbol}'
-                  order by stock_symbol, week_opening_date asc
-                  )
-        
-                  select week_opening_date
-                  , stock_symbol
-                  , week_close_price
-                    , filing_week
-                  , '{keyword} Mentions' as keyword_mentions
-                  , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
-                  from rolling_average_calculation
-                  order by stock_symbol, week_opening_date asc
-                  )
-        
-                select
-                md2.filing_week 
-                from matched_dates as md1
-                join matched_dates as md2 
-                on md1.week_opening_date = md2.filing_week + interval '{interval} week'
-                where md2.filing_week >= '{correlation_start_date}'
-                '''
-        df_filing_weeks = pd.read_sql(filing_weeks, con=connect)
-        df_filing_weeks = df_filing_weeks['filing_week'].tolist()
-        datetime_list = []
-        for timestamp in df_filing_weeks:
-            datetime_list.append(timestamp.strftime("%Y-%m-%d"))
+        # calling function to determing the end date for each loop for the model to use for the training set
+        # this ensures that, when backtesting, the real data isn't appearing in the training set
+        # when running this one time, just set datetime list as 'yesterday'
+        if testing_timeline == 'backtest':
+            datetime_list = list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol, interval,
+                                                            correlation_start_date)
+        else:
+            datetime_list = [yesterday]
 
         test_results = []
         full_test_data = []
         mae_data = []
 
         for dates in datetime_list:
-            training_dataset = f'''
-                            with matched_dates as (
-                            with rolling_average_calculation as (
-                              with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
-                            stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
-        
-                            select 
-                            distinct week_opening_date
-                            , filing_week
-                            , week_close_price
-                            , stock_symbol
-                            , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                            from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
-                            where week_opening_date >= '2017-01-01'
-                            and filing_type = '{filing_type}'
-                            and stock_symbol = '{stock_symbol}'
-                            order by stock_symbol, week_opening_date asc
-                            )
-        
-                            select week_opening_date
-                            , stock_symbol
-                            , week_close_price
-                              , filing_week
-                            , '{keyword} Mentions' as keyword_mentions
-                            , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
-                            from rolling_average_calculation
-                            order by stock_symbol, week_opening_date asc
-                            )
-        
-                            select 
-                            (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
-                            , md2.keyword_mentions_rolling_avg
-                            , md2.week_close_price as current_close_price
-                            , md1.week_close_price as next_week_close_price
-                            from matched_dates as md1
-                            join matched_dates as md2 
-                            on md1.week_opening_date = md2.filing_week + interval '{interval} week'
-                            where md2.filing_week < '{dates}'
-                            offset 3
-                    '''
-            df_results = pd.read_sql(training_dataset, con=connect)
+            df_test_full, df_test, mae, model = train_ml_model(keyword, filing_type, stock_symbol, interval, dates)
+            full_test_data.append(df_test_full)
+            mae_data.append(mae)
+
             try:
-                X = df_results.drop(columns=['next_week_close_price'])
-                y = df_results['next_week_close_price']
-                X = X.interpolate()
-                y = y.interpolate()
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=12)
-
-                # create the random forest model
-                # model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
-                # model = RandomForestRegressor(n_estimators=200, max_depth=20)
-                model = LinearRegression()
-
-                model.fit(X_train, y_train)
-                y_pred = model.predict(X_test)
-                mae = mean_absolute_error(y_test, y_pred)
-                print('Mean absolute error:', mae)
-
-                test_dataset = f'''
-                            with matched_dates as (
-                            with rolling_average_calculation as (
-                              with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}' and filing_type = '{filing_type}'),
-                            stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null )
-            
-                            select 
-                            distinct week_opening_date
-                            , filing_week
-                            , week_close_price
-                            , stock_symbol
-                            , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                            from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
-                            where week_opening_date >= '2017-01-01'
-                            and filing_type = '{filing_type}'
-                            and stock_symbol = '{stock_symbol}'
-                            order by stock_symbol, week_opening_date asc
-                            )
-            
-                            select week_opening_date
-                            , stock_symbol
-                            , week_close_price
-                              , filing_week
-                            , '{keyword} Mentions' as keyword_mentions
-                            , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
-                            from rolling_average_calculation
-                            order by stock_symbol, week_opening_date asc
-                            )
-            
-                            select 
-                            (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
-                            , md1.week_opening_date
-                            , md2.keyword_mentions_rolling_avg
-                            , md2.week_close_price as current_close_price
-                            , md1.week_close_price as next_week_close_price
-                            from matched_dates as md1
-                            join matched_dates as md2 
-                            on md1.week_opening_date = md2.filing_week + interval '{interval} week'
-                            where md2.filing_week = '{dates}'
-                            '''
-                df_test_full = pd.read_sql(test_dataset, con=connect)
-                df_test = df_test_full.drop(columns=['week_opening_date', 'next_week_close_price'])
-                df_test_full = df_test_full.drop_duplicates()
-                df_test = df_test.drop_duplicates()
-                full_test_data.append(df_test_full)
-                mae_data.append(mae)
-
-                try:
-                    prediction = model.predict(df_test)
-                    test_results.append(prediction)
-                    print('Predicted stock price:', prediction)
-                except (KeyError, ValueError) as error:
-                    print(error)
-                    continue
-            except (KeyError, ValueError) as error1:
-                print(error1)
-            continue
+                prediction = model.predict(df_test)
+                test_results.append(prediction)
+                print('Predicted stock price:', prediction)
+            except (KeyError, ValueError) as error:
+                print(error)
+                continue
 
         df_test = pd.DataFrame(test_results, columns=['predicted_price'])
         full_results_df = pd.concat(full_test_data, ignore_index=True)
@@ -301,5 +314,3 @@ def calculate_top_ten_forecasts():
 #
 # full_df_for_upload = calculate_top_ten_forecasts()
 # append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
-
-

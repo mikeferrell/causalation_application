@@ -55,8 +55,7 @@ scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name=
 scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=30, name='full_edgar_10qs')
 scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=10)
 scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', hour=3, minute=30)
-scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
-# scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'interval', minutes=3)
+# scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=10)
 scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', hour=4, minute=10)
 

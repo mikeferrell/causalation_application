@@ -183,6 +183,7 @@ def weekly_stock_opening_cron_job():
     append_to_postgres(query_results_df, 'weekly_stock_openings', 'replace')
     print("Weekly Stock Window Functions Done")
 
+
 # For each critieria in the lists, pull the stocks with the top 10 correlation scores. Loop through all the different
 # options
 def top_correlation_scores():
