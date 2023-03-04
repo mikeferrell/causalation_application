@@ -330,4 +330,15 @@ def calculate_ml_model_accuracy():
         query_results_df = query_results_df.append(df_full, ignore_index=True)
     return query_results_df, top_correlation_list, df_of_top_ten_correlations
 
+def stocks_to_buy_this_week():
+    query_results = f'''
+                    select * from future_buy_recommendations
+                    where predicted_weekly_close_price > previous_weekly_close_price
+                    '''
+    buys_df = pd.read_sql(query_results, con=connect)
+    df_full = pd.DataFrame(buys_df)
+    df_full['previous_weekly_open_date'] = pd.to_datetime(df_full['previous_weekly_open_date']).apply(lambda x: x.date())
+    df_full['previous_weekly_close_price'] = df_full['previous_weekly_close_price'].apply(format_dollar)
+    df_full['predicted_weekly_close_price'] = df_full['predicted_weekly_close_price'].apply(format_dollar)
+    return df_full
 # calculate_ml_model_accuracy()

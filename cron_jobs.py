@@ -322,6 +322,9 @@ def ml_calculate_top_ten_forecasts():
     full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts('backtest')
     append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
+def predicted_prices_for_next_week():
+    df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list()
+    append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
 def one_time_update_stock_data():
     symbols = []

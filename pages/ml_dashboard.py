@@ -21,6 +21,35 @@ colors = {
 
 
 layout = dbc.Container([
+    html.Div(html.H2(
+        children='Stocks to Buy This Week',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        })),
+    dbc.Row(
+        dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 8, "offset": 2})
+    ),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
+    html.Div(html.H1(
+        children='Top Stock Correlations',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        })),
+    dbc.Row(
+        dbc.Col(html.Div(id="ml_list_of_top_accuracy_table"), width={"size": 8, "offset": 2})
+    ),
+    # dbc.Row(dbc.Col(html.Div(html.P(
+    #     id="ml_top_five_accuracy_list",
+    #     style={
+    #         'textAlign': 'center',
+    #         'color': colors['text']
+    #     })),
+    #     width={"size": 12, "offset": 1})),
+    dbc.Row(
+        dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10, "offset": 1})
+    ),
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
@@ -48,34 +77,14 @@ layout = dbc.Container([
                                            id='keyword_dropdown_input_2', value='cloud')
                               ],
                              ), width={"size": 2}),
-            dbc.Col(html.Div(dbc.Button("Apply Filters", id='my_button_2', color="primary", className="me-1", n_clicks=0)
-                             ),
-                    width={"size": 2})
+            dbc.Col(
+                html.Div(dbc.Button("Apply Filters", id='my_button_2', color="primary", className="me-1", n_clicks=0)
+                         ),
+                width={"size": 2})
         ],
         className="g-2"
     ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_2', figure={})), width={"size": 9, "offset": 2})),
-    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
-    html.Div(html.H1(
-        children='Top Stock Correlations',
-        style={
-            'textAlign': 'center',
-            'color': colors['text']
-        })),
-    dbc.Row(
-        dbc.Col(html.Div(id="ml_list_of_top_accuracy_table"), width={"size": 8, "offset": 2})
-    ),
-    # dbc.Row(dbc.Col(html.Div(html.P(
-    #     id="ml_top_five_accuracy_list",
-    #     style={
-    #         'textAlign': 'center',
-    #         'color': colors['text']
-    #     })),
-    #     width={"size": 12, "offset": 1})),
-    dbc.Row(
-        dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10, "offset": 1})
-    ),
-
 ])
 
 
@@ -85,6 +94,7 @@ layout = dbc.Container([
     Output('ml_top_five_accuracy_table', 'children'),
     # Output('ml_top_five_accuracy_list', 'children'),
     Output('ml_list_of_top_accuracy_table', 'children'),
+    Output('stocks_to_buy_table', 'children'),
     Input('my_button_2', 'n_clicks'),
     [State('dropdown_input_2', 'value'),
      State('filing_type_dropdown_input_2', 'value'),
@@ -107,9 +117,10 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
         ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
         ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
+        stocks_to_buy_table = my_dash_charts.generate_table(dataframes_from_queries.stocks_to_buy_this_week())
         # ml_top_five_accuracy_list = ml_data_for_table[1]
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
     return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, \
-           ml_top_five_accuracy_table, ml_list_of_top_accuracy_table
+           ml_top_five_accuracy_table, ml_list_of_top_accuracy_table, stocks_to_buy_table
