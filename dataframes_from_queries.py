@@ -332,13 +332,30 @@ def calculate_ml_model_accuracy():
 
 def stocks_to_buy_this_week():
     query_results = f'''
-                    select * from future_buy_recommendations
+                    select previous_weekly_open_date + interval '7' day as buy_date
+                    , previous_weekly_close_price
+                    , predicted_weekly_close_price
+                    , (predicted_weekly_close_price / previous_weekly_close_price) - 1 as predicted_growth
+                    , stock_symbol 
+                    from future_buy_recommendations
                     where predicted_weekly_close_price > previous_weekly_close_price
                     '''
     buys_df = pd.read_sql(query_results, con=connect)
     df_full = pd.DataFrame(buys_df)
-    df_full['previous_weekly_open_date'] = pd.to_datetime(df_full['previous_weekly_open_date']).apply(lambda x: x.date())
+    df_full['buy_date'] = pd.to_datetime(df_full['buy_date']).apply(lambda x: x.date())
     df_full['previous_weekly_close_price'] = df_full['previous_weekly_close_price'].apply(format_dollar)
     df_full['predicted_weekly_close_price'] = df_full['predicted_weekly_close_price'].apply(format_dollar)
+    df_full['predicted_growth'] = df_full['predicted_growth'].apply(format_percent)
     return df_full
-# calculate_ml_model_accuracy()
+
+
+def buy_date():
+    query_results = f'''
+                    select previous_weekly_open_date + interval '7' day as buy_date
+                    from future_buy_recommendations
+                    limit 1
+                    '''
+    buys_df = pd.read_sql(query_results, con=connect)
+    df_full = pd.DataFrame(buys_df)
+    df_full['buy_date'] = pd.to_datetime(df_full['buy_date']).apply(lambda x: x.date())
+    return df_full

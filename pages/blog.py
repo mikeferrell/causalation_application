@@ -52,8 +52,8 @@ layout = dbc.Container([
         )
     ),
     dbc.Row(
-        dbc.Col(html.Div([dbc.NavLink(html.H3("Update 2/13/2023"),
-                                      href="/blog_pages/2_12_23_blog"),
+        dbc.Col(html.Div([dbc.NavLink(html.H3("Update 3/5/2023"),
+                                      href="/blog_pages/3_5_23_blog"),
                           ]),
                 style={'textAlign': 'center', 'color': colors['nav']},
                 width={"size": 8, "offset": 2},
@@ -62,6 +62,14 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div([dbc.NavLink(html.H3("Update 2/18/2023"),
                                       href="/blog_pages/2_18_23_blog"),
+                          ]),
+                style={'textAlign': 'center', 'color': colors['nav']},
+                width={"size": 8, "offset": 2},
+                )
+    ),
+    dbc.Row(
+        dbc.Col(html.Div([dbc.NavLink(html.H3("Update 2/13/2023"),
+                                      href="/blog_pages/2_12_23_blog"),
                           ]),
                 style={'textAlign': 'center', 'color': colors['nav']},
                 width={"size": 8, "offset": 2},

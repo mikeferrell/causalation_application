@@ -2,15 +2,10 @@ import dash
 from flask import Flask
 from dash import Dash, dcc, html
 import dash_bootstrap_components as dbc
-import images as my_images
-import base64
 import sidebar as sidebar
 import cron_jobs
-import edgar_jobs
 from apscheduler.schedulers.background import BackgroundScheduler
 import one_time_jobs
-import time
-import os
 import logging
 
 
@@ -32,7 +27,7 @@ colors = {
 
 app.layout = dbc.Container([
     dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
-                                      style={'height': '5%', 'width': '70%'})),
+                                      style={'height': '2%', 'width': '50%'})),
                     width={"size": 6, "offset": 4})),
     dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(dbc.Col(dash.page_container)),
@@ -66,7 +61,4 @@ scheduler.start()
 
 
 if __name__ == '__main__':
-    application.run(port=8000, debug=False)
-#
-# if __name__ == '__main__':
-#     app.run_server(port=8000, debug=False)
+    application.run(port=8000, debug=True)

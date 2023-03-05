@@ -1,5 +1,5 @@
 import dash
-from dash import html
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 import images as my_images
 import base64
@@ -15,6 +15,17 @@ colors = {
 
 
 layout = dbc.Container([
+    dbc.Row(
+        dbc.Col(html.Div([
+            html.H6(dcc.Markdown('''**DISCMLAIMER**: This is not financial advice, this is just a project to make SEC
+            data more accessible. What you do with that data is up to you. Any "recommendations" are simply machine 
+            learning results based on the underlying data, and not actual financial recommendations.
+            '''))
+        ]),
+            style={'textAlign': 'center', 'color': colors['text']},
+            width={"size": 8, "offset": 2}
+        )
+    ),
     dbc.Row(
         dbc.Col(html.Div([
             html.H1('''FAQ''')
@@ -53,35 +64,47 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div([
             html.Img(src=screenshot_helper,
-                     style={'height': '5%', 'width': '70%'}),
-            html.P(
-                '''1: Filter by Stock'''),
-            html.P(
-                '''2: Filter by Date'''),
-            html.P(
-                '''3: Filter by number of week delay. This allows you to correlate stocks with topics mentioned X number of weeks ago'''),
-            html.P(
-                '''4: Filter by Filing Type. Only 10-K's available today'''),
-            html.P(
-                '''5: Filter by keywords mentioned. Each keyword includes all larger words. e.g. "cloud computing" would be captured by "cloud"'''),
-            html.P(
-                '''6: Apply filers. Only click it once, it's pretty slow for now'''),
-            html.P(
-                '''7: This chart shows each stock's opening price for given week and the percentage of SEC Filings that mention the topic select.
-                The topic selected is cohorted by week and the percentage represented in the chart is based on a 12 week rolling average'''),
-            html.P(
-                '''8: Total number of times this keyword is mentioned within the timeframe selected'''),
-            html.P(
-                '''9: The correlation ratio between the stock and the keyword selected, within the given filters'''),
-            html.P(
-                '''10: Regardless of the stock you selected, this table shows the top 10 stocks most correlated with the keyword selected; 
-                within the filters applied'''),
-            html.P(
-                '''11: This table is the same as #10, but ordered by stocks inversely correlated with the selected keyword'''),
-
+                     style={'height': '5%', 'width': '80%'}),
+            html.P()
         ]),
             style={'textAlign': 'center'},
             width={"size": 8, "offset": 2},
+        )
+    ),
+    dbc.Row(
+        dbc.Col(html.Div([
+
+            dcc.Markdown('''
+            **1:** Filter by Stock
+            
+            **2:** Filter by Date
+            
+            **3:** Filter by number of week delay. This allows you to correlate stocks with topics mentioned X number 
+            of weeks ago
+            
+            **4:** Filter by Filing Type. Only 10-K's available today
+            
+            **5:** Filter by keywords mentioned. Each keyword includes all larger words. e.g. "cloud computing" would 
+            be captured by "cloud"
+            
+            **6:** Apply filers. Only click it once, it's pretty slow for now
+            
+            **7:** This chart shows each stock's opening price for given week and the percentage of SEC Filings that 
+            mention the topic select. The topic selected is cohorted by week and the percentage represented in the chart 
+            is based on a 12 week rolling average
+            
+            **8:** Total number of times this keyword is mentioned within the timeframe selected
+            
+            **9:** The correlation ratio between the stock and the keyword selected, within the given filters
+            
+            **10:** Regardless of the stock you selected, this table shows the top 10 stocks most correlated with the 
+            keyword selected; within the filters applied
+                
+            **11:** This table is the same as #10, but ordered by stocks inversely correlated with the selected keyword
+            '''),
+        ]),
+            style={'textAlign': 'left'},
+            width={"size": 6, "offset": 3},
         )
     ),
     dbc.Row(
@@ -97,6 +120,25 @@ layout = dbc.Container([
             html.P(
                 '''The data is pulled from SEC public filings. Text is then extracted from the sections 
                 4 "Risk Factors" and 7 "Management’s Discussion and Analysis of Financial Condition and Results of Operations"''')
+        ]),
+            style={'textAlign': 'center'},
+            width={"size": 8, "offset": 2},
+        )
+    ),
+    dbc.Row(
+        dbc.Col(html.Div([
+            html.H3('''Why isn't the start date what I selected?''', className="text-muted")
+        ]),
+            style={'textAlign': 'center', 'color': colors['text']},
+            width={"size": 8, "offset": 2}
+        )
+    ),
+    dbc.Row(
+        dbc.Col(html.Div([
+            html.P(
+                '''The chart includes the 12 week rolling average of keyword mentions- this ensures that a slow week
+                in filings doesn't distort the data. But to ensure that the first few weeks also aren't dramatic swings,
+                the first 6 datapoints are disregarded.''')
         ]),
             style={'textAlign': 'center'},
             width={"size": 8, "offset": 2},
