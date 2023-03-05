@@ -38,7 +38,7 @@ layout = dbc.Container([
         width={"size": 10, "offset": 1}
         )),
     dbc.Row(
-        dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 8, "offset": 2})
+        dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
     html.Div(html.H1(
@@ -126,7 +126,7 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
         ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
         ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
-        stocks_to_buy_table = my_dash_charts.generate_table(dataframes_from_queries.stocks_to_buy_this_week())
+        stocks_to_buy_table = my_dash_charts.generate_table(dataframes_from_queries.stocks_to_buy_this_week(1000))
         # buy_date_text = dataframes_from_queries.buy_date()
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:

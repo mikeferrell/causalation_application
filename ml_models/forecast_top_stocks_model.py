@@ -426,3 +426,41 @@ def weekly_buy_recommendation_list():
                                      'week_opening_date': 'previous_weekly_open_date',
                                      'predicted_price': 'predicted_weekly_close_price'}, inplace=True)
     return df_for_pg_upload
+
+
+def calculate_purchase_amounts(principal):
+    query_for_buys = f'''
+    with stock_selections as (
+      SELECT
+          stock_symbol,
+          previous_weekly_open_date,
+          previous_weekly_close_price,
+          predicted_weekly_close_price, 
+          predicted_weekly_close_price / previous_weekly_close_price AS predicted_price_change_percentage
+      FROM
+          public.future_buy_recommendations
+    ),
+
+    total_estimation as (
+      select previous_weekly_open_date, sum(predicted_price_change_percentage) as total_change_amount
+      from stock_selections
+      group by previous_weekly_open_date
+    )
+
+    select 
+      stock_symbol
+      , previous_weekly_close_price
+      , ({principal} * (predicted_price_change_percentage / total_change_amount)) / previous_weekly_close_price as number_of_shares_to_purchase
+      , predicted_price_change_percentage / total_change_amount as scaled_predicted_change
+    from 
+      stock_selections 
+      join total_estimation on stock_selections.previous_weekly_open_date = total_estimation.previous_weekly_open_date
+    where predicted_price_change_percentage != 0
+    order by 
+     stock_symbol asc
+        '''
+    df_for_buys = pd.read_sql(query_for_buys, con=connect)
+    # df_for_buys['previous_weekly_close_price'] = df_for_buys['previous_weekly_close_price'].apply(format_dollar)
+    # df_for_buys['scaled_predicted_change'] = df_for_buys['scaled_predicted_change'].apply(format_percent)
+    # df_for_buys = df_for_buys.round({'number_of_shares_to_purchase': 2})
+    return df_for_buys

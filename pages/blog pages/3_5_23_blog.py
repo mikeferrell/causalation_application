@@ -29,7 +29,8 @@ layout = dbc.Container([
         dcc.Markdown('''
             This week is the first dry run of buy recommendations. The recommendations are now live on the ML dashboard,
             however every stock is predicted to skyrocket. So we'll wait a week before starting the process, but in the 
-            meantime, let's see what would happen.
+            meantime, let's see what would happen. This assumes I'll be to purchase fractional shares, so I'll need to 
+            setup a Robinhood account for this experiment.
         ''')
         ]),
             style={'textAlign': 'left'},
@@ -49,12 +50,10 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div([
             dcc.Markdown('''
-        **Next time**, we'll need to also propose how to split the buys, consistent with the backtest. That means: the higher
-        the predicted growth, the higher percentage of the principal that should be allocated to that stock.
+        **Things that need to be fixed for before next week:**
         
-        Other things that need to be fixed:
-        
-        **1.** Ensure the regression model has no gaps, which is likely what's causing the forecasted price jumps.
+        **1.** Ensure the regression model has no gaps in training data, which is likely what's causing the forecasted 
+        price jumps. There are other model improvements to roll out in subsequent weeks, but this is the first to fix.
         
         **2.** Ensure the dashboard is more legible. 
         

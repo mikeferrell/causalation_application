@@ -330,22 +330,75 @@ def calculate_ml_model_accuracy():
         query_results_df = query_results_df.append(df_full, ignore_index=True)
     return query_results_df, top_correlation_list, df_of_top_ten_correlations
 
-def stocks_to_buy_this_week():
+def stocks_to_buy_this_week(principal):
     query_results = f'''
-                    select previous_weekly_open_date + interval '7' day as buy_date
-                    , previous_weekly_close_price
-                    , predicted_weekly_close_price
-                    , (predicted_weekly_close_price / previous_weekly_close_price) - 1 as predicted_growth
-                    , stock_symbol 
-                    from future_buy_recommendations
-                    where predicted_weekly_close_price > previous_weekly_close_price
+            with buy_recs as (  
+              select previous_weekly_open_date + interval '7' day as buy_date
+              , previous_weekly_close_price
+              , predicted_weekly_close_price
+              , (predicted_weekly_close_price / previous_weekly_close_price) - 1 as predicted_growth
+              , stock_symbol 
+              from future_buy_recommendations
+              where predicted_weekly_close_price > previous_weekly_close_price
+              ),
+              
+            buy_amounts as (
+              with stock_selections as (
+              SELECT
+                  stock_symbol,
+                  previous_weekly_open_date,
+                  previous_weekly_close_price,
+                  predicted_weekly_close_price, 
+                  predicted_weekly_close_price / previous_weekly_close_price AS predicted_price_change_percentage
+              FROM
+                  public.future_buy_recommendations
+            ),
+            
+            total_estimation as (
+              select previous_weekly_open_date, sum(predicted_price_change_percentage) as total_change_amount
+              from stock_selections
+              group by previous_weekly_open_date
+            )
+            
+            select 
+              stock_symbol
+              , previous_weekly_close_price
+              , {principal} as principal_amount
+              , ({principal} * (predicted_price_change_percentage / total_change_amount)) / previous_weekly_close_price as number_of_shares_to_purchase
+              , predicted_price_change_percentage / total_change_amount as scaled_predicted_change
+            from 
+              stock_selections 
+              join total_estimation on stock_selections.previous_weekly_open_date = total_estimation.previous_weekly_open_date
+            where predicted_price_change_percentage != 0
+            order by 
+             stock_symbol asc
+            )
+            
+            select buy_date
+            , buy_recs.stock_symbol
+            , buy_recs.previous_weekly_close_price
+            , buy_recs.predicted_weekly_close_price
+            , predicted_growth
+            , number_of_shares_to_purchase
+            , principal_amount
+            from buy_recs join buy_amounts on buy_recs.stock_symbol =buy_amounts.stock_symbol
                     '''
     buys_df = pd.read_sql(query_results, con=connect)
     df_full = pd.DataFrame(buys_df)
     df_full['buy_date'] = pd.to_datetime(df_full['buy_date']).apply(lambda x: x.date())
-    df_full['previous_weekly_close_price'] = df_full['previous_weekly_close_price'].apply(format_dollar)
     df_full['predicted_weekly_close_price'] = df_full['predicted_weekly_close_price'].apply(format_dollar)
     df_full['predicted_growth'] = df_full['predicted_growth'].apply(format_percent)
+    df_full['previous_weekly_close_price'] = df_full['previous_weekly_close_price'].apply(format_dollar)
+    df_full['principal_amount'] = df_full['principal_amount'].apply(format_dollar)
+    df_full = df_full.round({'number_of_shares_to_purchase': 2})
+    df_full.rename(columns={'buy_date': 'Buy Date',
+                            'stock_symbol': 'Stock Symbol',
+                             'predicted_weekly_close_price': 'Predicted Weekly Close Price',
+                             'previous_weekly_close_price': 'Previous Next Week Close Price',
+                            'predicted_growth': 'Predicted Growth',
+                            'principal_amount': 'Principal Amount',
+                            'number_of_shares_to_purchase': 'Number of Shares to Purchase'
+                            }, inplace=True)
     return df_full
 
 
