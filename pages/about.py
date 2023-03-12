@@ -4,6 +4,7 @@ import dash_bootstrap_components as dbc
 import images as my_images
 import base64
 
+
 dash.register_page(__name__, path='/about')
 
 screenshot_helper = 'static/causalation_how_to.png'
@@ -77,20 +78,20 @@ layout = dbc.Container([
             dcc.Markdown('''
             **1:** Filter by Stock
             
-            **2:** Filter by Date
+            **2:** Filter by Date. 10-K's have data going back to January 2017; 10-Q's to January 2021.
             
             **3:** Filter by number of week delay. This allows you to correlate stocks with topics mentioned X number 
             of weeks ago
             
-            **4:** Filter by Filing Type. Only 10-K's available today
+            **4:** Filter by Filing Type. 10-K's or 10-Q's
             
             **5:** Filter by keywords mentioned. Each keyword includes all larger words. e.g. "cloud computing" would 
             be captured by "cloud"
             
             **6:** Apply filers. Only click it once, it's pretty slow for now
             
-            **7:** This chart shows each stock's opening price for given week and the percentage of SEC Filings that 
-            mention the topic select. The topic selected is cohorted by week and the percentage represented in the chart 
+            **7:** This chart shows each stock's closing price for a given week and the percentage of SEC Filings that 
+            mention the keyword selected. The keyword selected is cohorted by week and the percentage represented in the chart 
             is based on a 12 week rolling average
             
             **8:** Total number of times this keyword is mentioned within the timeframe selected

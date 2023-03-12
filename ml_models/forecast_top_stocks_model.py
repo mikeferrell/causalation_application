@@ -194,9 +194,9 @@ def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=12)
 
         # choose your model
-        # model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
+        model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
         # model = RandomForestRegressor(n_estimators=200, max_depth=20)
-        model = LinearRegression()
+        # model = LinearRegression()
 
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
@@ -338,7 +338,7 @@ def weekly_buy_recommendation_list():
         future_predictions = []
 
         datetime_list = list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol,
-                                                                                    interval, correlation_start_date)
+                                                          interval, correlation_start_date)
         most_recent_date = datetime_list.pop()
 
         try:
@@ -426,6 +426,9 @@ def weekly_buy_recommendation_list():
                                      'week_opening_date': 'previous_weekly_open_date',
                                      'predicted_price': 'predicted_weekly_close_price'}, inplace=True)
     return df_for_pg_upload
+
+# df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list()
+# append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
 
 def calculate_purchase_amounts(principal):

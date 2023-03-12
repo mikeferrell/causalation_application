@@ -1,5 +1,6 @@
 /venv
 /templates
+/unused_templates
 /older_versions
 /Scratchpad.py
 /required_stuff
@@ -8,3 +9,4 @@
 /ml_models/validate_forecast.py
 /ml_models/simple_forecast_v2.py
 /ml_models/rnn_forecast.py
+/static/navbar.html

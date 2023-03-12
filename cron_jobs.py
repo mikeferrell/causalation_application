@@ -21,7 +21,7 @@ symbols_list = dataframes_from_queries.stock_dropdown()
 #returns a string
 def get_dates():
     today = date.today()
-    yesterdays_date = today - timedelta(days=1)
+    yesterdays_date = today - timedelta(days=2)
     yesterdays_date = str(yesterdays_date)
     year = int(yesterdays_date[0:4])
     month = int(yesterdays_date[5:7])
@@ -94,8 +94,8 @@ def update_stock_data():
         symbols.append(downloaded_data)
     df = pd.concat(symbols)
     df = df.reset_index()
-    df = df[['Date', 'Close', 'Symbol']]
-    df.columns = ['created_at', 'close_price', 'stock_symbol']
+    df = df[['Date', 'Open', 'Close', 'Symbol']]
+    df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
     append_to_postgres(df, 'ticker_data', 'append')
     print("Stock Done")
@@ -326,11 +326,12 @@ def predicted_prices_for_next_week():
     df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list()
     append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
+
 def one_time_update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
+            downloaded_data = yf.download(ticker, start='2023-03-06', end=date.today())
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -342,5 +343,5 @@ def one_time_update_stock_data():
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    append_to_postgres(df, 'ticker_data', 'replace')
+    # append_to_postgres(df, 'ticker_data', 'replace')
     print("stocks done")

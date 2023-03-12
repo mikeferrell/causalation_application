@@ -330,6 +330,7 @@ def calculate_ml_model_accuracy():
         query_results_df = query_results_df.append(df_full, ignore_index=True)
     return query_results_df, top_correlation_list, df_of_top_ten_correlations
 
+
 def stocks_to_buy_this_week(principal):
     query_results = f'''
             with buy_recs as (  

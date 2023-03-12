@@ -1,5 +1,5 @@
 import dash
-from flask import Flask
+from flask import Flask, render_template
 from dash import Dash, dcc, html
 import dash_bootstrap_components as dbc
 import sidebar as sidebar
@@ -49,7 +49,7 @@ logging.info('Admin logged in')
 scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name='full_edgar_10ks')
 scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=30, name='full_edgar_10qs')
 scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=10)
-scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', hour=3, minute=30)
+scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', day_of_week='tue-sat', hour=3, minute=30)
 # scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=10)
 scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', hour=4, minute=10)
@@ -61,4 +61,4 @@ scheduler.start()
 
 
 if __name__ == '__main__':
-    application.run(port=8000, debug=True)
+    application.run(port=8000, debug=False)
