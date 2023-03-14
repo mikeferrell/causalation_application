@@ -21,7 +21,7 @@ symbols_list = dataframes_from_queries.stock_dropdown()
 #returns a string
 def get_dates():
     today = date.today()
-    yesterdays_date = today - timedelta(days=2)
+    yesterdays_date = today - timedelta(days=1)
     yesterdays_date = str(yesterdays_date)
     year = int(yesterdays_date[0:4])
     month = int(yesterdays_date[5:7])
