@@ -31,6 +31,7 @@ def get_dates():
 #see if there's a more efficient way to ensure that for the correlation query, we only check timelines of between, idk
 # 12 and 52 weeks. or less. No need to try every month. So do some filtering on the dates_dict within the end_dates
 #portion of the for loop to reduce that. Right now, we're looking at generating 3.7MM rows
+#did this, double check the expected size output now and estimate time to run. this may work now, or may need more work
 def backtest_correlation_scores():
     yesterday, today_minus_one_eighty = get_dates()
     # grab the keywords we want to test
@@ -142,4 +143,4 @@ def backtest_correlation_scores():
     print("done with top correlations")
 
 
-backtest_correlation_scores()
+# backtest_correlation_scores()

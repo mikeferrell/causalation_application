@@ -5,7 +5,7 @@ from datetime import date, datetime
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
-from cron_jobs import get_dates, get_datestoo
+from cron_jobs import get_dates
 
 dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
