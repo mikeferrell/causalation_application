@@ -97,7 +97,7 @@ def top_correlation_query_results():
     query_df = pd.read_sql(top_correlation_query_results, con=connect)
     return query_df
 
-#first, fix this to always return the most recent week, then fix the if/then 'yesterday' to pull the max date
+
 def list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol, interval, correlation_start_date):
     filing_weeks = f'''
             with matched_dates as (
