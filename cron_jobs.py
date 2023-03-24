@@ -197,7 +197,7 @@ def top_correlation_scores():
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
     # time delays to test
-    time_delay_dict = ['1', '2', '4', '8', '12']
+    time_delay_dict = ['1', '2', '4', '8']
     filing_type = ['10-K', '10-Q']
     # grab the first date of each week within the time bound we're interested in. Right now, Aug 2021-Yesterday
     dates_dict = f'''

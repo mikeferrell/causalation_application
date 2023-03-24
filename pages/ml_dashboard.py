@@ -57,45 +57,71 @@ layout = dbc.Container([
     #         'color': colors['text']
     #     })),
     #     width={"size": 12, "offset": 1})),
+    dbc.Row(html.Div([html.P()])),
     dbc.Row(
-        dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10, "offset": 1})
+        dbc.Button("See Weekly Prediction Accuracy", id="collapse-button", className='d-grid gap-2', color="primary",
+                   n_clicks=0)),
+    dbc.Row(html.Div([html.P()])),
+    dbc.Collapse(
+        dbc.Row(dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10})),
+        id='collapse_table',
+        is_open=False,
     ),
+    dbc.Row(html.Div([html.P()])),
     dbc.Row(
-        [
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
-                                           id='dropdown_input_2', placeholder='GME', value='GME')
-                              ],
-                             ), width={"size": 1, "offset": 2}),
-            dbc.Col(html.Div([dcc.DatePickerRange(id='date_picker_range_2',
-                                                  start_date=date(2017, 1, 1),
-                                                  end_date=get_dates(),
-                                                  clearable=False)], ),
-                    width={"size": 3}),
-            dbc.Col(html.Div([dcc.Dropdown(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14',
-                                            '15', '16', '17', '18', '19', '20'],
-                                           id='week_delay_dropdown_input_2', value='4')
-                              ],
-                             ), width={"size": 1}),
-            dbc.Col(html.Div([dcc.Dropdown(options=[
-                {'label': '10-K', 'value': '10-Q'},
-                {'label': '10-Q', 'value': '10-K'},
-                {'label': 'Both', 'value': ''}],
-                id='filing_type_dropdown_input_2', value='10-K')
+        dbc.Button("See Correlation Chart", id="collapse-button-explore-data", className='d-grid gap-2', color="primary",
+                   n_clicks=0)),
+    dbc.Row(html.Div([html.P()])),
+    # dbc.Row(
+    #     dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10, "offset": 1})
+    # ),
+    dbc.Collapse(
+        dbc.Row(
+            [
+                dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
+                                               id='dropdown_input_2', placeholder='GME', value='GME')
+                                  ],
+                                 ), width={"size": 1, "offset": 2}),
+                dbc.Col(html.Div([dcc.DatePickerRange(id='date_picker_range_2',
+                                                      start_date=date(2017, 1, 1),
+                                                      end_date=get_dates(),
+                                                      clearable=False)], ),
+                        width={"size": 3}),
+                dbc.Col(html.Div([dcc.Dropdown(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14',
+                                                '15', '16', '17', '18', '19', '20'],
+                                               id='week_delay_dropdown_input_2', value='4')
+                                  ],
+                                 ), width={"size": 1}),
+                dbc.Col(html.Div([dcc.Dropdown(options=[
+                    {'label': '10-K', 'value': '10-Q'},
+                    {'label': '10-Q', 'value': '10-K'},
+                    {'label': 'Both', 'value': ''}],
+                    id='filing_type_dropdown_input_2', value='10-K')
+                ],
+                ), width={"size": 1}),
+                dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.keyword_list,
+                                               id='keyword_dropdown_input_2', value='cloud')
+                                  ],
+                                 ), width={"size": 2}),
+                dbc.Col(
+                    html.Div(dbc.Button("Apply Filters", id='my_button_2', color="primary", className="me-1", n_clicks=0)
+                             ),
+                    width={"size": 2})
             ],
-            ), width={"size": 1}),
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.keyword_list,
-                                           id='keyword_dropdown_input_2', value='cloud')
-                              ],
-                             ), width={"size": 2}),
-            dbc.Col(
-                html.Div(dbc.Button("Apply Filters", id='my_button_2', color="primary", className="me-1", n_clicks=0)
-                         ),
-                width={"size": 2})
-        ],
-        className="g-2"
+            className="g-2"
+        ),
+        id='collapse_filters',
+        is_open=False,
     ),
-    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_2', figure={})), width={"size": 9, "offset": 2})),
-])
+    dbc.Collapse(
+        dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_2', figure={})), width={"size": 9, "offset": 2})),
+        id='collapse_edgar_chart',
+        is_open=False,),
+    dbc.Row(html.Div([dcc.Markdown('''
+    
+    
+    ''')])),
+    ])
 
 
 @callback(
@@ -110,7 +136,7 @@ layout = dbc.Container([
      State('week_delay_dropdown_input_2', 'value'),
      State('keyword_dropdown_input_2', 'value'),
      State('date_picker_range_2', 'start_date'),
-     State('date_picker_range_2', 'end_date')
+     State('date_picker_range_2', 'end_date'),
      ]
 )
 def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_dropdown_value,
@@ -133,3 +159,37 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         raise exceptions.PreventUpdate
     return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, \
            ml_top_five_accuracy_table, ml_list_of_top_accuracy_table, stocks_to_buy_table
+
+
+#collapse for the table of raw accuracy information
+@callback(
+Output('collapse_table', 'is_open'),
+[Input('collapse-button', 'n_clicks')],
+State('collapse_table', 'is_open')
+)
+def toggle_collapse_table(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
+@callback(
+Output('collapse_filters', 'is_open'),
+[Input('collapse-button-explore-data', 'n_clicks')],
+State('collapse_filters', 'is_open')
+)
+def toggle_collapse_filters(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
+@callback(
+Output('collapse_edgar_chart', 'is_open'),
+[Input('collapse-button-explore-data', 'n_clicks')],
+State('collapse_edgar_chart', 'is_open')
+)
+def toggle_collapse_edgar_chart(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
