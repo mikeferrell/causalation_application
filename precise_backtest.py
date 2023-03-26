@@ -53,48 +53,47 @@ def get_dates():
 #portion of the for loop to reduce that. Right now, we're looking at generating 3.7MM rows
 #did this, double check the expected size output now and estimate time to run. this may work now, or may need more work
 
-
-def all_time_top_correlation_query_results():
-    end_dates_query = f'''
-    select distinct end_date from correlation_scores_for_backtest
-    order by end_date asc
-    '''
-    end_date_df = pd.read_sql(end_dates_query, con=connect)
-    end_date_list = end_date_df.values.tolist()
-
-    df_for_top_correlations = pd.DataFrame(columns=['stock_symbol', 'keyword', 'start_date', 'end_date', 'time_delay',
-                                                    'filing_type', 'correlation'])
-
-    for dates in end_date_list:
-        dates = dates[0]
-        top_correlation_query_results = f'''
-            with top_correlations as (
-            select stock_symbol
-            , split_part("Keyword", ' Mentions', 1) as keyword
-            , start_date
-            , end_date
-            , time_delay
-            , filing_type
-            , correlation
-            from public.correlation_scores_for_backtest
-            where correlation is not null
-              and date(start_date) <= current_date - interval '40 week'
-              and stock_symbol not in ('GEHC', 'CAH')
-              and correlation != 1
-              and "Keyword" != 'cryptocurrency Mentions'
-              and end_date = '{dates}'
-            order by correlation desc
-            limit 100
-            )
-
-            select distinct on (stock_symbol) *
-            from top_correlations
-            order by stock_symbol, correlation desc
-            limit 10
-        '''
-        query_df = pd.read_sql(top_correlation_query_results, con=connect)
-        df_for_top_correlations = df_for_top_correlations.append(query_df, ignore_index=True)
-    return df_for_top_correlations
+#
+# def all_time_top_correlation_query_results():
+#     end_dates_query = f'''
+#     select distinct end_date from correlation_scores_for_backtest
+#     order by end_date asc
+#     '''
+#     end_date_df = pd.read_sql(end_dates_query, con=connect)
+#     end_date_list = end_date_df.values.tolist()
+#
+#     df_for_top_correlations = pd.DataFrame(columns=['stock_symbol', 'keyword', 'start_date', 'end_date', 'time_delay',
+#                                                     'filing_type', 'correlation'])
+#
+#     for dates in end_date_list:
+#         dates = dates[0]
+#         top_correlation_query_results = f'''
+#             with top_correlations as (
+#             select stock_symbol
+#             , split_part("Keyword", ' Mentions', 1) as keyword
+#             , start_date
+#             , end_date
+#             , time_delay
+#             , filing_type
+#             , correlation
+#             from public.correlation_scores_for_backtest
+#             where correlation is not null
+#               and date(start_date) <= current_date - interval '40 week'
+#               and stock_symbol not in ('GEHC', 'CAH')
+#               and correlation != 1
+#               and "Keyword" != 'cryptocurrency Mentions'
+#               and end_date = '{dates}'
+#             order by correlation desc
+#             limit 100
+#             )
+#
+#             select distinct on (stock_symbol) *
+#             from top_correlations
+#             order by stock_symbol, correlation desc
+#         '''
+#         query_df = pd.read_sql(top_correlation_query_results, con=connect)
+#         df_for_top_correlations = df_for_top_correlations.append(query_df, ignore_index=True)
+#     return df_for_top_correlations
 
 
 def build_backtest_prediction_table():
@@ -104,15 +103,19 @@ def build_backtest_prediction_table():
                                              'friday_end_date', 'time_delay', 'filing_type'])
 
     #find each end date, then use that for the backtest process
+    today = date.today()
     end_dates_query = f'''
     select distinct end_date from correlation_scores_for_backtest
+    where date(end_date) <= date('{today}') - interval '14 day'
     order by end_date asc
     '''
     end_date_df = pd.read_sql(end_dates_query, con=connect)
     end_date_list = end_date_df.values.tolist()
+    # print("end date list", end_date_list)
     #for each week in the table, find the top 10 correlation scores and return them
     for dates in end_date_list:
         dates = dates[0]
+        # print("date for lopp", dates)
         top_correlation_query_results = f'''
             with top_correlations as (
             select stock_symbol
@@ -136,13 +139,21 @@ def build_backtest_prediction_table():
             select distinct on (stock_symbol) *
             from top_correlations
             order by stock_symbol, correlation desc
-            limit 10
         '''
         query_df = pd.read_sql(top_correlation_query_results, con=connect)
-        print(f'''query df: {query_df}''')
+        query_df = query_df.sort_values(by=['correlation'], ascending=False)
+        query_df = query_df.head(10)
+        # print("head sorted", query_df)
 
         test_results = []
         full_test_data = []
+        stock_symbol_list = []
+        keyword_list = []
+        correlation_start_date_list = []
+        friday_end_date_list = []
+        monday_end_date_list = []
+        interval_list = []
+        filing_type_list = []
 
         row_range = range(0, 10)
         #for each of the top 10 correlation scores for each week, train the ML model then predict the following weekly
@@ -167,42 +178,101 @@ def build_backtest_prediction_table():
                 rounded_friday = rounded_friday - timedelta(days=7)
             friday_end_date = rounded_friday
 
+
+            print("row data", stock_symbol, keyword, correlation_start_date, monday_end_date, interval, filing_type)
             df_test_full, df_test, mae, model = forecast_top_stocks_model.train_narrow_ml_model(keyword, filing_type,
                                                                                          stock_symbol, interval,
                                                                                          monday_end_date, correlation_start_date)
 
+            # print("df test full", df_test_full)
             full_test_data.append(df_test_full)
             try:
                 prediction = model.predict(df_test)
                 test_results.append(prediction)
-                print('Predicted stock price:', prediction)
+                # print('Predicted stock price:', prediction)
             except (KeyError, ValueError) as error:
                 print(error)
                 continue
 
+            # print("prediction", prediction)
+            stock_symbol_list.append(stock_symbol)
+            keyword_list.append(keyword)
+            correlation_start_date_list.append(correlation_start_date)
+            friday_end_date_list.append(friday_end_date)
+            monday_end_date_list.append(monday_end_date)
+            interval_list.append(interval)
+            filing_type_list.append(filing_type)
+
         #build the table with all of the predictions
+        # pd.set_option("display.max_columns", 20)
         df_test = pd.DataFrame(test_results, columns=['predicted_price'])
         full_results_df = pd.concat(full_test_data, ignore_index=True)
         df_full = pd.DataFrame(full_results_df)
         df_full['predicted_price'] = df_test
-        df_full['stock_symbol'] = stock_symbol
-        df_full['keyword'] = keyword
-        df_full['start_date'] = correlation_start_date
-        df_full['friday_end_date'] = friday_end_date
-        df_full['monday_end_date'] = monday_end_date
-        df_full['time_delay'] = interval
-        df_full['filing_type'] = filing_type
+        df_full['stock_symbol'] = stock_symbol_list
+        df_full['keyword'] = keyword_list
+        df_full['start_date'] = correlation_start_date_list
+        df_full['friday_end_date'] = friday_end_date_list
+        df_full['monday_end_date'] = monday_end_date_list
+        df_full['time_delay'] = interval_list
+        df_full['filing_type'] = filing_type_list
         df_full = df_full.drop_duplicates()
+        print("df full", df_full)
         df_for_calculating_backtest = df_for_calculating_backtest.append(df_full, ignore_index=True)
     return df_for_calculating_backtest
 
 df_for_calculating_backtest = build_backtest_prediction_table()
+print(df_for_calculating_backtest)
 forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, 'precise_backtest_top_predictions', 'replace')
 
 def backtesting_buy_recommendation_list():
     df_recommended_buys = []
-    query_df = forecast_top_stocks_model.top_correlation_query_results()
+    today = date.today()
+    end_dates_query = f'''
+    select distinct end_date from correlation_scores_for_backtest
+    where date(end_date) <= date('{today}') - interval '14 day'
+    order by end_date asc
+    '''
+    end_date_df = pd.read_sql(end_dates_query, con=connect)
+    end_date_list = end_date_df.values.tolist()
+    # print("end date list", end_date_list)
+    # for each week in the table, find the top 10 correlation scores and return them
+    for dates in end_date_list:
+        dates = dates[0]
+        # print("date for lopp", dates)
+        top_correlation_query_results = f'''
+            with top_correlations as (
+            select stock_symbol
+            , split_part("Keyword", ' Mentions', 1) as keyword
+            , start_date
+            , end_date
+            , time_delay
+            , filing_type
+            , correlation
+            from public.correlation_scores_for_backtest
+            where correlation is not null
+              and date(start_date) <= current_date - interval '40 week'
+              and stock_symbol not in ('GEHC', 'CAH')
+              and correlation != 1
+              and "Keyword" != 'cryptocurrency Mentions'
+              and end_date = '{dates}'
+            order by correlation desc
+            limit 250
+            )
 
+            select distinct on (stock_symbol) *
+            from top_correlations
+            order by stock_symbol, correlation desc
+        '''
+        query_df = pd.read_sql(top_correlation_query_results, con=connect)
+        query_df = query_df.sort_values(by=['correlation'], ascending=False)
+        query_df = query_df.head(10)
+
+    #this is where I left off. the 'did the model get the stuff right and should you buy' query is designed from the
+    #og backtest to only handle 10 recommendations. Instead, I need to handle 10 recommendations for each week, make a
+    #one time prediction for the following week, test it, store it, then move on to the next loop in order to get one
+    #big dataframe of "here are the 10 top correlations. based on the prediction, here are ones the model says you should
+    #buy. then you can move onto the next function to calculate if it's accurate
     row_range = range(0, 10)
     for rows in row_range:
         df_row = query_df.iloc[rows]
