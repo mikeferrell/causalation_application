@@ -166,6 +166,7 @@ def one_time_backfill_correlation_scores():
     print("starting correlation for loop")
     for end_date in end_dates:
         for start_date in dates_dict:
+            #only look at times where the start date is 6 months to 1 yr before the end date
             if (datetime.strptime(start_date, '%Y-%m-%d').date() >= (datetime.strptime(end_date, '%Y-%m-%d').date() -
                                                                      timedelta(days=365))) and (
                     datetime.strptime(start_date, '%Y-%m-%d').date()
@@ -175,9 +176,11 @@ def one_time_backfill_correlation_scores():
                     for keywords in keywords_dict:
                         for filings in filing_type:
                             # Pulls the top 10 stock correlation scores with the applied filters
+                            #end date is the Monday of the most recent week of stock data. So we have data for the
+                            #end date week included in the results
                             query_results = f'''
                                 with top_correlations as (with rolling_average_calculation as (
-                                 with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
+                                with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
                                 stock_weekly_opening as (select * from weekly_stock_openings)
 
                                 select 

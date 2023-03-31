@@ -144,6 +144,7 @@ def list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol, interv
     return datetime_list
 
 #this is the model training used all of the charts & tables up to 3/24/23
+#be sure to fix the queries with the correct interval time, like the narrow model has
 def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
     training_dataset = f'''
                      with matched_dates as (
@@ -264,11 +265,11 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
 
                      select 
                      distinct week_opening_date
-                     , filing_week
                      , week_close_price
                      , stock_symbol
                      , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                     from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                     from stock_weekly_opening 
+                     join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week
                      where week_opening_date >= '{correlation_start_date}'
                      and filing_type = '{filing_type}'
                      and stock_symbol = '{stock_symbol}'
@@ -278,7 +279,6 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
                      select week_opening_date
                      , stock_symbol
                      , week_close_price
-                       , filing_week
                      , '{keyword} Mentions' as keyword_mentions
                      , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                      from rolling_average_calculation
@@ -286,18 +286,19 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
                      )
 
                      select 
-                     (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
+                     (EXTRACT(YEAR FROM md2.week_opening_date) * 10000) + (EXTRACT(MONTH FROM md2.week_opening_date) * 100) + EXTRACT(DAY FROM md2.week_opening_date) as current_week
                      , md2.keyword_mentions_rolling_avg
                      , md2.week_close_price as current_close_price
                      , md1.week_close_price as next_week_close_price
                      from matched_dates as md1
                      join matched_dates as md2 
-                     on md1.week_opening_date = md2.filing_week + interval '{interval} week'
+                     on md1.week_opening_date = md2.week_opening_date + interval '{interval} week'
                      where md2.filing_week < '{end_date}'
                      offset 3
              '''
     df_results = pd.read_sql(training_dataset, con=connect)
     try:
+        #next_week_close_price should be called close_price_after_time_interval_in_the_future
         X = df_results.drop(columns=['next_week_close_price'])
         y = df_results['next_week_close_price']
         X = X.interpolate()
@@ -322,11 +323,11 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
 
                      select 
                      distinct week_opening_date
-                     , filing_week
                      , week_close_price
                      , stock_symbol
                      , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                     from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
+                     from stock_weekly_opening 
+                     join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week
                      where week_opening_date >= '{correlation_start_date}'
                      and filing_type = '{filing_type}'
                      and stock_symbol = '{stock_symbol}'
@@ -336,7 +337,6 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
                      select week_opening_date
                      , stock_symbol
                      , week_close_price
-                       , filing_week
                      , '{keyword} Mentions' as keyword_mentions
                      , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                      from rolling_average_calculation
@@ -344,18 +344,18 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
                      )
 
                      select 
-                     (EXTRACT(YEAR FROM md2.filing_week) * 10000) + (EXTRACT(MONTH FROM md2.filing_week) * 100) + EXTRACT(DAY FROM md2.filing_week) as current_week
-                     , md1.week_opening_date
+                     (EXTRACT(YEAR FROM md2.week_opening_date) * 10000) + (EXTRACT(MONTH FROM md2.week_opening_date) * 100) + EXTRACT(DAY FROM md2.week_opening_date) as current_week
+                     , md1.week_opening_date as prediction_date
                      , md2.keyword_mentions_rolling_avg
                      , md2.week_close_price as current_close_price
                      , md1.week_close_price as next_week_close_price
                      from matched_dates as md1
                      join matched_dates as md2 
-                     on md1.week_opening_date = md2.filing_week + interval '{interval} week'
+                     on md1.week_opening_date = md2.week_opening_date + interval '{interval} week'
                      where md2.filing_week = '{end_date}'
                      '''
         df_test_full = pd.read_sql(test_dataset, con=connect)
-        df_test = df_test_full.drop(columns=['week_opening_date', 'next_week_close_price'])
+        df_test = df_test_full.drop(columns=['prediction_date', 'next_week_close_price'])
         df_test_full = df_test_full.drop_duplicates()
         df_test = df_test.drop_duplicates()
     except (KeyError, ValueError) as error1:
