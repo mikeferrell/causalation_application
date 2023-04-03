@@ -1,18 +1,12 @@
 import dataframes_from_queries
-import cron_jobs
 from datetime import date, timedelta, datetime
 from sqlalchemy import create_engine
 import psycopg2
 import passwords
-import numpy as np
 import pandas as pd
 from datetime import date, timedelta, datetime
-import time
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
+from pandasql import sqldf
+from sklearn import datasets
 import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
 
 url = passwords.rds_access
@@ -229,25 +223,103 @@ def build_backtest_prediction_table():
 
 
 def backtesting_buy_recommendation_list():
-    #find each end date, then use that for the backtest process
-    today = date.today()
     buy_rec_query = f'''
-        select stock_symbol, start_date, keyword, time_delay, filing_type
-        , monday_end_date as current_week, current_close_price
-        , week_opening_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
-        , case when current_close_price < predicted_price then 'buy recommended'
+        with stock_opening_dates as ( 
+        with distinct_dates as (
+        select distinct week_opening_date as week_opening_date
+        from public.weekly_stock_openings 
+        order by week_opening_date asc
+        )
+        select week_opening_date
+        , LEAD(week_opening_date) OVER (ORDER BY week_opening_date) as next_week_opening_date
+        from distinct_dates
+        order by week_opening_date asc
+        )
+        
+        select 
+          precise_backtest_top_predictions.stock_symbol
+          , start_date, keyword, time_delay, filing_type
+          , next_week_opening_date as week_to_buy
+          , current_close_price
+          , predicted_price
+          , weekly_stock_openings.week_open_price as buy_open_price
+          , weekly_stock_openings.week_close_price as buy_close_price
+          , (predicted_price / precise_backtest_top_predictions.current_close_price) - 1 as predicted_price_change_percentage
+          , case 
+            when current_close_price < predicted_price then 'buy recommended'
             else 'dont buy'
-            end as predicted_price_movement
-        from precise_backtest_top_predictions
-        order by current_week asc
+          end as predicted_price_movement
+          from precise_backtest_top_predictions
+        JOIN stock_opening_dates on monday_end_date = stock_opening_dates.week_opening_date
+        join public.weekly_stock_openings on stock_opening_dates.next_week_opening_date = weekly_stock_openings.week_opening_date
+        and precise_backtest_top_predictions.stock_symbol = weekly_stock_openings.stock_symbol
+        order by monday_end_date
     '''
     buy_rec_df = pd.read_sql(buy_rec_query, con=connect)
 
+    date_query = '''
+    select distinct week_to_buy as buy_week from buy_rec_df
+    '''
+    df_for_buys = sqldf(date_query)
+    print("weeks", df_for_buys)
 
-        # print("head sorted", query_df)
+    cash_in_hand = 1000
 
-    df_recommended_buys = []
+    performance_at_each_week = []
+    # Iterate through each unique buy_week date and calculate returns
+    for index, row in df_for_buys.iterrows():
+        buy_week = row['buy_week']
+        # clean up the dataframe of which stocks to buy, and the weight for how many shares to buy
+        print("date", buy_week)
+        query_for_buys = f'''
+        with stock_selections as (
+          SELECT
+              stock_symbol,
+              week_to_buy as buy_week,
+              buy_open_price as buy_price,
+              buy_close_price as cashout_price,
+              predicted_price_change_percentage
+          FROM
+              buy_rec_df
+            WHERE predicted_price_movement = 'buy recommended'
+            and week_to_buy = '{buy_week}'
+        ),
 
+        total_estimation as (
+          select buy_week
+          , sum(predicted_price_change_percentage) total_prediction_changes
+          from stock_selections
+          group by buy_week
+        )
+
+        select 
+          stock_symbol, 
+          stock_selections.buy_week, 
+          buy_price, 
+          cashout_price,
+          {cash_in_hand} * predicted_price_change_percentage / total_prediction_changes / buy_price as number_of_shares_to_buy
+        from 
+          stock_selections 
+          join total_estimation on stock_selections.buy_week = total_estimation.buy_week
+        where predicted_price_change_percentage != 0
+        order by 
+          stock_selections.buy_week asc
+            '''
+        df_for_calculating_returns = sqldf(query_for_buys)
+        print(df_for_calculating_returns)
+
+        returns_for_date = ((df_for_calculating_returns['cashout_price'] * df_for_calculating_returns['number_of_shares_to_buy'])
+                                             - (df_for_calculating_returns['buy_price'] * df_for_calculating_returns['number_of_shares_to_buy'])).sum()
+        print("returns", returns_for_date)
+
+        print("cash in hand before:", cash_in_hand)
+        cash_in_hand = cash_in_hand + returns_for_date
+        print("cash in hand after:", cash_in_hand)
+        end_of_week_performance = (date, cash_in_hand)
+        performance_at_each_week.append(end_of_week_performance)
+    performance_at_each_week_df = pd.DataFrame(performance_at_each_week,
+                                               columns=['week_of_purchases', 'portfolio_value'])
+    return cash_in_hand, performance_at_each_week_df
 
 
     # df_for_pg_upload = pd.concat(df_recommended_buys, ignore_index=True)
@@ -256,7 +328,7 @@ def backtesting_buy_recommendation_list():
     # forecast_top_stocks_model.append_to_postgres(df_for_pg_upload, 'precise_backtest_buys_test', 'replace')
     return df_for_pg_upload
 
-
+#this should be working, except it's using the buy_price to decide number of shares, it should use last_week_close_price
 backtesting_buy_recommendation_list()
 
 # def backtesting_buy_recommendation_list():
@@ -418,60 +490,6 @@ backtesting_buy_recommendation_list()
 
 # df_for_pg_upload = backtesting_buy_recommendation_list()
 # print(df_for_pg_upload)
-
-def calculate_returns():
-    cash_in_hand = 1000
-
-    query_for_buys = f'''
-    with stock_selections as (
-      SELECT
-          stock_symbol,
-          buy_week,
-          buy_price,
-          cashout_price,
-          CAST(REPLACE(MAX(predicted_price_change_percentage), '%%', '') AS FLOAT)/100 AS predicted_price_change_percentage
-      FROM
-          backtest_buys_test
-      group by stock_symbol, buy_week, buy_price, cashout_price
-    ),
-
-    total_estimation as (
-      select buy_week, sum(predicted_price_change_percentage) as total_change_amount
-      from stock_selections
-      group by buy_week
-    )
-
-    select 
-      stock_symbol, 
-      stock_selections.buy_week, 
-      buy_price, 
-      cashout_price,
-      predicted_price_change_percentage / total_change_amount as scaled_predicted_change
-    from 
-      stock_selections 
-      join total_estimation on stock_selections.buy_week = total_estimation.buy_week
-    where predicted_price_change_percentage != 0
-    order by 
-      buy_week asc
-        '''
-    df_for_buys = pd.read_sql(query_for_buys, con=connect)
-
-    performance_at_each_week = []
-    # Iterate through each unique buy_week date and calculate returns
-    for date in df_for_buys['buy_week'].unique():
-        df_for_date = df_for_buys[df_for_buys['buy_week'] == date]
-
-        returns_for_date = (((cash_in_hand * df_for_date['scaled_predicted_change']) / df_for_date['buy_price']) *
-                            df_for_date['cashout_price']).sum()
-
-        cash_in_hand = returns_for_date
-        end_of_week_performance = (date, cash_in_hand)
-        performance_at_each_week.append(end_of_week_performance)
-    performance_at_each_week_df = pd.DataFrame(performance_at_each_week,
-                                               columns=['week_of_purchases', 'portfolio_value'])
-    return cash_in_hand, performance_at_each_week_df
-
-# calculate_returns()
 
 
 def comparing_returns_vs_sandp():
