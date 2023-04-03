@@ -261,7 +261,7 @@ def backtesting_buy_recommendation_list():
     select distinct week_to_buy as buy_week from buy_rec_df
     '''
     df_for_buys = sqldf(date_query)
-    print("weeks", df_for_buys)
+    # print("weeks", df_for_buys)
 
     cash_in_hand = 1000
 
@@ -270,7 +270,6 @@ def backtesting_buy_recommendation_list():
     for index, row in df_for_buys.iterrows():
         buy_week = row['buy_week']
         # clean up the dataframe of which stocks to buy, and the weight for how many shares to buy
-        print("date", buy_week)
         query_for_buys = f'''
         with stock_selections as (
           SELECT
@@ -306,194 +305,28 @@ def backtesting_buy_recommendation_list():
           stock_selections.buy_week asc
             '''
         df_for_calculating_returns = sqldf(query_for_buys)
-        print(df_for_calculating_returns)
+        # print(df_for_calculating_returns)
 
         returns_for_date = ((df_for_calculating_returns['cashout_price'] * df_for_calculating_returns['number_of_shares_to_buy'])
                                              - (df_for_calculating_returns['buy_price'] * df_for_calculating_returns['number_of_shares_to_buy'])).sum()
-        print("returns", returns_for_date)
+        # print("returns", returns_for_date)
 
-        print("cash in hand before:", cash_in_hand)
+        # print("cash in hand before:", cash_in_hand)
         cash_in_hand = cash_in_hand + returns_for_date
-        print("cash in hand after:", cash_in_hand)
-        end_of_week_performance = (date, cash_in_hand)
+        # print("cash in hand after:", cash_in_hand)
+        end_of_week_performance = (buy_week, cash_in_hand)
         performance_at_each_week.append(end_of_week_performance)
     performance_at_each_week_df = pd.DataFrame(performance_at_each_week,
                                                columns=['week_of_purchases', 'portfolio_value'])
     return cash_in_hand, performance_at_each_week_df
 
 
-    # df_for_pg_upload = pd.concat(df_recommended_buys, ignore_index=True)
-    # df_for_pg_upload = df_for_pg_upload.sort_values(by=['buy_week', 'stock_symbol'])
-    # print(df_for_pg_upload)
-    # forecast_top_stocks_model.append_to_postgres(df_for_pg_upload, 'precise_backtest_buys_test', 'replace')
-    return df_for_pg_upload
-
-#this should be working, except it's using the buy_price to decide number of shares, it should use last_week_close_price
-backtesting_buy_recommendation_list()
-
-# def backtesting_buy_recommendation_list():
-    # df_recommended_buys = []
-    # today = date.today()
-    # end_dates_query = f'''
-    # select distinct end_date from correlation_scores_for_backtest
-    # where date(end_date) <= date('{today}') - interval '14 day'
-    # order by end_date asc
-    # '''
-    # end_date_df = pd.read_sql(end_dates_query, con=connect)
-    # end_date_list = end_date_df.values.tolist()
-    # # print("end date list", end_date_list)
-    # # for each week in the table, find the top 10 correlation scores and return them
-    # for dates in end_date_list:
-    #     dates = dates[0]
-    #     # print("date for lopp", dates)
-    #     top_correlation_query_results = f'''
-    #         with top_correlations as (
-    #         select stock_symbol
-    #         , split_part("Keyword", ' Mentions', 1) as keyword
-    #         , start_date
-    #         , end_date
-    #         , time_delay
-    #         , filing_type
-    #         , correlation
-    #         from public.correlation_scores_for_backtest
-    #         where correlation is not null
-    #           and date(start_date) <= current_date - interval '40 week'
-    #           and stock_symbol not in ('GEHC', 'CAH')
-    #           and correlation != 1
-    #           and "Keyword" != 'cryptocurrency Mentions'
-    #           and end_date = '{dates}'
-    #         order by correlation desc
-    #         limit 250
-    #         )
-    #
-    #         select distinct on (stock_symbol) *
-    #         from top_correlations
-    #         order by stock_symbol, correlation desc
-    #     '''
-    #     query_df = pd.read_sql(top_correlation_query_results, con=connect)
-    #     query_df = query_df.sort_values(by=['correlation'], ascending=False)
-    #     query_df = query_df.head(10)
-    #
-    # #this is where I left off. the 'did the model get the stuff right and should you buy' query is designed from the
-    # #og backtest to only handle 10 recommendations. Instead, I need to handle 10 recommendations for each week, make a
-    # #one time prediction for the following week, test it, store it, then move on to the next loop in order to get one
-    # #big dataframe of "here are the 10 top correlations. based on the prediction, here are ones the model says you should
-    # #buy. then you can move onto the next function to calculate if it's accurate
-    #
-    # #there's a bunch of crap here. rewrite it. grab each row. if it predicts the price to go up, return the price. if not,
-    # #then drop it. return a dataframe of all the buy recommendations and the week it's recommended to buy.
-    #     row_range = range(0, 10)
-    #     for rows in row_range:
-    #         df_row = query_df.iloc[rows]
-    #         stock_symbol = df_row['stock_symbol']
-    #         keyword = df_row['keyword']
-    #         correlation_start_date = df_row['start_date']
-    #         monday_end_date = df_row['end_date']
-    #         interval = df_row['time_delay']
-    #         filing_type = df_row['filing_type']
-    #
-    #         # adjusts start date and end dates to the real start & end dates as pulled from the DB
-    #         correlation_start_date = datetime.strptime(correlation_start_date, '%Y-%m-%d').date()
-    #         correlation_start_date = correlation_start_date + timedelta((0 - correlation_start_date.weekday()) % 7)
-    #         monday_end_date = datetime.strptime(monday_end_date, '%Y-%m-%d').date()
-    #
-    #         buy_recommendation = f'''with prediction_testing as (
-    #           with prices as (
-    #           select stock_symbol, start_date, keyword, time_delay, filing_type, to_date(cast(current_week as text), 'YYYYMMDD') as current_week, current_close_price
-    #           , week_opening_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
-    #           , case when next_week_close_price > current_close_price then 'price increased'
-    #               when next_week_close_price < current_close_price then 'price decreased'
-    #               when next_week_close_price is null then 'no price comparison'
-    #               else 'price the same'
-    #               end as actual_price_movement
-    #           , next_week_close_price - current_close_price as actual_price_change
-    #           , (next_week_close_price / current_close_price) - 1 as actual_price_change_percentage
-    #           , case when current_close_price < predicted_price then 'price increased'
-    #               when current_close_price > predicted_price then 'price decreased'
-    #               when predicted_price is null then 'no price comparison'
-    #               else 'price the same'
-    #               end as predicted_price_movement
-    #           , predicted_price - current_close_price as predicted_price_change
-    #           , 1 - (current_close_price / predicted_price) as predicted_price_change_percentage
-    #           from precise_backtest_top_predictions
-    #           where
-    #           stock_symbol = '{stock_symbol}'
-    #           and keyword = '{keyword}'
-    #           and start_date = '{correlation_start_date}'
-    #           and time_delay = '{interval}'
-    #           and filing_type = '{filing_type}'
-    #           order by current_week asc
-    #           )
-    #
-    #           SELECT
-    #           stock_symbol, keyword, time_delay, filing_type, start_date, current_week, prediction_date, current_close_price
-    #           , next_week_close_price  as actual_price_week_of_prediction, next_week_predicted_close as predicted_close_price
-    #           , actual_price_change
-    #           , predicted_price_change
-    #           , predicted_price_change_percentage
-    #           , case when actual_price_movement = 'no price comparison' then 'no price comparison'
-    #               when actual_price_movement = predicted_price_movement then 'correct prediction'
-    #               else 'incorrect prediction'
-    #               end as prediction_validation
-    #           , actual_price_change - predicted_price_change as actual_prediction_delta
-    #           , case when actual_price_change = 0 then null else (actual_price_change - predicted_price_change) / current_close_price end as actual_prediction_percentage_delta
-    #           from prices
-    #         ),
-    #
-    #         next_week_close as (
-    #           select stock_symbol
-    #           , week_open_price
-    #           , week_close_price
-    #             , week_opening_date
-    #             , Lead(week_open_price) OVER (
-    #           ORDER BY stock_symbol, week_opening_date) as one_week_later_open_price
-    #           , Lead(week_close_price) OVER (
-    #             ORDER BY stock_symbol, week_opening_date) as one_week_later_close_price
-    #           from weekly_stock_openings
-    #           where week_opening_date is not null
-    #         )
-    #
-    #         select
-    #         prediction_testing.stock_symbol
-    #         , current_week as buy_week
-    #         --need to change this to the weekly open!
-    #         , next_week_close.one_week_later_open_price as buy_price
-    #         , next_week_close.one_week_later_close_price as cashout_price
-    #         , prediction_date
-    #         , prediction_testing.predicted_close_price
-    #         , predicted_price_change
-    #         , predicted_price_change_percentage
-    #         , prediction_testing.keyword
-    #         , prediction_testing.time_delay
-    #         , prediction_testing.filing_type
-    #         , prediction_testing.start_date
-    #
-    #         from prediction_testing
-    #         join next_week_close on prediction_testing.current_week = next_week_close.week_opening_date
-    #         and prediction_testing.stock_symbol = next_week_close.stock_symbol
-    #         where next_week_close.week_opening_date = '{monday_end_date}'
-    #         and predicted_close_price > current_close_price
-    #             '''
-    #         buy_df_results = pd.read_sql(buy_recommendation, con=connect)
-    #         if buy_df_results.empty:
-    #             continue
-    #         else:
-    #             buy_df_results['predicted_price_change_percentage'] = buy_df_results[
-    #                 'predicted_price_change_percentage'].apply(format_percent)
-    #             df_recommended_buys.append(buy_df_results)
-    # df_for_pg_upload = pd.concat(df_recommended_buys, ignore_index=True)
-    # df_for_pg_upload = df_for_pg_upload.sort_values(by=['buy_week', 'stock_symbol'])
-    # print(df_for_pg_upload)
-    # # forecast_top_stocks_model.append_to_postgres(df_for_pg_upload, 'precise_backtest_buys_test', 'replace')
-    # return df_for_pg_upload
-
-
-# df_for_pg_upload = backtesting_buy_recommendation_list()
-# print(df_for_pg_upload)
+# cash_in_hand, performance_at_each_week_df = backtesting_buy_recommendation_list()
+# print(performance_at_each_week_df)
 
 
 def comparing_returns_vs_sandp():
-    returns_df = calculate_returns()[1]
+    returns_df = backtesting_buy_recommendation_list()[1]
     first_date = returns_df['week_of_purchases'].min()
     last_date = returns_df['week_of_purchases'].max()
 
@@ -502,6 +335,7 @@ def comparing_returns_vs_sandp():
     where stock_symbol = '^GSPC'
     and created_at >= '{first_date}'
     and created_at <= '{last_date}'
+    order by created_at asc
     '''
     df_for_join = pd.read_sql(sandp_query, con=connect)
     df_for_join['week_of_purchases'] = pd.to_datetime(df_for_join['week_of_purchases'])

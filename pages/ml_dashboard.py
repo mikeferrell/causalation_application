@@ -7,7 +7,8 @@ import pandas as pd
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
 from cron_jobs import get_dates
-import ml_models.backtest as backtest
+# import ml_models.backtest as backtest
+import precise_backtest as backtest
 
 import images as my_images
 import base64
