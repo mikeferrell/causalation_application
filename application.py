@@ -26,18 +26,28 @@ colors = {
 }
 
 app.layout = dbc.Container([
+    dbc.Row(html.Div([sidebar.navbar, sidebar.content])),
     dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
                                       style={'height': '2%', 'width': '50%'})),
                     width={"size": 6, "offset": 4})),
-    dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
+    # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(dbc.Col(dash.page_container)),
 ]
 )
+# content = dbc.Container([
+#     dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
+#                                       style={'height': '2%', 'width': '50%'})),
+#                     width={"size": 6, "offset": 4})),
+#     dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
+#     dbc.Row(dbc.Col(dash.page_container)),
+# ]
+# )
 
 
 @server.route("/")
 def my_dash_app():
     return app.index()
+    # return render_template('index.html', logo=logo_image_direct, content=content)
 
 
 console_handler = logging.StreamHandler()

@@ -17,11 +17,12 @@ dash.register_page(__name__, path='/predictions', name="Predictions")
 
 colors = {
     'background': '#D3D3D3',
-    'text': '#00008B'
+    # 'text': '#00008B'
+    'text': '000000'
 }
 
 layout = dbc.Container([
-    html.Div(html.H2(
+    html.Div(html.H1(
         children='Stocks to Buy This Week',
         style={
             'textAlign': 'center',
@@ -41,9 +42,8 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
-    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
     html.Div(html.H1(
-        children='Top Stock Correlations',
+        children='Top Stock Correlations This Week',
         style={
             'textAlign': 'center',
             'color': colors['text']
@@ -51,6 +51,34 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div(id="ml_list_of_top_accuracy_table"), width={"size": 8, "offset": 2})
     ),
+    html.Div(html.H1(
+        children='Backtest Results Compared to S&P 500',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        })),
+    # html.Div(html.H3(
+    #     children='Random Forest Model',
+    #     style={
+    #         'textAlign': 'center',
+    #         'color': colors['text']
+    #     })),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})),
+                    width={"size": 9, "offset": 2})),
+    # html.Div(html.H3(
+    #     children='Decision Tree Model',
+    #     style={
+    #         'textAlign': 'center',
+    #         'color': colors['text']
+    #     })),
+    # dbc.Row(dbc.Col(html.Div(dcc.Graph(id='decision_tree_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
+    # html.Div(html.H3(
+    #     children='Linear Regression Model',
+    #     style={
+    #         'textAlign': 'center',
+    #         'color': colors['text']
+    #     })),
+    # dbc.Row(dbc.Col(html.Div(dcc.Graph(id='linear_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
     # dbc.Row(dbc.Col(html.Div(html.P(
     #     id="ml_top_five_accuracy_list",
     #     style={
@@ -128,6 +156,8 @@ layout = dbc.Container([
 @callback(
     Output('date_and_stock_for_chart_2', 'figure'),
     Output('date_and_stock_for_chart_backtest', 'figure'),
+    # Output('decision_tree_chart_backtest', 'figure'),
+    # Output('linear_chart_backtest', 'figure'),
     Output('ml_top_five_accuracy_table', 'children'),
     Output('ml_list_of_top_accuracy_table', 'children'),
     Output('stocks_to_buy_table', 'children'),
@@ -149,7 +179,11 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
                                                             end_date, keyword_dropdown_value, '', filing_type_value),
             stock_dropdown_value, keyword_dropdown_value)
         date_and_stock_for_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
-            backtest.comparing_returns_vs_sandp())
+            backtest.comparing_returns_vs_sandp('random_forest'))
+        # decision_tree_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
+        #     backtest.comparing_returns_vs_sandp('decision_tree'))
+        # linear_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
+        #     backtest.comparing_returns_vs_sandp('linear'))
         ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
         ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
         ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
@@ -160,6 +194,8 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         raise exceptions.PreventUpdate
     return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, \
            ml_top_five_accuracy_table, ml_list_of_top_accuracy_table, stocks_to_buy_table
+           # decision_tree_chart_backtest, linear_chart_backtest, \
+
 
 
 #collapse for the table of raw accuracy information

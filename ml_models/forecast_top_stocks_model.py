@@ -82,19 +82,20 @@ def top_correlation_query_results():
         from public.all_correlation_scores
         where correlation is not null
           and date(start_date) <= current_date - interval '40 week'
-          and stock_symbol not in ('GEHC', 'CAH')
+          and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
           and correlation != 1
           and "Keyword" != 'cryptocurrency Mentions'
         order by correlation desc
-        limit 50
+        limit 250
         )
         
         select distinct on (stock_symbol) *
         from top_correlations
         order by stock_symbol, correlation desc
-        limit 10
     '''
     query_df = pd.read_sql(top_correlation_query_results, con=connect)
+    query_df = query_df.sort_values(by=['correlation'], ascending=False)
+    query_df = query_df.head(10)
     return query_df
 
 
@@ -143,9 +144,9 @@ def list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol, interv
         datetime_list.append(timestamp.strftime("%Y-%m-%d"))
     return datetime_list
 
+
 #this is the model training used all of the charts & tables up to 3/24/23
-#be sure to fix the queries with the correct interval time, like the narrow model has
-def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
+def train_ml_model(keyword, filing_type, stock_symbol, interval, dates, correlation_start_date):
     training_dataset = f'''
                      with matched_dates as (
                      with rolling_average_calculation as (
@@ -159,7 +160,7 @@ def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
                      , stock_symbol
                      , 1.00 * keyword_mentions / total_filings as keyword_percentage
                      from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
-                     where week_opening_date >= '2017-01-01'
+                     where week_opening_date >= '{correlation_start_date}'
                      and filing_type = '{filing_type}'
                      and stock_symbol = '{stock_symbol}'
                      order by stock_symbol, week_opening_date asc
@@ -217,7 +218,7 @@ def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
                      , stock_symbol
                      , 1.00 * keyword_mentions / total_filings as keyword_percentage
                      from stock_weekly_opening join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week 
-                     where week_opening_date >= '2017-01-01'
+                     where week_opening_date >= '{correlation_start_date}'
                      and filing_type = '{filing_type}'
                      and stock_symbol = '{stock_symbol}'
                      order by stock_symbol, week_opening_date asc
@@ -256,7 +257,7 @@ def train_ml_model(keyword, filing_type, stock_symbol, interval, dates):
 #the function above uses all historical data to train the model on the next week's prediction. This function will only
 # use the data points within the period we observe strong correlation, and then try to predict the next week
 #this will be used for the precise backtest
-def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date, correlation_start_date):
+def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date, correlation_start_date, model_type):
     training_dataset = f'''
                      with matched_dates as (
                      with rolling_average_calculation as (
@@ -293,7 +294,7 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
                      from matched_dates as md1
                      join matched_dates as md2 
                      on md1.week_opening_date = md2.week_opening_date + interval '{interval} week'
-                     where md2.filing_week < '{end_date}'
+                     where md2.week_opening_date < '{end_date}'
                      offset 3
              '''
     df_results = pd.read_sql(training_dataset, con=connect)
@@ -306,9 +307,12 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=12)
 
         # choose your model
-        model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
-        # model = RandomForestRegressor(n_estimators=200, max_depth=20)
-        # model = LinearRegression()
+        if model_type == 'decision_tree':
+            model = DecisionTreeRegressor(criterion='friedman_mse', random_state=12)
+        elif model_type == 'random_forest':
+            model = RandomForestRegressor(n_estimators=200, max_depth=20)
+        else:
+            model = LinearRegression()
 
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
@@ -346,16 +350,17 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
                      select 
                      (EXTRACT(YEAR FROM md2.week_opening_date) * 10000) + (EXTRACT(MONTH FROM md2.week_opening_date) * 100) + EXTRACT(DAY FROM md2.week_opening_date) as current_week
                      , md1.week_opening_date as prediction_date
+                     , md2.week_opening_date
                      , md2.keyword_mentions_rolling_avg
                      , md2.week_close_price as current_close_price
                      , md1.week_close_price as next_week_close_price
                      from matched_dates as md1
                      join matched_dates as md2 
                      on md1.week_opening_date = md2.week_opening_date + interval '{interval} week'
-                     where md2.filing_week = '{end_date}'
+                     where md2.week_opening_date = '{end_date}'
                      '''
         df_test_full = pd.read_sql(test_dataset, con=connect)
-        df_test = df_test_full.drop(columns=['prediction_date', 'next_week_close_price'])
+        df_test = df_test_full.drop(columns=['week_opening_date', 'prediction_date', 'next_week_close_price'])
         df_test_full = df_test_full.drop_duplicates()
         df_test = df_test.drop_duplicates()
     except (KeyError, ValueError) as error1:
@@ -399,7 +404,7 @@ def calculate_top_ten_forecasts(testing_timeline):
 
         for dates in datetime_list:
             df_test_full, df_test, mae, model = train_ml_model(keyword, filing_type, stock_symbol,
-                                                               interval, dates)
+                                                               interval, dates, correlation_start_date)
             full_test_data.append(df_test_full)
             mae_data.append(mae)
 

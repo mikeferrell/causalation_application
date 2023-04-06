@@ -90,7 +90,7 @@ def get_dates():
 #     return df_for_top_correlations
 
 
-def build_backtest_prediction_table():
+def build_backtest_prediction_table(model_type):
     df_for_calculating_backtest = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
                                              'stock_symbol', 'keyword', 'start_date', 'monday_end_date',
@@ -177,8 +177,8 @@ def build_backtest_prediction_table():
 
             # print("row data", stock_symbol, keyword, correlation_start_date, monday_end_date, interval, filing_type)
             df_test_full, df_test, mae, model = forecast_top_stocks_model.train_narrow_ml_model(keyword, filing_type,
-                                                                                         stock_symbol, interval,
-                                                                                         monday_end_date, correlation_start_date)
+                                                                            stock_symbol, interval, monday_end_date,
+                                                                            correlation_start_date, model_type)
 
             # print("df test full", df_test_full)
             full_test_data.append(df_test_full)
@@ -213,16 +213,17 @@ def build_backtest_prediction_table():
         df_full['time_delay'] = interval_list
         df_full['filing_type'] = filing_type_list
         df_full = df_full.drop_duplicates()
-        print("df full", df_full)
+        # print("df full", df_full)
         df_for_calculating_backtest = df_for_calculating_backtest.append(df_full, ignore_index=True)
     return df_for_calculating_backtest
 
-# df_for_calculating_backtest = build_backtest_prediction_table()
+# model_type = 'linear'
+# df_for_calculating_backtest = build_backtest_prediction_table(model_type)
 # print(df_for_calculating_backtest)
-# forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, 'precise_backtest_top_predictions', 'replace')
+# forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions', 'replace')
 
 
-def backtesting_buy_recommendation_list():
+def backtesting_buy_recommendation_list(model_type):
     buy_rec_query = f'''
         with stock_opening_dates as ( 
         with distinct_dates as (
@@ -237,22 +238,22 @@ def backtesting_buy_recommendation_list():
         )
         
         select 
-          precise_backtest_top_predictions.stock_symbol
+          {model_type}_backtest_top_predictions.stock_symbol
           , start_date, keyword, time_delay, filing_type
           , next_week_opening_date as week_to_buy
           , current_close_price
           , predicted_price
           , weekly_stock_openings.week_open_price as buy_open_price
           , weekly_stock_openings.week_close_price as buy_close_price
-          , (predicted_price / precise_backtest_top_predictions.current_close_price) - 1 as predicted_price_change_percentage
+          , (predicted_price / {model_type}_backtest_top_predictions.current_close_price) - 1 as predicted_price_change_percentage
           , case 
             when current_close_price < predicted_price then 'buy recommended'
             else 'dont buy'
           end as predicted_price_movement
-          from precise_backtest_top_predictions
+          from {model_type}_backtest_top_predictions
         JOIN stock_opening_dates on monday_end_date = stock_opening_dates.week_opening_date
         join public.weekly_stock_openings on stock_opening_dates.next_week_opening_date = weekly_stock_openings.week_opening_date
-        and precise_backtest_top_predictions.stock_symbol = weekly_stock_openings.stock_symbol
+        and {model_type}_backtest_top_predictions.stock_symbol = weekly_stock_openings.stock_symbol
         order by monday_end_date
     '''
     buy_rec_df = pd.read_sql(buy_rec_query, con=connect)
@@ -325,8 +326,8 @@ def backtesting_buy_recommendation_list():
 # print(performance_at_each_week_df)
 
 
-def comparing_returns_vs_sandp():
-    returns_df = backtesting_buy_recommendation_list()[1]
+def comparing_returns_vs_sandp(model_type):
+    returns_df = backtesting_buy_recommendation_list(model_type)[1]
     first_date = returns_df['week_of_purchases'].min()
     last_date = returns_df['week_of_purchases'].max()
 

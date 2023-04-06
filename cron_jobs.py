@@ -235,52 +235,54 @@ def top_correlation_scores():
     print("starting correlation for loop")
 
     for dates in dates_dict:
-        for time_delays in time_delay_dict:
-            for keywords in keywords_dict:
-                for filings in filing_type:
-                    # Pulls the top 10 stock correlation scores with the applied filters
-                    query_results = f'''
-                        with top_correlations as (with rolling_average_calculation as (
-                         with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
-                        stock_weekly_opening as (select * from weekly_stock_openings)
-
-                        select 
-                        distinct week_opening_date
-                        , week_close_price
-                        , stock_symbol
-                        , 1.00 * keyword_mentions / total_filings as keyword_percentage
-                        from stock_weekly_opening 
-                        join keyword_data 
-                        on stock_weekly_opening.week_opening_date = keyword_data.filing_week + interval '{time_delays} week'
-                        where week_opening_date >= '{dates}'
-                        and week_opening_date <= '{get_dates()}'
-                        and filing_type = '{filings}'
-                        )
-
-                        select week_opening_date, stock_symbol,
-                        week_close_price,
-                        'keyword Mentions' as keyword_mentions,
-                        avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
-                        from rolling_average_calculation
-                        order by stock_symbol, week_opening_date
-                        )
-
-                        select stock_symbol, '{keywords} Mentions' as "Keyword",
-                        '{dates}' as start_date,
-                        '{get_dates()}' as end_date,
-                        {time_delays} as time_delay,
-                        '{filings}' as filing_type,
-                        corr(week_close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
-                        from top_correlations
-                        where week_opening_date >= '{dates}'
-                        and week_opening_date <= '{get_dates()}'
-                        group by 1, 2
-                        order by Correlation desc
-                        limit 10
-                        '''
-                    df_results = pd.read_sql(query_results, con=connect)
-                    df_results = df_results.round({'correlation': 4})
-                    list_of_all_correlations.append(df_results)
+        if (datetime.strptime(dates, '%Y-%m-%d').date() <= (datetime.strptime(get_dates(), '%Y-%m-%d').date()
+                                                                 - timedelta(days=180))):
+            for time_delays in time_delay_dict:
+                for keywords in keywords_dict:
+                    for filings in filing_type:
+                        # Pulls the top 10 stock correlation scores with the applied filters
+                        query_results = f'''
+                            with top_correlations as (with rolling_average_calculation as (
+                             with keyword_data as (select * from keyword_weekly_counts where keyword = '{keywords}'),
+                            stock_weekly_opening as (select * from weekly_stock_openings)
+    
+                            select 
+                            distinct week_opening_date
+                            , week_close_price
+                            , stock_symbol
+                            , 1.00 * keyword_mentions / total_filings as keyword_percentage
+                            from stock_weekly_opening 
+                            join keyword_data 
+                            on stock_weekly_opening.week_opening_date = keyword_data.filing_week + interval '{time_delays} week'
+                            where week_opening_date >= '{dates}'
+                            and week_opening_date <= '{get_dates()}'
+                            and filing_type = '{filings}'
+                            )
+    
+                            select week_opening_date, stock_symbol,
+                            week_close_price,
+                            'keyword Mentions' as keyword_mentions,
+                            avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
+                            from rolling_average_calculation
+                            order by stock_symbol, week_opening_date
+                            )
+    
+                            select stock_symbol, '{keywords} Mentions' as "Keyword",
+                            '{dates}' as start_date,
+                            '{get_dates()}' as end_date,
+                            {time_delays} as time_delay,
+                            '{filings}' as filing_type,
+                            corr(week_close_price, keyword_mentions_rolling_avg) * 1.000 as Correlation
+                            from top_correlations
+                            where week_opening_date >= '{dates}'
+                            and week_opening_date <= '{get_dates()}'
+                            group by 1, 2
+                            order by Correlation desc
+                            limit 10
+                            '''
+                        df_results = pd.read_sql(query_results, con=connect)
+                        df_results = df_results.round({'correlation': 4})
+                        list_of_all_correlations.append(df_results)
 
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
     print("finished correlation for loop")

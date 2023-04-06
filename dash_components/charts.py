@@ -88,8 +88,8 @@ def backtest_Mult_Y_Axis_Lines(dataframe_input):
     # Set x-axis title
     fig.update_xaxes(title_text="Date")
     # Set y-axes titles
-    fig.update_yaxes(title_text=f"<b>Backtested Value", secondary_y=False)
-    fig.update_yaxes(title_text=f"<b>S&P 500 Value", secondary_y=True)
+    fig.update_yaxes(title_text=f"<b>Backtested Value", range=[1000, 2500], secondary_y=False)
+    fig.update_yaxes(title_text=f"<b>S&P 500 Value", range=[3500, 5000], secondary_y=True)
 
     return fig
 
