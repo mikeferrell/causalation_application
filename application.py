@@ -62,7 +62,7 @@ scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', ho
 scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', day_of_week='tue-sat', hour=3, minute=30)
 # scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=10)
-scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', hour=4, minute=10)
+scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', day_of_week='sat', hour=4, minute=10)
 scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week='sat', hour=22, minute=1)
 
 # scheduler.add_job(one_time_jobs.one_time_backfill_correlation_scores, 'cron', day_of_week='tue', hour=13, minute=40)

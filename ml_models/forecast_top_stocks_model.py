@@ -435,10 +435,19 @@ def calculate_top_ten_forecasts(testing_timeline):
 
 
 def weekly_buy_recommendation_list():
+    this_week_or_next = 'this week'
+
     df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
                                              'stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type'])
-    query_df = top_correlation_query_results()
+
+    # setting this up to display last weeks top 10 correlations. need to first ensure that data exists in a table
+    # since it doesn't exist in all_correlation_scores. Then, need to write that query, then need to ensure the columns
+    #line up with the current query
+    if this_week_or_next == 'this week':
+        query_df = top_correlation_query_results()
+    else:
+        query_df = top_correlation_query_results()
 
     row_range = range(0, 10)
     for rows in row_range:
@@ -457,11 +466,12 @@ def weekly_buy_recommendation_list():
 
         datetime_list = list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol,
                                                           interval, correlation_start_date)
+        print(datetime_list)
         most_recent_date = datetime_list.pop()
 
         try:
             df_test_full, df_test, mae, model = train_ml_model(keyword, filing_type, stock_symbol, interval,
-                                                               most_recent_date)
+                                                               most_recent_date, correlation_start_date)
             full_test_data.append(df_test_full)
             mae_data.append(mae)
 

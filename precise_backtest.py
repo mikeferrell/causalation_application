@@ -222,7 +222,7 @@ def build_backtest_prediction_table(model_type):
 # print(df_for_calculating_backtest)
 # forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions', 'replace')
 
-
+#model_type options are decision_tree, random_forest, and linear
 def backtesting_buy_recommendation_list(model_type):
     buy_rec_query = f'''
         with stock_opening_dates as ( 
@@ -243,13 +243,13 @@ def backtesting_buy_recommendation_list(model_type):
           , next_week_opening_date as week_to_buy
           , current_close_price
           , predicted_price
-          , weekly_stock_openings.week_open_price as buy_open_price
-          , weekly_stock_openings.week_close_price as buy_close_price
           , (predicted_price / {model_type}_backtest_top_predictions.current_close_price) - 1 as predicted_price_change_percentage
           , case 
             when current_close_price < predicted_price then 'buy recommended'
             else 'dont buy'
-          end as predicted_price_movement
+            end as predicted_price_movement
+            , weekly_stock_openings.week_open_price as buy_open_price
+          , weekly_stock_openings.week_close_price as buy_close_price
           from {model_type}_backtest_top_predictions
         JOIN stock_opening_dates on monday_end_date = stock_opening_dates.week_opening_date
         join public.weekly_stock_openings on stock_opening_dates.next_week_opening_date = weekly_stock_openings.week_opening_date
@@ -319,10 +319,27 @@ def backtesting_buy_recommendation_list(model_type):
         performance_at_each_week.append(end_of_week_performance)
     performance_at_each_week_df = pd.DataFrame(performance_at_each_week,
                                                columns=['week_of_purchases', 'portfolio_value'])
-    return cash_in_hand, performance_at_each_week_df
 
+    #clean up the buy_rec_df to be displayed on the website
+    buy_rec_df['predicted_price_change_percentage'] = buy_rec_df['predicted_price_change_percentage'].apply(format_percent)
+    buy_rec_df['current_close_price'] = buy_rec_df['current_close_price'].apply(format_dollar)
+    buy_rec_df['predicted_price'] = buy_rec_df['predicted_price'].apply(format_dollar)
+    buy_rec_df['buy_open_price'] = buy_rec_df['buy_open_price'].apply(format_dollar)
+    buy_rec_df['buy_close_price'] = buy_rec_df['buy_close_price'].apply(format_dollar)
+    buy_rec_df['week_to_buy'] = pd.to_datetime(buy_rec_df['week_to_buy']).apply(lambda x: x.date())
+    buy_rec_df.rename(columns={'predicted_price_change_percentage': 'Predicted Change',
+                               'current_close_price': 'Close Price',
+                               'predicted_price': 'Predicted Price',
+                               'buy_open_price':'Purchase Price',
+                               'buy_close_price':'Sale Price',
+                               'predicted_price_movement':'Recommendation',
+                               'week_to_buy':"Purchase Week"
+                               }, inplace=True)
+    buy_rec_df = buy_rec_df.drop(columns=['start_date', 'time_delay', 'filing_type'])
 
-# cash_in_hand, performance_at_each_week_df = backtesting_buy_recommendation_list()
+    return cash_in_hand, performance_at_each_week_df, buy_rec_df
+
+# cash_in_hand, performance_at_each_week_df = backtesting_buy_recommendation_list('decision_tree')
 # print(performance_at_each_week_df)
 
 

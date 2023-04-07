@@ -133,9 +133,13 @@ layout = dbc.Container([
                                   ],
                                  ), width={"size": 2}),
                 dbc.Col(
-                    html.Div(dbc.Button("Apply Filters", id='my_button_2', color="primary", className="me-1", n_clicks=0)
-                             ),
-                    width={"size": 2})
+                    html.Div(dbc.Spinner(
+                        dbc.Button("Apply Filters", id='my_button_2', color="primary", className="me-1", n_clicks=0,
+                                        disabled=True,
+                                        loading_state={'is_loading': True})
+                             )),
+                    width={"size": 2}
+                )
             ],
             className="g-2"
         ),
@@ -168,7 +172,8 @@ layout = dbc.Container([
      State('keyword_dropdown_input_2', 'value'),
      State('date_picker_range_2', 'start_date'),
      State('date_picker_range_2', 'end_date'),
-     ]
+     ],
+    prevent_initial_call=False
 )
 def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_dropdown_value,
                   keyword_dropdown_value, start_date, end_date):
@@ -185,7 +190,9 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         # linear_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
         #     backtest.comparing_returns_vs_sandp('linear'))
         ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
-        ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
+        backtest_all_results_df = backtest.backtesting_buy_recommendation_list('random_forest')
+        ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(backtest_all_results_df[2])
+        # ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
         ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
         stocks_to_buy_table = my_dash_charts.generate_table(dataframes_from_queries.stocks_to_buy_this_week(1000))
         # buy_date_text = dataframes_from_queries.buy_date()
@@ -230,3 +237,12 @@ def toggle_collapse_edgar_chart(n_clicks, is_open):
     if n_clicks:
         return not is_open
     return is_open
+
+@callback(
+    Output('my_button_2', 'disabled'),
+    Input('my_button_2', 'n_clicks')
+)
+def disable_button(n_clicks):
+    if n_clicks is not None and n_clicks > 0:
+        return True
+    return False

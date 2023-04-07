@@ -382,7 +382,7 @@ def stocks_to_buy_this_week(principal):
             , predicted_growth
             , number_of_shares_to_purchase
             , principal_amount
-            from buy_recs join buy_amounts on buy_recs.stock_symbol =buy_amounts.stock_symbol
+            from buy_recs join buy_amounts on buy_recs.stock_symbol = buy_amounts.stock_symbol
                     '''
     buys_df = pd.read_sql(query_results, con=connect)
     df_full = pd.DataFrame(buys_df)
