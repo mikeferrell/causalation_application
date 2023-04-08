@@ -238,9 +238,9 @@ def backtesting_buy_recommendation_list(model_type):
         )
         
         select 
-          {model_type}_backtest_top_predictions.stock_symbol
+            next_week_opening_date as week_to_buy
+          , {model_type}_backtest_top_predictions.stock_symbol
           , start_date, keyword, time_delay, filing_type
-          , next_week_opening_date as week_to_buy
           , current_close_price
           , predicted_price
           , (predicted_price / {model_type}_backtest_top_predictions.current_close_price) - 1 as predicted_price_change_percentage
@@ -347,6 +347,7 @@ def comparing_returns_vs_sandp(model_type):
     returns_df = backtesting_buy_recommendation_list(model_type)[1]
     first_date = returns_df['week_of_purchases'].min()
     last_date = returns_df['week_of_purchases'].max()
+    # print("full df", returns_df)
 
     sandp_query = f'''
     select created_at as week_of_purchases, close_price as s_and_p_price from ticker_data
@@ -360,5 +361,20 @@ def comparing_returns_vs_sandp(model_type):
     returns_df['week_of_purchases'] = pd.to_datetime(returns_df['week_of_purchases'])
     df_for_chart = pd.merge(df_for_join, returns_df, how='inner', on='week_of_purchases')
 
-    return df_for_chart
+    #calculate S&P ROI
+    starting_price_sp = df_for_join['s_and_p_price'].values[:1]
+    ending_price_sp = df_for_join['s_and_p_price'].values[-1:]
+    starting_price_sp = starting_price_sp[0]
+    ending_price_sp = ending_price_sp[0]
+    s_and_p_returns = (ending_price_sp - starting_price_sp) / starting_price_sp
+    s_and_p_returns = "{:.1%}".format(s_and_p_returns)
 
+    # calculate Backtest ROI
+    starting_price_backtest = returns_df['portfolio_value'].values[:1]
+    ending_price_backtest = returns_df['portfolio_value'].values[-1:]
+    starting_price_backtest = starting_price_backtest[0]
+    ending_price_backtest = ending_price_backtest[0]
+    backtest_returns = (ending_price_backtest - starting_price_backtest) / starting_price_backtest
+    backtest_returns = "{:.1%}".format(backtest_returns)
+
+    return df_for_chart, s_and_p_returns, backtest_returns

@@ -105,14 +105,16 @@ def generate_table_with_filters(dataframe):
                       style_data={
                         'width': '150px', 'minWidth': '50px', 'maxWidth': '100px',
                         'overflow': 'hidden',
-                        'textOverflow': 'ellipsis',
-                          'font-family': 'Times New Roman'
+                        'textOverflow': 'inherit',
+                          'font-family': 'Calibri'
                       },
-                      style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
+                      style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(167, 199, 231)'}
+                                              ],
                       style_as_list_view=True,
-                      style_cell={'padding': '5px'},
+                      style_cell={'padding': '5px', 'textAlign': 'center'},
                       style_header={
-        'backgroundColor': 'grey',
-        'fontWeight': 'bold'
+                          'backgroundColor': 'rgb(63, 0, 255)',
+                          'fontWeight': 'bold',
+                          'color': 'white',
                       })
     return table

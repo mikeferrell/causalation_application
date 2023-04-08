@@ -22,6 +22,7 @@ colors = {
 }
 
 layout = dbc.Container([
+    #Recommendation Section
     html.Div(html.H1(
         children='Stocks to Buy This Week',
         style={
@@ -51,18 +52,41 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div(id="ml_list_of_top_accuracy_table"), width={"size": 8, "offset": 2})
     ),
+
+    #Backtesting Section
     html.Div(html.H1(
         children='Backtest Results Compared to S&P 500',
         style={
             'textAlign': 'center',
             'color': colors['text']
         })),
-    # html.Div(html.H3(
-    #     children='Random Forest Model',
-    #     style={
-    #         'textAlign': 'center',
-    #         'color': colors['text']
-    #     })),
+    dbc.Row(html.Div([html.P()])),
+    dbc.Row(
+        [dbc.Col(html.Div(html.H3("S&P 500 Returns:"),
+                          style={
+                              'textAlign': 'center',
+                              'color': colors['text']
+                          }), width={"size": 3, "offset": 2}),
+         dbc.Col(html.Div(html.H3("Backtest Returns:"),
+                          style={
+                              'textAlign': 'center',
+                              'color': colors['text']
+                          }), width={"size": 3, "offset": 2})
+         ]
+    ),
+    dbc.Row(
+        [dbc.Col(html.Div(html.H3(id='s_and_p_returns'),
+        style={
+            'textAlign': 'right',
+            'color': colors['text']
+        }), width={"size": 3, "offset": 1}),
+         dbc.Col(html.Div(html.H3(id='backtest_returns'),
+        style={
+            'textAlign': 'right',
+            'color': colors['text']
+        }), width={"size": 3, "offset": 2})
+        ]
+    ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})),
                     width={"size": 9, "offset": 2})),
     # html.Div(html.H3(
@@ -86,6 +110,8 @@ layout = dbc.Container([
     #         'color': colors['text']
     #     })),
     #     width={"size": 12, "offset": 1})),
+
+    #Prediction Table unfurl section
     dbc.Row(html.Div([html.P()])),
     dbc.Row(
         dbc.Button("See Weekly Prediction Accuracy", id="collapse-button", className='d-grid gap-2', color="primary",
@@ -104,6 +130,8 @@ layout = dbc.Container([
     # dbc.Row(
     #     dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10, "offset": 1})
     # ),
+
+    #Correlation collapsed section
     dbc.Collapse(
         dbc.Row(
             [
@@ -165,6 +193,8 @@ layout = dbc.Container([
     Output('ml_top_five_accuracy_table', 'children'),
     Output('ml_list_of_top_accuracy_table', 'children'),
     Output('stocks_to_buy_table', 'children'),
+    Output('s_and_p_returns', 'children'),
+    Output('backtest_returns', 'children'),
     Input('my_button_2', 'n_clicks'),
     [State('dropdown_input_2', 'value'),
      State('filing_type_dropdown_input_2', 'value'),
@@ -184,7 +214,9 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
                                                             end_date, keyword_dropdown_value, '', filing_type_value),
             stock_dropdown_value, keyword_dropdown_value)
         date_and_stock_for_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
-            backtest.comparing_returns_vs_sandp('random_forest'))
+            backtest.comparing_returns_vs_sandp('random_forest')[0])
+        s_and_p_returns = backtest.comparing_returns_vs_sandp('random_forest')[1]
+        backtest_returns = backtest.comparing_returns_vs_sandp('random_forest')[2]
         # decision_tree_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
         #     backtest.comparing_returns_vs_sandp('decision_tree'))
         # linear_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
@@ -199,8 +231,8 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
-    return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, \
-           ml_top_five_accuracy_table, ml_list_of_top_accuracy_table, stocks_to_buy_table
+    return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, ml_top_five_accuracy_table, \
+           ml_list_of_top_accuracy_table, stocks_to_buy_table, s_and_p_returns, backtest_returns
            # decision_tree_chart_backtest, linear_chart_backtest, \
 
 
