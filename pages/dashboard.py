@@ -45,9 +45,14 @@ layout = html.Div(children=
                                            id='keyword_dropdown_input', value='cloud')
                               ],
                              ), width={"size": 2}),
-            dbc.Col(html.Div(dbc.Button("Apply Filters", disabled=False, id='my_button',
-                                        color="primary", className="me-1", n_clicks=0)),
-                    width={"size": 2})
+            dbc.Col(
+                html.Div(dbc.Spinner(
+                    dbc.Button("Apply Filters", id='my_button', color="primary", className="me-1", n_clicks=0,
+                               disabled=True,
+                               loading_state={'is_loading': True})
+                )),
+                width={"size": 2}
+            )
         ],
         className="g-2"
     ),
@@ -153,3 +158,34 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
     return edgar_chart, keyword_correlation_table, \
            keyword_count_table, descending_correlation_table, ascending_correlation_table
         # , data_from_chart
+
+@callback(
+    Output('my_button', 'disabled'),
+    Input('my_button', 'n_clicks')
+)
+def disable_button(n_clicks):
+    if n_clicks is not None and n_clicks > 0:
+        disabled = True
+    else:
+        disabled = False
+    return disabled
+
+@callback(
+    Output('my_button', 'n_clicks'),
+    Input('my_button', 'n_clicks'),
+    State('dropdown_input', 'value'),
+    State('filing_type_dropdown_input', 'value'),
+    State('week_delay_dropdown_input', 'value'),
+    State('keyword_dropdown_input', 'value'),
+    State('date_picker_range', 'start_date'),
+    State('date_picker_range', 'end_date')
+)
+def reset_n_clicks(n_clicks, stock_dropdown_value, filing_type_value, week_delay_dropdown_value,
+                   keyword_dropdown_value, start_date, end_date):
+    if n_clicks is not None and n_clicks > 0:
+        # Call the function that applies the filters
+        update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_dropdown_value,
+                         keyword_dropdown_value, start_date, end_date)
+        return 0
+    else:
+        return n_clicks

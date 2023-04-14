@@ -466,7 +466,7 @@ def weekly_buy_recommendation_list():
 
         datetime_list = list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol,
                                                           interval, correlation_start_date)
-        print(datetime_list)
+        # print(datetime_list)
         most_recent_date = datetime_list.pop()
 
         try:
@@ -527,7 +527,7 @@ def weekly_buy_recommendation_list():
                     offset (select count(week_opening_date) - 1 from most_recent_keyword_mention_rolling_average)
                     '''
         df_for_predicting_next_week = pd.read_sql(data_for_predicting_next_week, con=connect)
-        print(df_for_predicting_next_week)
+        # print(df_for_predicting_next_week)
         try:
             future_prediction = model.predict(df_for_predicting_next_week)
             future_predictions.append(future_prediction)
@@ -554,9 +554,10 @@ def weekly_buy_recommendation_list():
                                      'week_opening_date': 'previous_weekly_open_date',
                                      'predicted_price': 'predicted_weekly_close_price'}, inplace=True)
     return df_for_pg_upload
-
-# df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list()
+#
+# df_for_upload = weekly_buy_recommendation_list()
 # append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
+
 
 
 def calculate_purchase_amounts(principal):
@@ -567,9 +568,10 @@ def calculate_purchase_amounts(principal):
           previous_weekly_open_date,
           previous_weekly_close_price,
           predicted_weekly_close_price, 
-          predicted_weekly_close_price / previous_weekly_close_price AS predicted_price_change_percentage
+          (predicted_weekly_close_price / previous_weekly_close_price) - 1 AS predicted_price_change_percentage
       FROM
           public.future_buy_recommendations
+      WHERE predicted_weekly_close_price > previous_weekly_close_price
     ),
 
     total_estimation as (
