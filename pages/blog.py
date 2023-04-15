@@ -1,17 +1,14 @@
 import dash
 from dash import html
 import dash_bootstrap_components as dbc
+from static.color_palette import colors
 import images as my_images
 import base64
 
 dash.register_page(__name__, path='/blog')
 
 screenshot_helper = 'static/causalation_how_to.png'
-colors = {
-    'background': '#D3D3D3',
-    'text': '#000000',
-    'nav': '#0000FF'
-}
+
 
 
 
@@ -55,7 +52,7 @@ layout = dbc.Container([
         dbc.Col(html.Div([dbc.NavLink(html.H3("Update 3/12/2023"),
                                       href="/blog_pages/3_12_23_blog"),
                           ]),
-                style={'textAlign': 'center', 'color': colors['nav']},
+                style={'textAlign': 'center', 'color': colors['mid_theme']},
                 width={"size": 8, "offset": 2},
                 )
     ),
@@ -63,7 +60,7 @@ layout = dbc.Container([
         dbc.Col(html.Div([dbc.NavLink(html.H3("Update 3/5/2023"),
                                       href="/blog_pages/3_5_23_blog"),
                           ]),
-                style={'textAlign': 'center', 'color': colors['nav']},
+                style={'textAlign': 'center', 'color': colors['mid_theme']},
                 width={"size": 8, "offset": 2},
                 )
     ),
@@ -71,7 +68,7 @@ layout = dbc.Container([
         dbc.Col(html.Div([dbc.NavLink(html.H3("Update 2/18/2023"),
                                       href="/blog_pages/2_18_23_blog"),
                           ]),
-                style={'textAlign': 'center', 'color': colors['nav']},
+                style={'textAlign': 'center', 'color': colors['mid_theme']},
                 width={"size": 8, "offset": 2},
                 )
     ),
@@ -79,7 +76,7 @@ layout = dbc.Container([
         dbc.Col(html.Div([dbc.NavLink(html.H3("Update 2/13/2023"),
                                       href="/blog_pages/2_12_23_blog"),
                           ]),
-                style={'textAlign': 'center', 'color': colors['nav']},
+                style={'textAlign': 'center', 'color': colors['mid_theme']},
                 width={"size": 8, "offset": 2},
                 )
     ),

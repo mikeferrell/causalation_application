@@ -10,17 +10,13 @@ import sidebar as sidebar
 from cron_jobs import get_dates
 # import ml_models.backtest as backtest
 import precise_backtest as backtest
+from static.color_palette import colors
 
 import images as my_images
 import base64
 
 dash.register_page(__name__, path='/predictions', name="Predictions")
 
-colors = {
-    'background': '#D3D3D3',
-    # 'text': '#00008B'
-    'text': '000000'
-}
 
 layout = dbc.Container([
     #Recommendation Section

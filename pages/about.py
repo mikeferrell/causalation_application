@@ -1,6 +1,7 @@
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+from static.color_palette import colors
 import images as my_images
 import base64
 
@@ -8,10 +9,7 @@ import base64
 dash.register_page(__name__, path='/about')
 
 screenshot_helper = 'static/causalation_how_to.png'
-colors = {
-    'background': '#D3D3D3',
-    'text': '#000000'
-}
+
 
 
 

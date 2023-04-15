@@ -6,13 +6,14 @@ import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 import sidebar as sidebar
 from cron_jobs import get_dates
+from static.color_palette import colors
 
 dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
-colors = {
-    'background': '#FFFFFF',
-    'text': '#000000'
-}
+# colors = {
+#     'background': '#FFFFFF',
+#     'text': '#000000'
+# }
 
 
 layout = html.Div(children=
@@ -46,7 +47,8 @@ layout = html.Div(children=
                               ],
                              ), width={"size": 2}),
             dbc.Col(
-                html.Div(dbc.Spinner(
+                html.Div(
+                    dbc.Spinner(
                     dbc.Button("Apply Filters", id='my_button', color="primary", className="me-1", n_clicks=0,
                                disabled=True,
                                loading_state={'is_loading': True})

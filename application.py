@@ -7,6 +7,7 @@ import cron_jobs
 from apscheduler.schedulers.background import BackgroundScheduler
 import one_time_jobs
 import logging
+from static.color_palette import colors
 
 
 app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static", assets_url_path="static",
@@ -20,16 +21,10 @@ application = app.server
 logo_image_direct = 'static/causalation-logo-no-background.png'
 
 
-colors = {
-    'background': '#FFFFFF',
-    'text': '#000000'
-}
+
 
 app.layout = dbc.Container([
     dbc.Row(html.Div([sidebar.navbar, sidebar.content])),
-    dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
-                                      style={'height': '2%', 'width': '50%'})),
-                    width={"size": 6, "offset": 4})),
     # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(dbc.Col(dash.page_container)),
 ]
@@ -72,4 +67,4 @@ scheduler.start()
 
 
 if __name__ == '__main__':
-    application.run(port=8000, debug=False)
+    application.run(port=8000, debug=True)

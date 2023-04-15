@@ -1,5 +1,6 @@
 from dash import html
 import dash_bootstrap_components as dbc
+from static.color_palette import colors
 import base64
 
 small_logo_image_direct = 'static/small_logo.png'
@@ -54,7 +55,7 @@ NAVBAR_STYLE = {
     "left": 0,
     "right": 0,
     "padding": "1rem",
-    "background-color": "#71797E"
+    "background-color": colors['dark_theme']
 }
 
 CONTENT_STYLE = {
@@ -70,20 +71,28 @@ navbar = dbc.Navbar(
                       style={'height': '8vh', 'width': 'auto'}),
              dbc.Nav(
                  [
-                 dbc.NavItem(dbc.NavLink("Home", href="/", active="exact")),
-                          dbc.NavItem(dbc.NavLink("ML Modeling", href="/predictions", active="exact")),
-                          dbc.NavItem(dbc.NavLink("Dashboard", href="/dashboard", active="exact")),
-                          dbc.NavItem(dbc.NavLink("Blog", href="/blog", active="exact")),
-                          dbc.NavItem(dbc.NavLink("About", href="/about", active="exact")),
-                          dbc.NavItem(dbc.NavLink("Contact", href="/contact", active="exact"))
+                 dbc.NavItem(dbc.NavLink("Home", href="/", active="exact",
+                                         style={"color": colors['background']})),
+                          dbc.NavItem(dbc.NavLink("ML Modeling", href="/predictions", active="exact",
+                                                  style={"color": colors['background']})),
+                          dbc.NavItem(dbc.NavLink("Dashboard", href="/dashboard", active="exact",
+                                                  style={"color": colors['background']})),
+                          dbc.NavItem(dbc.NavLink("Blog", href="/blog", active="exact",
+                                                  style={"color": colors['background']})),
+                          dbc.NavItem(dbc.NavLink("About", href="/about", active="exact",
+                                                  style={"color": colors['background']})),
+                          dbc.NavItem(dbc.NavLink("Contact", href="/contact", active="exact",
+                                                  style={"color": colors['background']}))
                           ],
             className="ml-auto",
             navbar=True
         ),
     ],
-    color="light",
+    # color="light",
+    color=colors['dark_theme'],
     dark=False,
     style=NAVBAR_STYLE,
+    className="navbar-expand-lg"
 )
 
 sidebar = html.Div()
