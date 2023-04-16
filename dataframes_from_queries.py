@@ -207,9 +207,19 @@ def inflation_mention_chart(stock_symbol, start_date, end_date, keyword, limit, 
         '''
     query_results_df = pd.read_sql(query_results, con=connect)
     query_results_df = query_results_df.round({f'{keyword} Mentions Rolling Average': 4})
-    query_results_df = query_results_df.round({'stock_price': 2})
-    return query_results_df
+    query_results_df = query_results_df.round({'week_close_price': 2})
 
+    #ROI for the stock
+    starting_price_stock = query_results_df['week_close_price'].values[:1]
+    ending_price_stock = query_results_df['week_close_price'].values[-1:]
+    starting_price_stock = starting_price_stock[0]
+    ending_price_stock = ending_price_stock[0]
+    stock_returns = (ending_price_stock - starting_price_stock) / starting_price_stock
+    stock_returns = "{:.1%}".format(stock_returns)
+    return query_results_df, stock_returns
+
+# query, stocks = inflation_mention_chart('ETSY', '2021-01-01', '2022-01-01', 'cloud', ' ', '10-Q')
+# print(query, stocks)
 
 def ml_accuracy_table():
     query_results = f'''
@@ -413,3 +423,21 @@ def buy_date():
     df_full = pd.DataFrame(buys_df)
     df_full['buy_date'] = pd.to_datetime(df_full['buy_date']).apply(lambda x: x.date())
     return df_full
+
+def s_and_p_returns_for_daterange(start_date, end_date):
+    sandp_query = f'''
+    select created_at as week_of_purchases, close_price as s_and_p_price from ticker_data
+    where stock_symbol = '^GSPC'
+    and created_at >= '{start_date}'
+    and created_at <= '{end_date}'
+    order by created_at asc
+    '''
+    sandp_df = pd.read_sql(sandp_query, con=connect)
+
+    starting_price_sp = sandp_df['s_and_p_price'].values[:1]
+    ending_price_sp = sandp_df['s_and_p_price'].values[-1:]
+    starting_price_sp = starting_price_sp[0]
+    ending_price_sp = ending_price_sp[0]
+    s_and_p_returns = (ending_price_sp - starting_price_sp) / starting_price_sp
+    s_and_p_returns = "{:.1%}".format(s_and_p_returns)
+    return s_and_p_returns

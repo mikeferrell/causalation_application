@@ -16,8 +16,7 @@ dash.register_page(__name__, path='/dashboard', name="Dashboard")
 # }
 
 
-layout = html.Div(children=
-                  [dbc.Container([
+layout = html.Div(children=[dbc.Container([
     dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(
         [
@@ -64,6 +63,33 @@ layout = html.Div(children=
         dbc.Col(html.Div(id="keyword_count_table"), width={"size": 3, "offset": 2}),
         dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 3, "offset": 1})
     ]),
+    dbc.Row([dbc.Col(html.Div([html.H3("Stock Returns:"),
+                               html.H3(id='stock_returns')],
+                              style={
+                              'textAlign': 'center',
+                              'color': colors['text']
+                              }), width={"size": 3, "offset": 2}),
+             dbc.Col(html.Div([html.H3("S&P 500 Returns:"),
+                               html.H3(id='s_and_p_returns_for_daterange')],
+                              style={
+                              'textAlign': 'center',
+                              'color': colors['text']
+                              }), width={"size": 3, "offset": 2}),
+         ]
+    ),
+    # dbc.Row(
+    #     [dbc.Col(html.Div(html.H3(id='stock_returns'),
+    #                       style={
+    #                           'textAlign': 'right',
+    #                           'color': colors['text']
+    #                       }), width={"size": 3, "offset": 2}),
+    #      dbc.Col(html.Div(html.H3(id='s_and_p_returns_for_daterange'),
+    #                       style={
+    #                           'textAlign': 'right',
+    #                           'color': colors['text']
+    #                       }), width={"size": 3, "offset": 1}),
+    #      ]
+    # ),
     html.Div(html.H1(
         children='Top Stocks Correlated',
         style={
@@ -119,6 +145,8 @@ layout = html.Div(children=
     Output('keyword_count_table', 'children'),
     Output('desc_correlation_table', 'children'),
     Output('asc_correlation_table', 'children'),
+    Output('stock_returns', 'children'),
+    Output('s_and_p_returns_for_daterange', 'children'),
     # Output('date_picker_range', 'end_date'),
     # Output('data_from_chart', 'children'),
     Input('my_button', 'n_clicks'),
@@ -134,10 +162,9 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
                   keyword_dropdown_value, start_date, end_date):
     if len(stock_dropdown_value) > 0:
         print(n_clicks)
-        edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
-            dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, keyword_dropdown_value, '', filing_type_value),
-            stock_dropdown_value, keyword_dropdown_value)
+        edgar_chart_data, stock_return_data = dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
+                                                            end_date, keyword_dropdown_value, '', filing_type_value)
+        edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(edgar_chart_data, stock_dropdown_value, keyword_dropdown_value)
         # dropdown_table = my_dash_charts.generate_table(
         #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
         keyword_correlation_table = my_dash_charts.generate_table(
@@ -151,14 +178,15 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
         ascending_correlation_table = my_dash_charts.generate_table(
                 dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc', keyword_dropdown_value,
                                                     start_date, end_date, week_delay_dropdown_value, filing_type_value))
+        s_and_p_returns = dataframes_from_queries.s_and_p_returns_for_daterange(start_date, end_date)
         # data_from_chart = my_dash_charts.generate_table(
         #     dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
         #                                             end_date, keyword_dropdown_value, 'limit 30', filing_type_value))
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
-    return edgar_chart, keyword_correlation_table, \
-           keyword_count_table, descending_correlation_table, ascending_correlation_table
+    return edgar_chart, keyword_correlation_table, keyword_count_table, descending_correlation_table, \
+           ascending_correlation_table, stock_return_data, s_and_p_returns
         # , data_from_chart
 
 @callback(
