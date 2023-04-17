@@ -118,6 +118,7 @@ def inflation_mention_correlation(stock_symbol, start_date, end_date, keyword, t
                 avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                 from rolling_average_calculation
                 order by stock_symbol, week_opening_date asc
+                offset 6
                 )
             
             select stock_symbol as "Stock Symbol", '{keyword} Mentions' as "Keyword Mentions",
@@ -158,6 +159,7 @@ def top_keyword_correlations_with_rolling_avg(asc_or_desc, keyword, start_date, 
                 avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
                 from rolling_average_calculation
                 order by stock_symbol, week_opening_date asc
+                offset 6
                 )
             
             select stock_symbol as "Stock Symbol", '{keyword} Mentions' as "Keyword Mentions",
@@ -441,3 +443,55 @@ def s_and_p_returns_for_daterange(start_date, end_date):
     s_and_p_returns = (ending_price_sp - starting_price_sp) / starting_price_sp
     s_and_p_returns = "{:.1%}".format(s_and_p_returns)
     return s_and_p_returns
+
+
+def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time_delay, filing_type):
+    query_results = f'''
+    with weekly_data as (
+    with rolling_average_calculation as (
+         with keyword_data as (select * from keyword_weekly_counts where keyword = '{keyword}'),
+        stock_weekly_opening as (select * from weekly_stock_openings where week_opening_date is not null)
+    
+        select 
+        week_opening_date
+        , LAG(week_opening_date, {time_delay}) OVER (
+          ORDER BY stock_symbol, week_opening_date
+        ) as last_week_opening_date
+        , week_close_price
+        , stock_symbol
+        , 1.00 * keyword_mentions / total_filings as keyword_percentage
+        from stock_weekly_opening 
+        inner join keyword_data on stock_weekly_opening.week_opening_date = keyword_data.filing_week + interval '{time_delay} week'
+        where week_opening_date >= '{start_date}'
+        and week_opening_date <= '{end_date}'
+        and filing_type != '{filing_type}'
+        and stock_symbol = '{stock_symbol}'
+        offset (6-{time_delay})
+        )
+    
+        select week_opening_date
+        , last_week_opening_date
+        , stock_symbol
+        , week_close_price
+        , avg(keyword_percentage) over(order by stock_symbol, week_opening_date rows 12 preceding) as keyword_mentions_rolling_avg
+        from rolling_average_calculation
+        order by stock_symbol, week_opening_date asc
+    )
+    
+    select dateweek.week_opening_date, dateweek.week_close_price, prevweek.keyword_mentions_rolling_avg
+    , case when dateweek.week_close_price > prevweek.week_close_price then 'moved_up'
+      when dateweek.week_close_price < prevweek.week_close_price then 'moved_down'
+      when dateweek.week_close_price = prevweek.week_close_price then 'no_move'
+      end as stock_moves
+    , case when dateweek.keyword_mentions_rolling_avg > prevweek.keyword_mentions_rolling_avg then 'moved_up'
+      when dateweek.keyword_mentions_rolling_avg < prevweek.keyword_mentions_rolling_avg then 'moved_down'
+      when dateweek.keyword_mentions_rolling_avg = prevweek.keyword_mentions_rolling_avg then 'no_move'
+      end as keyword_moves
+    from weekly_data as prevweek
+    join weekly_data as dateweek on prevweek.week_opening_date = dateweek.last_week_opening_date 
+    '''
+    query_df = pd.read_sql(query_results, con=connect)
+
+    #above is the moves up and down. Calcuate % of time that stock_moves = keyword_moves within the same column
+    #return that % on the Dashboard
+    return sec_and_stock_move_together
