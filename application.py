@@ -25,6 +25,10 @@ logo_image_direct = 'static/causalation-logo-no-background.png'
 
 app.layout = dbc.Container([
     dbc.Row(html.Div([sidebar.navbar, sidebar.content])),
+    dbc.Row([dbc.Col(html.Div(html.Img(src=logo_image_direct,
+                                       style={'height': '2%', 'width': '50%'})),
+                     width={"size": 8, "offset": 4}),
+             ]),
     # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(dbc.Col(dash.page_container)),
 ]
@@ -59,6 +63,7 @@ scheduler.add_job(cron_jobs.top_correlation_scores, 'cron', day_of_week='tue-sat
 scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=10)
 scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', day_of_week='sat', hour=4, minute=10)
 scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week='sat', hour=22, minute=1)
+scheduler.add_job(cron_jobs.last_week_top_correlation_scores, 'cron', day_of_week='sat', hour=1, minute=5)
 
 # scheduler.add_job(one_time_jobs.one_time_backfill_correlation_scores, 'cron', day_of_week='tue', hour=13, minute=40)
 # scheduler.add_job(one_time_edgar_pull.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=15, minute=1, name='one_time_edgar_10ks')

@@ -69,7 +69,7 @@ def append_to_postgres(df, table, append_or_replace):
 
 
 # this is the list of the top 10 correlations from the all_correlation_scores table, with some filtering
-def top_correlation_query_results():
+def top_correlation_query_results(table_for_this_week_or_last):
     top_correlation_query_results = f'''
         with top_correlations as (
         select stock_symbol
@@ -79,7 +79,7 @@ def top_correlation_query_results():
         , time_delay
         , filing_type
         , correlation
-        from public.all_correlation_scores
+        from public.{table_for_this_week_or_last}
         where correlation is not null
           and date(start_date) <= current_date - interval '40 week'
           and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
@@ -254,9 +254,8 @@ def train_ml_model(keyword, filing_type, stock_symbol, interval, dates, correlat
     return df_test_full, df_test, mae, model
 
 
-#the function above uses all historical data to train the model on the next week's prediction. This function will only
-# use the data points within the period we observe strong correlation, and then try to predict the next week
-#this will be used for the precise backtest
+#This function will only use the data points within the period we observe strong correlation, and then try to
+# predict the next week. this will be used for the precise backtest
 def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date, correlation_start_date, model_type):
     training_dataset = f'''
                      with matched_dates as (
@@ -434,8 +433,8 @@ def calculate_top_ten_forecasts(testing_timeline):
 # append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 
-def weekly_buy_recommendation_list():
-    this_week_or_next = 'this week'
+def weekly_buy_recommendation_list(this_week_or_next):
+    # this_week_or_next = 'this week'
 
     df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
                                              'current_close_price', 'next_week_close_price', 'predicted_price',
@@ -445,9 +444,9 @@ def weekly_buy_recommendation_list():
     # since it doesn't exist in all_correlation_scores. Then, need to write that query, then need to ensure the columns
     #line up with the current query
     if this_week_or_next == 'this week':
-        query_df = top_correlation_query_results()
+        query_df = top_correlation_query_results('all_correlation_scores')
     else:
-        query_df = top_correlation_query_results()
+        query_df = top_correlation_query_results('last_week_correlation_scores')
 
     row_range = range(0, 10)
     for rows in row_range:
@@ -555,9 +554,9 @@ def weekly_buy_recommendation_list():
                                      'predicted_price': 'predicted_weekly_close_price'}, inplace=True)
     return df_for_pg_upload
 #
-# df_for_upload = weekly_buy_recommendation_list()
+# df_for_upload = weekly_buy_recommendation_list('this week')
+# print(df_for_upload)
 # append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
-
 
 
 def calculate_purchase_amounts(principal):

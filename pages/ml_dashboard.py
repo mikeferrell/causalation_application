@@ -41,7 +41,7 @@ layout = dbc.Container([
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
     html.Div(html.H1(
-        children='Top Stock Correlations This Week',
+        children='Top Stock Correlations Today',
         style={
             'textAlign': 'center',
             'color': colors['text']
@@ -208,7 +208,7 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         print(n_clicks)
         date_and_stock_for_chart_2 = my_dash_charts.Edgar_Mult_Y_Axis_Lines(
             dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
-                                                            end_date, keyword_dropdown_value, '', filing_type_value),
+                                                            end_date, keyword_dropdown_value, '', filing_type_value)[0],
             stock_dropdown_value, keyword_dropdown_value)
         date_and_stock_for_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
             backtest.comparing_returns_vs_sandp('random_forest')[0])

@@ -9,10 +9,6 @@ logo_image_direct = 'static/causalation-logo-no-background.png'
 
 
 layout = dbc.Container([
-    dbc.Row([dbc.Col(html.Div(html.Img(src=logo_image_direct,
-                                       style={'height': '2%', 'width': '50%'})),
-                     width={"size": 6, "offset": 1}),
-             ]),
     dbc.Row([dbc.Col(html.Div([
                      html.P(''''''),
                               html.H3(children='''Is it Correlation? Causation? Let's find out.''',
@@ -24,11 +20,11 @@ layout = dbc.Container([
                     width={"size": 6}),
              dbc.Col(html.Div(
                  [html.P(''''''),
-                  dbc.NavLink(dbc.Button("See Stock Predictions", size="lg", id="prediction-button", className="me-1",
+                  dbc.NavLink(dbc.Button("See Future Predictions", size="lg", id="prediction-button", className="me-1",
                               style={"backgroundColor": colors["mid_theme"], "color": colors["background"]}),
                               href="/predictions",),
                   html.P(''''''),
-                 dbc.NavLink(dbc.Button("Explore the Data", size="lg", id="dashboard-button", className="me-1",
+                 dbc.NavLink(dbc.Button("Explore Historical Data", size="lg", id="dashboard-button", className="me-1",
                                         style={"backgroundColor": colors["mid_theme"], "color": colors["background"]}),
                              href="/dashboard",),
                  html.P(''''''),

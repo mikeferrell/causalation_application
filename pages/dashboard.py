@@ -17,7 +17,9 @@ dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
 
 layout = html.Div(children=[dbc.Container([
-    dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
+    # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
+
+    #Filters
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
@@ -57,39 +59,40 @@ layout = html.Div(children=[dbc.Container([
         ],
         className="g-2"
     ),
-    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
-    dbc.Row([
-        # dbc.Col(html.Div(id="correlation_table"), width={"size": 3, "offset": 2}),
-        dbc.Col(html.Div(id="keyword_count_table"), width={"size": 3, "offset": 2}),
-        dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 3, "offset": 1})
-    ]),
+
+    #stock returns
+
     dbc.Row([dbc.Col(html.Div([html.H3("Stock Returns:"),
                                html.H3(id='stock_returns')],
                               style={
-                              'textAlign': 'center',
-                              'color': colors['text']
+                                  'textAlign': 'center',
+                                  'color': colors['text']
                               }), width={"size": 3, "offset": 2}),
              dbc.Col(html.Div([html.H3("S&P 500 Returns:"),
                                html.H3(id='s_and_p_returns_for_daterange')],
                               style={
-                              'textAlign': 'center',
-                              'color': colors['text']
+                                  'textAlign': 'center',
+                                  'color': colors['text']
                               }), width={"size": 3, "offset": 2}),
-         ]
-    ),
-    # dbc.Row(
-    #     [dbc.Col(html.Div(html.H3(id='stock_returns'),
-    #                       style={
-    #                           'textAlign': 'right',
-    #                           'color': colors['text']
-    #                       }), width={"size": 3, "offset": 2}),
-    #      dbc.Col(html.Div(html.H3(id='s_and_p_returns_for_daterange'),
-    #                       style={
-    #                           'textAlign': 'right',
-    #                           'color': colors['text']
-    #                       }), width={"size": 3, "offset": 1}),
-    #      ]
-    # ),
+             ]
+            ),
+
+    #table and counts
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
+    dbc.Row([
+        # dbc.Col(html.Div(id="correlation_table"), width={"size": 3, "offset": 2}),
+        dbc.Col(html.Div(id="keyword_count_table"), width={"size": 4, "offset": 1}),
+        dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 4, "offset": 1}),
+    ]),
+    dbc.Row(dbc.Col(html.Div([html.H3("Stock Moves Follow SEC Moves:"),
+                          html.H3(id='stock_and_sec_move_table'),
+                              html.H3("")],
+                         style={
+                             'textAlign': 'center',
+                             'color': colors['text']
+                         }), width={"size": 4, "offset": 4})),
+
+    #top correlation section
     html.Div(html.H1(
         children='Top Stocks Correlated',
         style={
@@ -147,6 +150,7 @@ layout = html.Div(children=[dbc.Container([
     Output('asc_correlation_table', 'children'),
     Output('stock_returns', 'children'),
     Output('s_and_p_returns_for_daterange', 'children'),
+    Output('stock_and_sec_move_table', 'children'),
     # Output('date_picker_range', 'end_date'),
     # Output('data_from_chart', 'children'),
     Input('my_button', 'n_clicks'),
@@ -179,6 +183,8 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
                 dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc', keyword_dropdown_value,
                                                     start_date, end_date, week_delay_dropdown_value, filing_type_value))
         s_and_p_returns = dataframes_from_queries.s_and_p_returns_for_daterange(start_date, end_date)
+        stock_and_sec_move_table = dataframes_from_queries.stock_moving_with_sec_data(stock_dropdown_value, start_date,
+                                        end_date, keyword_dropdown_value, week_delay_dropdown_value, filing_type_value)
         # data_from_chart = my_dash_charts.generate_table(
         #     dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
         #                                             end_date, keyword_dropdown_value, 'limit 30', filing_type_value))
@@ -186,7 +192,7 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
     return edgar_chart, keyword_correlation_table, keyword_count_table, descending_correlation_table, \
-           ascending_correlation_table, stock_return_data, s_and_p_returns
+           ascending_correlation_table, stock_return_data, s_and_p_returns, stock_and_sec_move_table
         # , data_from_chart
 
 @callback(

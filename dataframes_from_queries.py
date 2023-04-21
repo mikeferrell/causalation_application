@@ -273,7 +273,7 @@ def calculate_ml_model_accuracy():
 
     top_correlation_list = []
 
-    df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results()
+    df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results('all_correlation_scores')
 
     row_range = range(0, 10)
     for rows in row_range:
@@ -445,6 +445,8 @@ def s_and_p_returns_for_daterange(start_date, end_date):
     return s_and_p_returns
 
 
+#calculating the % of times that SEC average counts move in the same direct time_delay weeks before stocks move the same
+#direction
 def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time_delay, filing_type):
     query_results = f'''
     with weekly_data as (
@@ -491,7 +493,10 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
     join weekly_data as dateweek on prevweek.week_opening_date = dateweek.last_week_opening_date 
     '''
     query_df = pd.read_sql(query_results, con=connect)
-
-    #above is the moves up and down. Calcuate % of time that stock_moves = keyword_moves within the same column
-    #return that % on the Dashboard
+    row_count = len(query_df)
+    same_moves = len(query_df.query('stock_moves == keyword_moves'))
+    sec_and_stock_move_together = (same_moves / row_count)
+    sec_and_stock_move_together = "{:.1%}".format(sec_and_stock_move_together)
     return sec_and_stock_move_together
+
+stock_moving_with_sec_data('ETSY', '2021-01-01', "2022-02-02", 'cloud', '2', '10-Q')

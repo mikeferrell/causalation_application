@@ -302,6 +302,15 @@ def top_correlation_scores():
     print("done with top correlations")
 
 
+def last_week_top_correlation_scores():
+    query_results = f'''
+        select * from all_correlation_scores
+        '''
+    df_results = pd.read_sql(query_results, con=connect)
+    append_to_postgres(df_results, 'last_week_correlation_scores', 'replace')
+    print("done with last week correlation table")
+
+
 def full_edgar_job_10ks():
     update_edgar_files('10-K')
     time.sleep(10)
@@ -335,5 +344,5 @@ def ml_calculate_top_ten_forecasts():
     append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 def predicted_prices_for_next_week():
-    df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list()
+    df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list('this week')
     append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
