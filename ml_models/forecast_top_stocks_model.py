@@ -433,7 +433,7 @@ def calculate_top_ten_forecasts(testing_timeline):
 # append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 
-def weekly_buy_recommendation_list(this_week_or_next):
+def weekly_buy_recommendation_list(this_week_or_last):
     # this_week_or_next = 'this week'
 
     df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
@@ -443,7 +443,7 @@ def weekly_buy_recommendation_list(this_week_or_next):
     # setting this up to display last weeks top 10 correlations. need to first ensure that data exists in a table
     # since it doesn't exist in all_correlation_scores. Then, need to write that query, then need to ensure the columns
     #line up with the current query
-    if this_week_or_next == 'this week':
+    if this_week_or_last == 'this week':
         query_df = top_correlation_query_results('all_correlation_scores')
     else:
         query_df = top_correlation_query_results('last_week_correlation_scores')

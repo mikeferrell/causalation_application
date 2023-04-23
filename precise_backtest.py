@@ -270,7 +270,7 @@ def backtesting_buy_recommendation_list(model_type):
     # Iterate through each unique buy_week date and calculate returns
     for index, row in df_for_buys.iterrows():
         buy_week = row['buy_week']
-        # clean up the dataframe of which stocks to buy, and the weight for how many shares to buy
+        #dataframe of which stocks to buy, and the weight for how many shares to buy
         query_for_buys = f'''
         with stock_selections as (
           SELECT
@@ -320,7 +320,7 @@ def backtesting_buy_recommendation_list(model_type):
     performance_at_each_week_df = pd.DataFrame(performance_at_each_week,
                                                columns=['week_of_purchases', 'portfolio_value'])
 
-    #clean up the buy_rec_df to be displayed on the website
+    #df to be displayed on the website
     buy_rec_df['predicted_price_change_percentage'] = buy_rec_df['predicted_price_change_percentage'].apply(format_percent)
     buy_rec_df['current_close_price'] = buy_rec_df['current_close_price'].apply(format_dollar)
     buy_rec_df['predicted_price'] = buy_rec_df['predicted_price'].apply(format_dollar)

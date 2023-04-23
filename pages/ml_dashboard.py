@@ -40,6 +40,27 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
+    dbc.Row(
+        dbc.Col([html.Div(html.H1(
+                    children='Stocks Recommendations Last Week',
+                    style={
+                        'textAlign': 'center',
+                        'color': colors['text']
+                    })),
+                html.Div(html.H3(
+                    children='Last Week Returns:',
+                    style={
+                        'textAlign': 'center',
+                        'color': colors['text']
+                    })),
+                    html.Div(html.H3(id='last_week_returns'),
+                             style={
+                                 'textAlign': 'center',
+                                 'color': colors['text']
+                             }),
+                html.Div(id="stocks_to_buy_last_week_table")],
+                width={"size": 10, "offset": 1})
+    ),
     html.Div(html.H1(
         children='Top Stock Correlations Today',
         style={
@@ -192,6 +213,8 @@ layout = dbc.Container([
     Output('stocks_to_buy_table', 'children'),
     Output('s_and_p_returns', 'children'),
     Output('backtest_returns', 'children'),
+    Output('stocks_to_buy_last_week_table', 'children'),
+    Output('last_week_returns', 'children'),
     Input('my_button_2', 'n_clicks'),
     [State('dropdown_input_2', 'value'),
      State('filing_type_dropdown_input_2', 'value'),
@@ -223,13 +246,18 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(backtest_all_results_df[2])
         # ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
         ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
-        stocks_to_buy_table = my_dash_charts.generate_table(dataframes_from_queries.stocks_to_buy_this_week(1000))
+        stocks_to_buy_table = my_dash_charts.generate_table(
+            dataframes_from_queries.stocks_to_buy_this_week(1000, 'future_buy_recommendations')[0])
+        stocks_to_buy_last_week_table = my_dash_charts.generate_table(
+            dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[0])
+        last_week_returns = dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[1]
         # buy_date_text = dataframes_from_queries.buy_date()
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
     return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, ml_top_five_accuracy_table, \
-           ml_list_of_top_accuracy_table, stocks_to_buy_table, s_and_p_returns, backtest_returns
+           ml_list_of_top_accuracy_table, stocks_to_buy_table, s_and_p_returns, backtest_returns, \
+           stocks_to_buy_last_week_table, last_week_returns
            # decision_tree_chart_backtest, linear_chart_backtest, \
 
 

@@ -343,15 +343,20 @@ def calculate_ml_model_accuracy():
     return query_results_df, top_correlation_list, df_of_top_ten_correlations
 
 
-def stocks_to_buy_this_week(principal):
+def stocks_to_buy_this_week(principal, this_week_or_last_table):
+    if this_week_or_last_table == 'future_buy_recommendations':
+        buy_date = '''previous_weekly_open_date + interval '7' day'''
+    else:
+        buy_date = 'previous_weekly_open_date'
+
     query_results = f'''
             with buy_recs as (  
-              select previous_weekly_open_date + interval '7' day as buy_date
+              select {buy_date} as buy_date
               , previous_weekly_close_price
               , predicted_weekly_close_price
               , (predicted_weekly_close_price / previous_weekly_close_price) - 1 as predicted_growth
               , stock_symbol 
-              from future_buy_recommendations
+              from {this_week_or_last_table}
               where predicted_weekly_close_price > previous_weekly_close_price
               ),
               
@@ -364,7 +369,7 @@ def stocks_to_buy_this_week(principal):
                   predicted_weekly_close_price, 
                   predicted_weekly_close_price / previous_weekly_close_price AS predicted_price_change_percentage
               FROM
-                  public.future_buy_recommendations
+                  public.{this_week_or_last_table}
             ),
             
             total_estimation as (
@@ -407,13 +412,40 @@ def stocks_to_buy_this_week(principal):
     df_full.rename(columns={'buy_date': 'Buy Date',
                             'stock_symbol': 'Stock Symbol',
                              'predicted_weekly_close_price': 'Predicted Weekly Close Price',
-                             'previous_weekly_close_price': 'Previous Next Week Close Price',
+                             'previous_weekly_close_price': 'Previous Week Close Price',
                             'predicted_growth': 'Predicted Growth',
                             'principal_amount': 'Principal Amount',
                             'number_of_shares_to_purchase': 'Number of Shares to Purchase'
                             }, inplace=True)
-    return df_full
 
+    #pull data from last week to determine the returns
+    if this_week_or_last_table == 'last_week_buy_recommendations':
+        close_data_query = f'''
+          select stock_symbol, week_opening_date, week_open_price, week_close_price from public.weekly_stock_openings
+            where week_opening_date >= date('{forecast_top_stocks_model.defined_dates()[0]}') - interval '14' day
+            '''
+        query_df = pd.read_sql(close_data_query, con=connect)
+        formatted_df = pd.DataFrame(query_df)
+        formatted_df['week_opening_date'] = pd.to_datetime(formatted_df['week_opening_date']).apply(lambda x: x.date())
+        merged_df = pd.merge(formatted_df, df_full, left_on=['stock_symbol', 'week_opening_date'], 
+                             right_on=['Stock Symbol', 'Buy Date'])
+        merged_df = merged_df.drop(columns=['Predicted Growth', 'Buy Date', 'Stock Symbol', 'Predicted Weekly Close Price',
+                                            'Previous Week Close Price'])
+
+        #calculate returns from last week
+        returns_for_date = ((merged_df['week_close_price'] * merged_df[
+            'Number of Shares to Purchase'])
+                            - (merged_df['week_open_price'] * merged_df[
+                    'Number of Shares to Purchase'])).sum()
+        cash_in_hand = principal + returns_for_date
+        end_of_week_performance = '{:.2%}'.format((cash_in_hand / principal) - 1)
+    else:
+        end_of_week_performance = 1
+
+    return df_full, end_of_week_performance
+
+# df_full, end_of_week_performance = stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')
+# print(end_of_week_performance)
 
 def buy_date():
     query_results = f'''
