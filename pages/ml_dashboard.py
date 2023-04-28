@@ -26,17 +26,33 @@ layout = dbc.Container([
             'textAlign': 'center',
             'color': colors['text']
         })),
-    dbc.Row(
-        dbc.Col(
-            html.Div(html.H6(dcc.Markdown('''Want to see previous recommendations, as well as commentary on the accuracy? 
-    [Check out our blog](/blog)!
-    '''),
+
+    # webfom
+    dbc.Row(dbc.Col([
+        html.Div(html.H6(dcc.Markdown('''This week's recommendations will soon be moving exclusively to our newsletter.
+        Sign up here!'''),
+                         style={
+                             'textAlign': 'center',
+                             'color': colors['text']
+                         })),
+    html.Form(
+        action="https://buttondown.email/api/emails/embed-subscribe/Causalation?tag=website",
+        method="post",
+        target="popupwindow",
+        className="embeddable-buttondown-form",
+        children=[
+            dcc.Input(type="email", name="email", placeholder="you@example.com"),
+            dcc.Input(type="hidden", value="1", name="embed"),
+            dcc.Input(type="submit", value="Subscribe"),
+            html.P(
+                html.A("Powered by Buttondown.", href="https://buttondown.email/Causalation", target="_blank")
+            ),
+        ],
         style={
             'textAlign': 'center',
-
-        })),
-        width={"size": 10, "offset": 1}
-        )),
+            'color': colors['text']
+        })], width={"size": 10, "offset": 1})
+    ),
     dbc.Row(
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
@@ -47,6 +63,12 @@ layout = dbc.Container([
                         'textAlign': 'center',
                         'color': colors['text']
                     })),
+            html.Div(html.H6(dcc.Markdown('''Want to see detailed commentary on the accuracy of previous weeks? 
+            [Check out our blog](/blog)!'''),
+                             style={
+                                 'textAlign': 'center',
+
+                             })),
                 html.Div(html.H3(
                     children='Last Week Returns:',
                     style={
@@ -197,8 +219,8 @@ layout = dbc.Container([
         id='collapse_edgar_chart',
         is_open=False,),
     dbc.Row(html.Div([dcc.Markdown('''
-    
-    
+
+
     ''')])),
     ])
 
