@@ -6,6 +6,7 @@ import passwords
 import pandas as pd
 from datetime import date, timedelta, datetime
 from pandasql import sqldf
+import numpy as np
 from sklearn import datasets
 import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
 
@@ -367,6 +368,7 @@ def comparing_returns_vs_sandp(model_type):
     starting_price_sp = starting_price_sp[0]
     ending_price_sp = ending_price_sp[0]
     s_and_p_returns = (ending_price_sp - starting_price_sp) / starting_price_sp
+    s_and_p_number = s_and_p_returns
     s_and_p_returns = "{:.1%}".format(s_and_p_returns)
 
     # calculate Backtest ROI
@@ -375,6 +377,18 @@ def comparing_returns_vs_sandp(model_type):
     starting_price_backtest = starting_price_backtest[0]
     ending_price_backtest = ending_price_backtest[0]
     backtest_returns = (ending_price_backtest - starting_price_backtest) / starting_price_backtest
+    backtest_number = backtest_returns
     backtest_returns = "{:.1%}".format(backtest_returns)
 
-    return df_for_chart, s_and_p_returns, backtest_returns
+    #calculate Sharpe Ratio
+    risk_free_rate = 0.04
+    weekly_returns = returns_df.loc[:, 'portfolio_value'].pct_change()
+    excess_returns = (weekly_returns-risk_free_rate)/52
+    sharpe_ratio = np.sqrt(52)*np.mean(excess_returns)/np.std(excess_returns)
+    sharpe_ratio = round(sharpe_ratio, 3)
+
+
+    return df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio
+
+# df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio = comparing_returns_vs_sandp('random_forest')
+# print(sharpe_ratio)

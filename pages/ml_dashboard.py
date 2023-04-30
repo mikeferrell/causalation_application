@@ -116,6 +116,14 @@ layout = dbc.Container([
         }), width={"size": 3, "offset": 2})
         ]
     ),
+    dbc.Row(
+         dbc.Col(html.Div([html.H3("Sharpe Ratio:"),
+                           html.H3(id='sharpe_ratio')],
+                          style={
+                              'textAlign': 'center',
+                              'color': colors['text']
+                          }), width={"size": 4, "offset": 4})
+    ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})),
                     width={"size": 9, "offset": 2})),
     # html.Div(html.H3(
@@ -225,6 +233,7 @@ layout = dbc.Container([
     Output('backtest_returns', 'children'),
     Output('stocks_to_buy_last_week_table', 'children'),
     Output('last_week_returns', 'children'),
+    Output('sharpe_ratio', 'children'),
     Input('my_button_2', 'n_clicks'),
     [State('dropdown_input_2', 'value'),
      State('filing_type_dropdown_input_2', 'value'),
@@ -247,6 +256,7 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
             backtest.comparing_returns_vs_sandp('random_forest')[0])
         s_and_p_returns = backtest.comparing_returns_vs_sandp('random_forest')[1]
         backtest_returns = backtest.comparing_returns_vs_sandp('random_forest')[2]
+        sharpe_ratio = backtest.comparing_returns_vs_sandp('random_forest')[3]
         # decision_tree_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
         #     backtest.comparing_returns_vs_sandp('decision_tree'))
         # linear_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
@@ -267,7 +277,7 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         raise exceptions.PreventUpdate
     return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, ml_top_five_accuracy_table, \
            stocks_to_buy_table, s_and_p_returns, backtest_returns, \
-           stocks_to_buy_last_week_table, last_week_returns
+           stocks_to_buy_last_week_table, last_week_returns, sharpe_ratio
            # decision_tree_chart_backtest, linear_chart_backtest, \
 
 
