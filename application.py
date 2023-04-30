@@ -1,14 +1,11 @@
 import dash
-from flask import Flask, render_template
-from dash import Dash, dcc, html
+from flask import Flask, request
+from dash import Dash, html, dcc, callback
 import dash_bootstrap_components as dbc
-import sidebar as sidebar
+from static import navbar as sidebar
 import cron_jobs
 from apscheduler.schedulers.background import BackgroundScheduler
-import one_time_jobs
 import logging
-from static.color_palette import colors
-
 
 app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static", assets_url_path="static",
            external_stylesheets=[dbc.themes.UNITED])
@@ -21,32 +18,44 @@ application = app.server
 logo_image_direct = 'static/causalation-logo-no-background.png'
 
 
+# Add HSTS header to all HTTPS responses
+@callback(
+    dash.dependencies.Output('response-header', 'children'),
+    [dash.dependencies.Input('url', 'href')]
+)
+def add_hsts_header(href):
+    if href.startswith('https://'):
+        return {
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+        }
+    else:
+        return None
+
 
 
 app.layout = dbc.Container([
+    html.Div([
+        dcc.Location(id='url', refresh=False),
+        html.Div(id='response-header', style={'display': 'none'})
+    ]),
     dbc.Row(html.Div([sidebar.navbar, sidebar.content])),
     dbc.Row([dbc.Col(html.Div(html.Img(src=logo_image_direct,
                                        style={'height': '2%', 'width': '50%'})),
-                     width={"size": 8, "offset": 4}),
+                     width={"size": 6, "offset": 4}),
              ]),
+    dbc.Row(html.Div(html.Hr(className="my-2"))),
+    dbc.Row(html.Div(html.H1(""))),
     # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
     dbc.Row(dbc.Col(dash.page_container)),
 ]
 )
-# content = dbc.Container([
-#     dbc.Row(dbc.Col(html.Div(html.Img(src=logo_image_direct,
-#                                       style={'height': '2%', 'width': '50%'})),
-#                     width={"size": 6, "offset": 4})),
-#     dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
-#     dbc.Row(dbc.Col(dash.page_container)),
-# ]
-# )
 
 
 @server.route("/")
 def my_dash_app():
     return app.index()
     # return render_template('index.html', logo=logo_image_direct, content=content)
+
 
 
 console_handler = logging.StreamHandler()
@@ -73,4 +82,4 @@ scheduler.start()
 
 
 if __name__ == '__main__':
-    application.run(port=8000, debug=False)
+    application.run(port=8000, debug=True)

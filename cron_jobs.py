@@ -298,7 +298,10 @@ def top_correlation_scores():
     # conn.close()
     append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
     time.sleep(5)
-    append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'append')
+    if datetime.today().weekday() == 1:
+        append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'append')
+    else:
+        pass
     print("done with top correlations")
 
 

@@ -1,10 +1,9 @@
 import dash
 from dash import dcc, html, Input, Output, State, exceptions, callback
 import dash_bootstrap_components as dbc
-from datetime import date, datetime
+from datetime import date
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
-import sidebar as sidebar
 from cron_jobs import get_dates
 from static.color_palette import colors
 
@@ -20,6 +19,7 @@ layout = html.Div(children=[dbc.Container([
     # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
 
     #Filters
+    dbc.Row(html.Div(html.H4(""))),
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
@@ -60,7 +60,11 @@ layout = html.Div(children=[dbc.Container([
         className="g-2"
     ),
 
-    #stock returns
+    #table
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
+    dbc.Row(html.Div(html.Hr(className="my-2"))),
+
+    # stock returns
 
     dbc.Row([dbc.Col(html.Div([html.H3("Stock Returns:"),
                                html.H3(id='stock_returns')],
@@ -76,44 +80,66 @@ layout = html.Div(children=[dbc.Container([
                               }), width={"size": 3, "offset": 2}),
              ]
             ),
-
-    #table and counts
-    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
-    dbc.Row([
-        # dbc.Col(html.Div(id="correlation_table"), width={"size": 3, "offset": 2}),
-        dbc.Col(html.Div(id="keyword_count_table"), width={"size": 4, "offset": 1}),
-        dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 4, "offset": 1}),
-    ]),
-    dbc.Row(dbc.Col(html.Div([html.H3("Stock Moves Follow SEC Moves:"),
+    dbc.Row(dbc.Col(html.Div([html.H3("Stock Follows SEC Direction:"),
                           html.H3(id='stock_and_sec_move_table'),
                               html.H3("")],
                          style={
                              'textAlign': 'center',
                              'color': colors['text']
                          }), width={"size": 4, "offset": 4})),
+    dbc.Row(html.Div(html.Hr(className="my-2"))),
 
-    #top correlation section
+    #Counts
+
     html.Div(html.H1(
-        children='Top Stocks Correlated',
+        children='Keyword Information',
         style={
             'textAlign': 'center',
             'color': colors['text']
         }),
     ),
-    dbc.Row(dbc.Col(html.Div([html.P('''With the Filters Applied''')]),
-                  style={'textAlign': 'center'},
-                  width={"size": 8, "offset": 2},
-                  )
-    ),
+    dbc.Row([
+        # dbc.Col(html.Div(id="correlation_table"), width={"size": 3, "offset": 2}),
+        dbc.Col(html.Div(id="keyword_count_table"), width={"size": 4, "offset": 1}),
+        dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 4, "offset": 1}),
+    ]),
+
+    #top correlation section
+    html.Div(html.Hr(className="my-2")),
+    html.Div(html.H1(
+        children='Top Stock Correlations Today',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        })),
     dbc.Row(
-        [
-            dbc.Col(html.Div(id="desc_correlation_table"), width={"size": 3, "offset": 2}),
-            dbc.Col(html.Div(id="asc_correlation_table"), width={"size": 3, "offset": 1})
-        ]
+        dbc.Col(html.Div(id="ml_list_of_top_accuracy_table"), width={"size": 8, "offset": 2})
     ),
-    html.Div(style={'display': 'none'}, children=[
-        dcc.Input(id='trigger_on_pageload', value=0, style={'display': 'none'})
-    ])
+
+
+    #Junkyard
+    # dbc.Row(html.Div(html.Hr(className="my-2"))),
+    # html.Div(html.H1(
+    #     children='Top Stocks Correlated',
+    #     style={
+    #         'textAlign': 'center',
+    #         'color': colors['text']
+    #     }),
+    # ),
+    # dbc.Row(dbc.Col(html.Div([html.P('''With the Filters Applied''')]),
+    #                 style={'textAlign': 'center'},
+    #                 width={"size": 8, "offset": 2},
+    #                 )
+    #         ),
+    # dbc.Row(
+    #     [
+    #         dbc.Col(html.Div(id="desc_correlation_table"), width={"size": 3, "offset": 2}),
+    #         dbc.Col(html.Div(id="asc_correlation_table"), width={"size": 3, "offset": 1})
+    #     ]
+    # ),
+    # html.Div(style={'display': 'none'}, children=[
+    #     dcc.Input(id='trigger_on_pageload', value=0, style={'display': 'none'})
+    # ])
       # html.Div(html.H1(
       #     children='Data from Chart Above',
       #     style={
@@ -126,31 +152,19 @@ layout = html.Div(children=[dbc.Container([
         ])
                   ])
 
-#trying to make it work so that the daterange default is always today. not quite working
-# @callback(
-#     Output('date_picker_range', 'end_date'),
-#     [Input('trigger_on_pageload', 'value'),
-#     Input('date_picker_range', 'start_date'),
-#      Input('date_picker_range', 'end_date')])
-# def update_date_picker(trigger_on_pageload, start_date, end_date):
-#     today = datetime.now().date()
-#     if trigger_on_pageload is not None:
-#         return get_datestoo()
-#     elif end_date is None or end_date != today:
-#         return today
-#     return end_date
 
 
 @callback(
     Output('date_and_stock_for_chart', 'figure'),
-    # Output('correlation_table', 'children'),
     Output('keyword_correlation_table', 'children'),
     Output('keyword_count_table', 'children'),
-    Output('desc_correlation_table', 'children'),
-    Output('asc_correlation_table', 'children'),
     Output('stock_returns', 'children'),
     Output('s_and_p_returns_for_daterange', 'children'),
     Output('stock_and_sec_move_table', 'children'),
+    Output('ml_list_of_top_accuracy_table', 'children'),
+    # Output('correlation_table', 'children'),
+    # Output('desc_correlation_table', 'children'),
+    # Output('asc_correlation_table', 'children'),
     # Output('date_picker_range', 'end_date'),
     # Output('data_from_chart', 'children'),
     Input('my_button', 'n_clicks'),
@@ -169,30 +183,33 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
         edgar_chart_data, stock_return_data = dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
                                                             end_date, keyword_dropdown_value, '', filing_type_value)
         edgar_chart = my_dash_charts.Edgar_Mult_Y_Axis_Lines(edgar_chart_data, stock_dropdown_value, keyword_dropdown_value)
-        # dropdown_table = my_dash_charts.generate_table(
-        #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
         keyword_correlation_table = my_dash_charts.generate_table(
             dataframes_from_queries.inflation_mention_correlation(stock_dropdown_value, start_date, end_date,
                                                     keyword_dropdown_value, week_delay_dropdown_value, filing_type_value))
         keyword_count_table = my_dash_charts.generate_table(
             dataframes_from_queries.keyword_table(keyword_dropdown_value, start_date, end_date))
-        descending_correlation_table = my_dash_charts.generate_table(
-                dataframes_from_queries.top_keyword_correlations_with_rolling_avg('desc', keyword_dropdown_value,
-                                                    start_date, end_date, week_delay_dropdown_value, filing_type_value)),
-        ascending_correlation_table = my_dash_charts.generate_table(
-                dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc', keyword_dropdown_value,
-                                                    start_date, end_date, week_delay_dropdown_value, filing_type_value))
+
         s_and_p_returns = dataframes_from_queries.s_and_p_returns_for_daterange(start_date, end_date)
         stock_and_sec_move_table = dataframes_from_queries.stock_moving_with_sec_data(stock_dropdown_value, start_date,
                                         end_date, keyword_dropdown_value, week_delay_dropdown_value, filing_type_value)
+        ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
+        ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
+        # dropdown_table = my_dash_charts.generate_table(
+        #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
+        # descending_correlation_table = my_dash_charts.generate_table(
+        #         dataframes_from_queries.top_keyword_correlations_with_rolling_avg('desc', keyword_dropdown_value,
+        #                                             start_date, end_date, week_delay_dropdown_value, filing_type_value)),
+        # ascending_correlation_table = my_dash_charts.generate_table(
+        #         dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc', keyword_dropdown_value,
+        #                                             start_date, end_date, week_delay_dropdown_value, filing_type_value))
         # data_from_chart = my_dash_charts.generate_table(
         #     dataframes_from_queries.inflation_mention_chart(stock_dropdown_value, start_date,
         #                                             end_date, keyword_dropdown_value, 'limit 30', filing_type_value))
         print("filter_applied")
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
-    return edgar_chart, keyword_correlation_table, keyword_count_table, descending_correlation_table, \
-           ascending_correlation_table, stock_return_data, s_and_p_returns, stock_and_sec_move_table
+    return edgar_chart, keyword_correlation_table, keyword_count_table, stock_return_data, s_and_p_returns, \
+           stock_and_sec_move_table, ml_list_of_top_accuracy_table
         # , data_from_chart
 
 @callback(

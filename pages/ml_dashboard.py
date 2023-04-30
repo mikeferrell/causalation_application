@@ -3,17 +3,11 @@ from dash import dcc, html, Input, Output, State, exceptions, callback
 import dash_bootstrap_components as dbc
 from datetime import date
 import dataframes_from_queries
-import time
-import pandas as pd
 import dash_components.charts as my_dash_charts
-import sidebar as sidebar
 from cron_jobs import get_dates
 # import ml_models.backtest as backtest
 import precise_backtest as backtest
 from static.color_palette import colors
-
-import images as my_images
-import base64
 
 dash.register_page(__name__, path='/predictions', name="Predictions")
 
@@ -56,6 +50,9 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
+
+    #last week
+    html.Div(html.Hr(className="my-2")),
     dbc.Row(
         dbc.Col([html.Div(html.H1(
                     children='Stocks Recommendations Last Week',
@@ -83,17 +80,9 @@ layout = dbc.Container([
                 html.Div(id="stocks_to_buy_last_week_table")],
                 width={"size": 10, "offset": 1})
     ),
-    html.Div(html.H1(
-        children='Top Stock Correlations Today',
-        style={
-            'textAlign': 'center',
-            'color': colors['text']
-        })),
-    dbc.Row(
-        dbc.Col(html.Div(id="ml_list_of_top_accuracy_table"), width={"size": 8, "offset": 2})
-    ),
 
     #Backtesting Section
+    html.Div(html.Hr(className="my-2")),
     html.Div(html.H1(
         children='Backtest Results Compared to S&P 500',
         style={
@@ -231,7 +220,6 @@ layout = dbc.Container([
     # Output('decision_tree_chart_backtest', 'figure'),
     # Output('linear_chart_backtest', 'figure'),
     Output('ml_top_five_accuracy_table', 'children'),
-    Output('ml_list_of_top_accuracy_table', 'children'),
     Output('stocks_to_buy_table', 'children'),
     Output('s_and_p_returns', 'children'),
     Output('backtest_returns', 'children'),
@@ -267,7 +255,7 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
         backtest_all_results_df = backtest.backtesting_buy_recommendation_list('random_forest')
         ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(backtest_all_results_df[2])
         # ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(ml_data_for_table[0])
-        ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
+        # ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
         stocks_to_buy_table = my_dash_charts.generate_table(
             dataframes_from_queries.stocks_to_buy_this_week(1000, 'future_buy_recommendations')[0])
         stocks_to_buy_last_week_table = my_dash_charts.generate_table(
@@ -278,7 +266,7 @@ def ml_update_output(n_clicks, stock_dropdown_value, filing_type_value, week_del
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
     return date_and_stock_for_chart_2, date_and_stock_for_chart_backtest, ml_top_five_accuracy_table, \
-           ml_list_of_top_accuracy_table, stocks_to_buy_table, s_and_p_returns, backtest_returns, \
+           stocks_to_buy_table, s_and_p_returns, backtest_returns, \
            stocks_to_buy_last_week_table, last_week_returns
            # decision_tree_chart_backtest, linear_chart_backtest, \
 

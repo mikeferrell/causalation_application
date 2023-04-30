@@ -1,4 +1,4 @@
-from dash import html
+from dash import html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 from static.color_palette import colors
 import base64
@@ -65,15 +65,11 @@ CONTENT_STYLE = {
     "padding": "2rem 1rem"
 }
 
-navbar = dbc.Navbar(
-    [
-        html.Img(src=small_logo_image_direct,
-                      style={'height': '8vh', 'width': 'auto'}),
-             dbc.Nav(
+nav_items = dbc.Nav(
                  [
                  dbc.NavItem(dbc.NavLink("Home", href="/", active="exact",
                                          style={"color": colors['background']})),
-                          dbc.NavItem(dbc.NavLink("ML Modeling", href="/predictions", active="exact",
+                          dbc.NavItem(dbc.NavLink("AI Predictions", href="/predictions", active="exact",
                                                   style={"color": colors['background']})),
                           dbc.NavItem(dbc.NavLink("Dashboard", href="/dashboard", active="exact",
                                                   style={"color": colors['background']})),
@@ -87,8 +83,18 @@ navbar = dbc.Navbar(
             className="ml-auto",
             navbar=True
         ),
-    ],
-    # color="light",
+
+navbar = dbc.Navbar(dbc.Container(
+    [
+        html.Img(src=small_logo_image_direct,
+                      style={'height': '8vh', 'width': 'auto'}),
+        dbc.NavbarToggler(id="navbar-toggler", n_clicks=0),
+        dbc.Collapse(
+            nav_items,
+            id="navbar-collapse",
+            is_open=False,
+            navbar=True)
+    ],),
     color=colors['dark_theme'],
     dark=False,
     style=NAVBAR_STYLE,
@@ -98,3 +104,13 @@ navbar = dbc.Navbar(
 sidebar = html.Div()
 
 content = html.Div(id="page-content", style=CONTENT_STYLE)
+
+@callback(
+    Output("navbar-collapse", "is_open"),
+    [Input("navbar-toggler", "n_clicks")],
+    [State("navbar-collapse", "is_open")],
+)
+def toggle_navbar_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open

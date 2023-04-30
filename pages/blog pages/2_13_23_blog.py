@@ -1,8 +1,6 @@
 import dash
 from dash import html
 import dash_bootstrap_components as dbc
-import images as my_images
-import base64
 
 dash.register_page(__name__, path='/blog_pages/2_12_23_blog')
 

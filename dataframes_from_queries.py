@@ -274,6 +274,7 @@ def calculate_ml_model_accuracy():
     top_correlation_list = []
 
     df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results('all_correlation_scores')
+    df_of_top_ten_correlations['correlation'] = df_of_top_ten_correlations['correlation'].apply(lambda x: '{:.2%}'.format(x))
 
     row_range = range(0, 10)
     for rows in row_range:
@@ -367,9 +368,10 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
                   previous_weekly_open_date,
                   previous_weekly_close_price,
                   predicted_weekly_close_price, 
-                  predicted_weekly_close_price / previous_weekly_close_price AS predicted_price_change_percentage
+                  (predicted_weekly_close_price / previous_weekly_close_price) - 1 AS predicted_price_change_percentage
               FROM
                   public.{this_week_or_last_table}
+              WHERE predicted_weekly_close_price > previous_weekly_close_price
             ),
             
             total_estimation as (
