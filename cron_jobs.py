@@ -314,6 +314,13 @@ def last_week_top_correlation_scores():
     print("done with last week correlation table")
 
 
+def top_ten_correlations_today():
+    df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results('all_correlation_scores')
+    df_of_top_ten_correlations['correlation'] = df_of_top_ten_correlations['correlation'].apply(lambda x: '{:.2%}'.format(x))
+    append_to_postgres(df_of_top_ten_correlations, 'top_ten_correlations_today', 'replace')
+    print("done with top_ten_correlations_today")
+
+
 def full_edgar_job_10ks():
     update_edgar_files('10-K')
     time.sleep(10)

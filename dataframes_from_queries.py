@@ -264,84 +264,10 @@ def ml_accuracy_table():
     return query_results_df
 
 
-def calculate_ml_model_accuracy():
-    query_results_df = pd.DataFrame(columns=['stock_symbol', 'keyword', 'time_delay', 'filing_type', 'start_date',
-                                             'current_week', 'prediction_date', 'current_close_price',
-                                             'next_week_close_price', 'next_week_predicted_close',
-                                             'actual_price_change',
-                                             'predicted_price_change'])
-
-    top_correlation_list = []
-
-    df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results('all_correlation_scores')
-    df_of_top_ten_correlations['correlation'] = df_of_top_ten_correlations['correlation'].apply(lambda x: '{:.2%}'.format(x))
-
-    row_range = range(0, 10)
-    for rows in row_range:
-        df_row = df_of_top_ten_correlations.iloc[rows]
-        stock_symbol = df_row['stock_symbol']
-        keyword = df_row['keyword']
-        correlation_start_date = df_row['start_date']
-        interval = df_row['time_delay']
-        filing_type = df_row['filing_type']
-
-        correlation_list = f'Stock Symbol: {stock_symbol}, Keyword: {keyword}, Start Date: {correlation_start_date}, ' \
-                           f'Time Lag: {interval}, Filing Type: {filing_type}'
-        top_correlation_list.append(correlation_list)
-
-        query_results = f'''
-                        with prices as (
-                        select stock_symbol, start_date, keyword, time_delay, filing_type, current_week, current_close_price
-                        , week_opening_date as prediction_date, predicted_price as next_week_predicted_close, next_week_close_price
-                        , case when next_week_close_price > current_close_price then 'price increased'
-                            when next_week_close_price < current_close_price then 'price decreased'
-                            when next_week_close_price is null then 'no price comparison'
-                            else 'price the same'
-                            end as actual_price_movement
-                        , next_week_close_price - current_close_price as actual_price_change
-                        , (next_week_close_price / current_close_price) - 1 as actual_price_change_percentage
-                        , case when current_close_price < predicted_price then 'price increased'
-                            when current_close_price > predicted_price then 'price decreased'
-                            when predicted_price is null then 'no price comparison'
-                            else 'price the same'
-                            end as predicted_price_movement
-                        , predicted_price - current_close_price as predicted_price_change 
-                        , (current_close_price / predicted_price) - 1 as predicted_price_change_percentage 
-                        from top_five_prediction_results
-                        where stock_symbol = '{stock_symbol}'
-                        and keyword = '{keyword}'
-                        and start_date = '{correlation_start_date}'
-                        and time_delay = '{interval}'
-                        and filing_type = '{filing_type}'
-                        order by current_week asc
-                        )
-
-                        SELECT
-                        stock_symbol, keyword, time_delay, filing_type, start_date, current_week, prediction_date, current_close_price, next_week_close_price, next_week_predicted_close
-                        , actual_price_change
-                        , predicted_price_change
-                        , case when actual_price_movement = 'no price comparison' then 'no price comparison'
-                            when actual_price_movement = predicted_price_movement then 'correct prediction'
-                            else 'incorrect prediction'
-                            end as prediction_validation
-                        , actual_price_change - predicted_price_change as actual_prediction_delta
-                        , case when actual_price_change = 0 then null else (actual_price_change - predicted_price_change) / current_close_price end as actual_prediction_percentage_delta
-                        from prices
-                        '''
-        validationd_df = pd.read_sql(query_results, con=connect)
-        df_full = pd.DataFrame(validationd_df)
-        df_full['actual_prediction_percentage_delta'] = df_full['actual_prediction_percentage_delta'].apply(format_percent)
-        df_full['current_close_price'] = df_full['current_close_price'].apply(format_dollar)
-        df_full['next_week_close_price'] = df_full['next_week_close_price'].apply(format_dollar)
-        df_full['next_week_predicted_close'] = df_full['next_week_predicted_close'].apply(format_dollar)
-        df_full['actual_price_change'] = df_full['actual_price_change'].apply(format_dollar)
-        df_full['predicted_price_change'] = df_full['predicted_price_change'].apply(format_dollar)
-        df_full['actual_prediction_delta'] = df_full['actual_prediction_delta'].apply(format_dollar)
-        df_full['start_date'] = pd.to_datetime(df_full['start_date']).apply(lambda x: x.date())
-        df_full['current_week'] = pd.to_datetime(df_full['current_week'], format='%Y%m%d').apply(lambda x: x.date())
-        df_full['prediction_date'] = pd.to_datetime(df_full['prediction_date']).apply(lambda x: x.date())
-        query_results_df = query_results_df.append(df_full, ignore_index=True)
-    return query_results_df, top_correlation_list, df_of_top_ten_correlations
+def daily_top_ten_correlations():
+    query_df = f'''select * from top_ten_correlations_today'''
+    query_df = pd.read_sql(query_df, con=connect)
+    return query_df
 
 
 def stocks_to_buy_this_week(principal, this_week_or_last_table):

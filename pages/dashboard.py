@@ -6,6 +6,7 @@ import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 from cron_jobs import get_dates
 from static.color_palette import colors
+import static.images as images
 
 dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
@@ -16,7 +17,13 @@ dash.register_page(__name__, path='/dashboard', name="Dashboard")
 
 
 layout = html.Div(children=[dbc.Container([
-    # dbc.Row(dbc.Col(html.Div([dcc.Location(id="url"), sidebar.sidebar, sidebar.content]), width=6)),
+    # image
+    dbc.Row([dbc.Col(html.Div(html.Img(src=images.logo_image_direct,
+                                       style={'height': '2%', 'width': '50%'})),
+                     width={"size": 6, "offset": 4}),
+             ]),
+    dbc.Row(html.Div(html.Hr(className="my-2"))),
+    dbc.Row(html.Div(html.H1(""))),
 
     #Filters
     dbc.Row(html.Div(html.H4(""))),
@@ -65,7 +72,13 @@ layout = html.Div(children=[dbc.Container([
     dbc.Row(html.Div(html.Hr(className="my-2"))),
 
     # stock returns
-
+    html.Div(html.H1(
+        children='Stock Data',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        }),
+    ),
     dbc.Row([dbc.Col(html.Div([html.H3("Stock Returns:"),
                                html.H3(id='stock_returns')],
                               style={
@@ -92,7 +105,7 @@ layout = html.Div(children=[dbc.Container([
     #Counts
 
     html.Div(html.H1(
-        children='Keyword Information',
+        children='Keyword Data',
         style={
             'textAlign': 'center',
             'color': colors['text']
@@ -192,8 +205,7 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
         s_and_p_returns = dataframes_from_queries.s_and_p_returns_for_daterange(start_date, end_date)
         stock_and_sec_move_table = dataframes_from_queries.stock_moving_with_sec_data(stock_dropdown_value, start_date,
                                         end_date, keyword_dropdown_value, week_delay_dropdown_value, filing_type_value)
-        ml_data_for_table = dataframes_from_queries.calculate_ml_model_accuracy()
-        ml_list_of_top_accuracy_table = my_dash_charts.generate_table(ml_data_for_table[2])
+        ml_list_of_top_accuracy_table = my_dash_charts.generate_table(dataframes_from_queries.daily_top_ten_correlations())
         # dropdown_table = my_dash_charts.generate_table(
         #     dataframes_from_queries.stock_crypto_correlation_filtered(stock_dropdown_value))
         # descending_correlation_table = my_dash_charts.generate_table(

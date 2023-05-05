@@ -2,13 +2,13 @@ import dash
 from dash import html, Input, Output, callback
 import dash_bootstrap_components as dbc
 from static.color_palette import colors
+import static.images as images
 
 dash.register_page(__name__, path='/', name="Home")
-logo_image_direct = 'static/causalation-logo-no-background.png'
 
 
 layout = dbc.Container([
-    dbc.Row(dbc.Col([html.Div([
+    dbc.Row([dbc.Col(html.Div([
                         html.P(''''''),
                         html.H2(children='''Is it Correlation? Causation? Let's find out.''',
                                      style={'textAlign': 'center'}),
@@ -17,9 +17,19 @@ layout = dbc.Container([
                                      style={'textAlign': 'center'})
                                ],
                     # className="h-100 p-5 text-white bg-dark rounded-3",
-                    ),])),
-                    # style={'color': colors["background"],
-                    #     'background-color': colors["dark_theme"]}
+                    ), width={"size": 5, "offset": 1},
+                    style={"height": "100%"}),
+        dbc.Col(html.Div(html.Img(src=images.logo_image_direct,
+                                  style={'height': '2%', 'width': '50%'})),
+                width={"size": 6},
+                style={"height": "100%"}),
+    ],
+    className="h-35"),
+
+    #Buttons
+    dbc.Row(html.Div([html.Hr(className="my-2"),
+                     html.H1("")]),
+            className="h-10"),
     dbc.Row([
         dbc.Col(
             html.Div([
@@ -61,8 +71,10 @@ layout = dbc.Container([
             ),
             width={"size": 4}
         ),
-    ],)
+    ],
+    className="h-25")
 ],
+style={"height": "100vh"},
 )
 
 @callback(
