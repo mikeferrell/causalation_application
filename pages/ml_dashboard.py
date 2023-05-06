@@ -5,7 +5,6 @@ from datetime import date
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 from cron_jobs import get_dates
-# import ml_models.backtest as backtest
 import precise_backtest as backtest
 from static.color_palette import colors
 import static.images as images
@@ -59,36 +58,43 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),
+    dbc.Row(dbc.Col(html.Div(html.H6(dcc.Markdown('''Want to see detailed commentary on the accuracy of previous weeks?
+                [Check out our blog](/blog)!'''),
+                                 style={
+                                     'textAlign': 'center',
 
-    #last week
-    html.Div(html.Hr(className="my-2")),
-    dbc.Row(
-        dbc.Col([html.Div(html.H1(
-                    children='Stocks Recommendations Last Week',
-                    style={
-                        'textAlign': 'center',
-                        'color': colors['text']
-                    })),
-            html.Div(html.H6(dcc.Markdown('''Want to see detailed commentary on the accuracy of previous weeks?
-            [Check out our blog](/blog)!'''),
-                             style={
-                                 'textAlign': 'center',
-
-                             })),
-                html.Div(html.H3(
-                    children='Last Week Returns:',
-                    style={
-                        'textAlign': 'center',
-                        'color': colors['text']
-                    })),
-                    html.Div(html.H3(id='last_week_returns'),
-                             style={
-                                 'textAlign': 'center',
-                                 'color': colors['text']
-                             }),
-                html.Div(id="stocks_to_buy_last_week_table")],
-                width={"size": 10, "offset": 1})
+                                 })), width={"size": 10, "offset": 1})
     ),
+
+    #last week. Need to fix the query before this can be put back in
+    # html.Div(html.Hr(className="my-2")),
+    # dbc.Row(
+    #     dbc.Col([html.Div(html.H1(
+    #                 children='Stocks Recommendations Last Week',
+    #                 style={
+    #                     'textAlign': 'center',
+    #                     'color': colors['text']
+    #                 })),
+    #         html.Div(html.H6(dcc.Markdown('''Want to see detailed commentary on the accuracy of previous weeks?
+    #         [Check out our blog](/blog)!'''),
+    #                          style={
+    #                              'textAlign': 'center',
+    #
+    #                          })),
+    #             html.Div(html.H3(
+    #                 children='Last Week Returns:',
+    #                 style={
+    #                     'textAlign': 'center',
+    #                     'color': colors['text']
+    #                 })),
+    #                 html.Div(html.H3(id='last_week_returns'),
+    #                          style={
+    #                              'textAlign': 'center',
+    #                              'color': colors['text']
+    #                          }),
+    #             html.Div(id="stocks_to_buy_last_week_table")],
+    #             width={"size": 10, "offset": 1})
+    # ),
 
     #Backtesting Section
     html.Div(html.Hr(className="my-2")),
@@ -135,33 +141,13 @@ layout = dbc.Container([
     ),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart_backtest', figure={})),
                     width={"size": 9, "offset": 2})),
-    # html.Div(html.H3(
-    #     children='Decision Tree Model',
-    #     style={
-    #         'textAlign': 'center',
-    #         'color': colors['text']
-    #     })),
-    # dbc.Row(dbc.Col(html.Div(dcc.Graph(id='decision_tree_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
-    # html.Div(html.H3(
-    #     children='Linear Regression Model',
-    #     style={
-    #         'textAlign': 'center',
-    #         'color': colors['text']
-    #     })),
-    # dbc.Row(dbc.Col(html.Div(dcc.Graph(id='linear_chart_backtest', figure={})), width={"size": 9, "offset": 2})),
-    # dbc.Row(dbc.Col(html.Div(html.P(
-    #     id="ml_top_five_accuracy_list",
-    #     style={
-    #         'textAlign': 'center',
-    #         'color': colors['text']
-    #     })),
-    #     width={"size": 12, "offset": 1})),
+
 
     #Prediction Table unfurl section
     dbc.Row(html.Div([html.P()])),
     dbc.Row(
-        dbc.Button("See Weekly Prediction Accuracy", id="collapse-button", className='d-grid gap-2', color="primary",
-                   n_clicks=0)),
+        dbc.Button("See Weekly Prediction Accuracy", id="collapse-button", className='d-grid gap-2',
+                   color='primary', n_clicks=0)),
     dbc.Row(html.Div([html.P()])),
     dbc.Collapse(
         dbc.Row(dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10})),
@@ -189,8 +175,8 @@ layout = dbc.Container([
     Output('stocks_to_buy_table', 'children'),
     Output('s_and_p_returns', 'children'),
     Output('backtest_returns', 'children'),
-    Output('stocks_to_buy_last_week_table', 'children'),
-    Output('last_week_returns', 'children'),
+    # Output('stocks_to_buy_last_week_table', 'children'),
+    # Output('last_week_returns', 'children'),
     Output('sharpe_ratio', 'children'),
     Input('load_interval', 'n_intervals'),
     prevent_initial_call=False
@@ -205,13 +191,12 @@ def ml_update_output(n_intervals):
     ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(backtest_all_results_df[2])
     stocks_to_buy_table = my_dash_charts.generate_table(
         dataframes_from_queries.stocks_to_buy_this_week(1000, 'future_buy_recommendations')[0])
-    stocks_to_buy_last_week_table = my_dash_charts.generate_table(
-        dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[0])
-    last_week_returns = dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[1]
+    # stocks_to_buy_last_week_table = my_dash_charts.generate_table(
+    #     dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[0])
+    # last_week_returns = dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[1]
     # buy_date_text = dataframes_from_queries.buy_date()
     return date_and_stock_for_chart_backtest, ml_top_five_accuracy_table, \
-           stocks_to_buy_table, s_and_p_returns, backtest_returns, \
-           stocks_to_buy_last_week_table, last_week_returns, sharpe_ratio
+           stocks_to_buy_table, s_and_p_returns, backtest_returns, sharpe_ratio
            # decision_tree_chart_backtest, linear_chart_backtest, \
 
 

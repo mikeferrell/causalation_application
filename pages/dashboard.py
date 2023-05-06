@@ -57,9 +57,9 @@ layout = html.Div(children=[dbc.Container([
             dbc.Col(
                 html.Div(
                     dbc.Spinner(
-                    dbc.Button("Apply Filters", id='my_button', color="primary", className="me-1", n_clicks=0,
-                               disabled=True,
-                               loading_state={'is_loading': True})
+                        dbc.Button("Apply Filters", id='my_button', className="me-1", n_clicks=0,
+                               disabled=True, loading_state={'is_loading': True}),
+                        color=colors["dark_theme"]
                 )),
                 width={"size": 2}
             )
@@ -113,7 +113,7 @@ layout = html.Div(children=[dbc.Container([
     ),
     dbc.Row([
         # dbc.Col(html.Div(id="correlation_table"), width={"size": 3, "offset": 2}),
-        dbc.Col(html.Div(id="keyword_count_table"), width={"size": 4, "offset": 1}),
+        dbc.Col(html.Div(id="keyword_count_table"), width={"size": 3, "offset": 2}),
         dbc.Col(html.Div(id="keyword_correlation_table"), width={"size": 4, "offset": 1}),
     ]),
 

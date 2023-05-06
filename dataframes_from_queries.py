@@ -65,6 +65,7 @@ def keyword_table(keyword, start_date, end_date):
             where keyword_count > 0
             group by 1'''
     keyword_count_df = pd.read_sql(keyword_count, con=connect)
+    keyword_count_df = keyword_count_df.rename(columns={'keywords':'Keywords', 'keyword_count':'Keyword Count'})
     return keyword_count_df
 
 #def stock_crypto_correlation_filtered(stock_symbol):
@@ -428,7 +429,7 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
         and week_opening_date <= '{end_date}'
         and filing_type != '{filing_type}'
         and stock_symbol = '{stock_symbol}'
-        offset (6-{time_delay})
+        offset 6
         )
     
         select week_opening_date

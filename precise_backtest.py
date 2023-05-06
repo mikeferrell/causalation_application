@@ -380,15 +380,17 @@ def comparing_returns_vs_sandp(model_type):
     backtest_number = backtest_returns
     backtest_returns = "{:.1%}".format(backtest_returns)
 
-    #calculate Sharpe Ratio
+    #calculate Sharpe Ratio. This first way is from the book, the second one looks cleaner
+    # weekly_returns = np.log(1 + returns_df.loc[:, 'portfolio_value'].pct_change())
+    # excess_returns = (weekly_returns-risk_free_rate)/52
+    # sharpe_ratio = np.sqrt(52)*np.mean(excess_returns)/np.std(excess_returns)
     risk_free_rate = 0.04
-    weekly_returns = returns_df.loc[:, 'portfolio_value'].pct_change()
-    excess_returns = (weekly_returns-risk_free_rate)/52
-    sharpe_ratio = np.sqrt(52)*np.mean(excess_returns)/np.std(excess_returns)
+    returns = np.log(returns_df['portfolio_value'] / returns_df['portfolio_value'].shift(1))
+    volatility = returns.std() * np.sqrt(52)
+    sharpe_ratio = ((returns.mean() * 52) - risk_free_rate) / volatility
     sharpe_ratio = round(sharpe_ratio, 3)
+    return df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio, returns_df
 
 
-    return df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio
-
-# df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio = comparing_returns_vs_sandp('random_forest')
+# df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio, returns_df = comparing_returns_vs_sandp('random_forest')
 # print(sharpe_ratio)
