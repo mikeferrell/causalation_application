@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 
 dash.register_page(__name__, path='/blog_pages/3_5_23_blog')
 
-buy_screenshot = '../static/buys_for_3_6_23.png'
+buy_screenshot = '../static/blog_images/buys_for_3_6_23.png'
 colors = {
     'background': '#D3D3D3',
     'text': '#000000',
