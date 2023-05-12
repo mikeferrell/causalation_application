@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
 from dash.dash_table import DataTable
+from static.color_palette import colors
 from dash.dash_table.Format import Format, Group
 import passwords
 
@@ -108,13 +109,13 @@ def generate_table_with_filters(dataframe):
                         'textOverflow': 'inherit',
                           'font-family': 'Calibri'
                       },
-                      style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(167, 199, 231)'}
+                      style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': colors['light_theme']}
                                               ],
                       style_as_list_view=True,
                       style_cell={'padding': '5px', 'textAlign': 'center'},
                       style_header={
-                          'backgroundColor': 'rgb(63, 0, 255)',
-                          'fontWeight': 'bold',
+                          'backgroundColor': colors['mid_theme'],
+                          'fontWeight': '400',
                           'color': 'white',
                       })
     return table

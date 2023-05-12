@@ -2,6 +2,7 @@ import dash
 from dash import dcc, html, Input, Output, State, exceptions, callback
 import dash_bootstrap_components as dbc
 from datetime import date
+import time
 import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 from cron_jobs import get_dates
@@ -9,11 +10,6 @@ from static.color_palette import colors
 import static.images as images
 
 dash.register_page(__name__, path='/dashboard', name="Dashboard")
-
-# colors = {
-#     'background': '#FFFFFF',
-#     'text': '#000000'
-# }
 
 
 layout = html.Div(children=[dbc.Container([
@@ -55,13 +51,12 @@ layout = html.Div(children=[dbc.Container([
                               ],
                              ), width={"size": 2}),
             dbc.Col(
-                html.Div(
-                    dbc.Spinner(
-                        dbc.Button("Apply Filters", id='my_button', className="me-1", n_clicks=0,
-                               disabled=True, loading_state={'is_loading': True}),
-                        color=colors["dark_theme"]
-                )),
-                width={"size": 2}
+                html.Div([
+                    dcc.Loading(id='loading', fullscreen=False, color=colors['mid_theme'],
+                                children=dbc.Button("Apply Filters", id='my_button', className="me-1", n_clicks=0,
+                                                    style={"background-color": colors['mid_theme']})),
+                    html.Div(id='output_div')
+            ]),
             )
         ],
         className="g-2"
@@ -166,7 +161,6 @@ layout = html.Div(children=[dbc.Container([
                   ])
 
 
-
 @callback(
     Output('date_and_stock_for_chart', 'figure'),
     Output('keyword_correlation_table', 'children'),
@@ -175,6 +169,7 @@ layout = html.Div(children=[dbc.Container([
     Output('s_and_p_returns_for_daterange', 'children'),
     Output('stock_and_sec_move_table', 'children'),
     Output('ml_list_of_top_accuracy_table', 'children'),
+    Output('my_button', 'loading_state'),
     # Output('correlation_table', 'children'),
     # Output('desc_correlation_table', 'children'),
     # Output('asc_correlation_table', 'children'),
@@ -221,36 +216,15 @@ def update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_
     elif len(stock_dropdown_value) == 0:
         raise exceptions.PreventUpdate
     return edgar_chart, keyword_correlation_table, keyword_count_table, stock_return_data, s_and_p_returns, \
-           stock_and_sec_move_table, ml_list_of_top_accuracy_table
+           stock_and_sec_move_table, ml_list_of_top_accuracy_table, {'is_loading': True}
         # , data_from_chart
 
+
+#callback for the loading of the button
 @callback(
-    Output('my_button', 'disabled'),
+    Output('output_div', 'children'),
     Input('my_button', 'n_clicks')
 )
-def disable_button(n_clicks):
-    if n_clicks is not None and n_clicks > 0:
-        disabled = True
-    else:
-        disabled = False
-    return disabled
-
-@callback(
-    Output('my_button', 'n_clicks'),
-    Input('my_button', 'n_clicks'),
-    State('dropdown_input', 'value'),
-    State('filing_type_dropdown_input', 'value'),
-    State('week_delay_dropdown_input', 'value'),
-    State('keyword_dropdown_input', 'value'),
-    State('date_picker_range', 'start_date'),
-    State('date_picker_range', 'end_date')
-)
-def reset_n_clicks(n_clicks, stock_dropdown_value, filing_type_value, week_delay_dropdown_value,
-                   keyword_dropdown_value, start_date, end_date):
-    if n_clicks is not None and n_clicks > 0:
-        # Call the function that applies the filters
-        update_output(n_clicks, stock_dropdown_value, filing_type_value, week_delay_dropdown_value,
-                         keyword_dropdown_value, start_date, end_date)
-        return 0
-    else:
-        return n_clicks
+def update_output(n_clicks):
+    if n_clicks is not None:
+        time.sleep(5)

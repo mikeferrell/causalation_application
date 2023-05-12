@@ -146,8 +146,8 @@ layout = dbc.Container([
     #Prediction Table unfurl section
     dbc.Row(html.Div([html.P()])),
     dbc.Row(
-        dbc.Button("See Weekly Prediction Accuracy", id="collapse-button", className='d-grid gap-2',
-                   color='primary', n_clicks=0)),
+        dbc.Button("See Weekly Prediction Accuracy", id="collapse-button", className='d-grid gap-2', n_clicks=0,
+                   style={"background-color": colors['mid_theme']})),
     dbc.Row(html.Div([html.P()])),
     dbc.Collapse(
         dbc.Row(dbc.Col(html.Div(id="ml_top_five_accuracy_table"), width={"size": 10})),
