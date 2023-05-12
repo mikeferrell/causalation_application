@@ -19,10 +19,22 @@ layout = dbc.Container([
     # Disclaimer
     dbc.Row(
         dbc.Col(html.Div([
-            html.H6(dcc.Markdown('''**DISCMLAIMER**: This is not financial advice, this is just a project to make SEC
-            data more accessible. What you do with that data is up to you. Any "recommendations" are simply machine 
-            learning results based on the underlying data, and not actual financial recommendations.
+            html.H6(dcc.Markdown('''**DISCMLAIMER**: This is not financial advice, this is just a data project. 
+            What you do with that data is up to you. Any "recommendations" are simply machine learning results based on 
+            the underlying data, and not actual financial recommendations.
             '''))
+        ]),
+            style={'textAlign': 'center', 'color': colors['text']},
+            width={"size": 8, "offset": 2}
+        )
+    ),
+
+    #     #
+    # FAQ #
+    #     #
+    dbc.Row(
+        dbc.Col(html.Div([
+            html.H1('''FAQ''')
         ]),
             style={'textAlign': 'center', 'color': colors['text']},
             width={"size": 8, "offset": 2}
@@ -35,51 +47,52 @@ layout = dbc.Container([
             [
                 dbc.AccordionItem(
                     [
-                        dcc.Markdown('''**My Thesis: ** There is so much data available today, and more retail traders want to use that 
-                        data to inform their stock picks. However, data analysis is hard, and the only options available today are: 
+                        dcc.Markdown('''**Causalation** Is a project to designed to make it easier to use information
+                    from SEC filings in quantitative analysis.'''),
+
+                        dcc.Markdown('''**My Thesis: ** There is so much data available today, and retail traders want 
+                    to use that data to inform their stock picks. However, data analysis is hard, and the only 
+                    options available today are: 
+                    '''),
+                        dcc.Markdown('''
+                        **1.** Download raw (and expensive) datasets, then do a ton of coding to make it actionable
+
+                        **2.** Pay someone for their own picks that lack transparency around the process and the 
+                        success of the models
+
+                        My primary goal is to find somewhere inbetween where I can surface interesting and actionable
+                        data for everyone. I started with SEC data because that seems the most interesting for 
+                        momentum based strategies, but I will consider adding other data sources in the future.
+
+                        As a secondary goal, I want to take this data one step further and use it myself to build an 
+                        effective quantitative strategy.
+
+                        The blog will follow the results of that secondary focus to see if it's possible.
+
                         '''),
-                                                dcc.Markdown('''
-                            **1.** Download raw (and expensive) datasets, then do a ton of coding to make it actionable
-                        
-                            **2.** Pay someone for their own picks that lack transparency around the process and the success of the models
-                        
-                            Instead, I think there is value in exposing my own process to quant trading so that you can use my learnings to 
-                            inform your own process. My main focus will be to share clean and actionable data that underpins my own
-                            quant strategies. My secondary focus is to publish the results of my quant strategy so that you can follow along. 
-                            If the strategy is successful, then it will be something I can bill for. 
-                        
-                            This blog will follow the results of that secondary focus.
-                        
-                            **My Current Trading Strategy:** SEC Filings contain language in the sections about risk that are meant to be 
-                            boiler plate and broad. However, when you assess the trends over time of companies deciding these 
-                            warnings are/aren't necessary, you can accurately predict the directional movement of stocks that are 
-                            strongly correlated to broad market shifts.
-                        
-                            '''),
-                            # html.P('''My Thesis: By pulling together public data sources and making them searchable,
-                            # I can make market data more accessible to everyday traders. And if I use this data effectively,
-                            # I can develop trading strategies for myself.'''),
-                            # html.P(
-                            #         '''My Current Hypothesis: SEC Filings contain language in the sections about risk that are meant to be
-                            #         boiler plate and broad. However, when you assess the trends over time of companies deciding these
-                            #         warnings are/aren't necessary, you can accurately predict the directional movement of stocks that are
-                            #         strongly correlated to broad market shifts.'''),
-                            #     html.P(
-                            #         '''Follow along in these blog posts to see how the model changes over time and whether or not
-                            #         the recommendations are profitable'''),
                     ],
-                    title="What is Causalation?",)],
+                    title="What is Causalation?", )],
             start_collapsed=True,
-                ),),
-            style={'textAlign': 'center'},
-            width={"size": 8, "offset": 2},
-        )
+        ), ),
+        style={'textAlign': 'left'},
+        width={"size": 8, "offset": 2},
+    )
     ),
 
-    # FAQ
+    #AI Strategy
     dbc.Row(
         dbc.Col(html.Div([
-            html.H1('''FAQ''')
+            dbc.Accordion(
+                [
+                dbc.AccordionItem(
+                    [
+                        dcc.Markdown(
+                            '''**My Current Trading Strategy:** SEC Filings contain language in the sections about risk 
+                            that are meant to be boiler plate and broad. However, when you assess the trends over time 
+                            of companies deciding these warnings are/aren't necessary, you can accurately predict the 
+                            directional movement of stocks that are strongly correlated to broad market shifts.'''),],
+                    title="What's the Strategy for the AI Predictions'?",)],
+                    start_collapsed=True,)
         ]),
             style={'textAlign': 'center', 'color': colors['text']},
             width={"size": 8, "offset": 2}
@@ -87,45 +100,14 @@ layout = dbc.Container([
     ),
     dbc.Row(
         dbc.Col(html.Div([
-            html.H3('''So what exactly am I looking at here?''', className="text-muted")
-        ]),
-            style={'textAlign': 'center', 'color': colors['text']},
-            width={"size": 8, "offset": 2}
-        )
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-        html.P('''Causalation is a way to spot correlations between stock prices and what companies are discussing in their public filings.'''),
-        html.P(
-                '''The dashboard is bringing together keywords extracted from 10-K & 10-Q filings
-                with weekly stock closings from S&P 500 companies (and some meme stocks) over the same time period.'''),
-        ]),
-            style={'textAlign': 'center'},
-            width={"size": 8, "offset": 2},
-        )
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-            html.H3('''What is on the Dashboard?''', className="text-muted")
-        ]),
-            style={'textAlign': 'center', 'color': colors['text']},
-            width={"size": 8, "offset": 2}
-        )
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-            html.Img(src=images.screenshot_helper,
-                     style={'height': '5%', 'width': '80%'}),
-            html.P()
-        ]),
-            style={'textAlign': 'center'},
-            width={"size": 8, "offset": 2},
-        )
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-
-            dcc.Markdown('''
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        [
+                            html.Img(src=images.screenshot_helper,
+                                     style={'height': '5%', 'width': '80%'}),
+                            dcc.Markdown(
+                                '''
             **1:** Filter by Stock
             
             **2:** Filter by Date. 10-K's have data going back to January 2017; 10-Q's to January 2021.
@@ -133,34 +115,52 @@ layout = dbc.Container([
             **3:** Filter by number of week delay. This allows you to correlate stocks with topics mentioned X number 
             of weeks ago
             
-            **4:** Filter by Filing Type. 10-K's or 10-Q's
+            **4:** Filter by Filing Type. 10-K's, 10-Q's, or both
             
             **5:** Filter by keywords mentioned. Each keyword includes all larger words. e.g. "cloud computing" would 
             be captured by "cloud"
             
-            **6:** Apply filers. Only click it once, it's pretty slow for now
+            **6:** Apply filters to the entire page
             
             **7:** This chart shows each stock's closing price for a given week and the percentage of SEC Filings that 
             mention the keyword selected. The keyword selected is cohorted by week and the percentage represented in the chart 
             is based on a 12 week rolling average
             
-            **8:** Total number of times this keyword is mentioned within the timeframe selected
+            **8:** The returns of the stock in the given timeframe
             
-            **9:** The correlation ratio between the stock and the keyword selected, within the given filters
+            **9:** The returns of the S&P 500 during the same timeframe to make benchmarking easier
             
-            **10:** Regardless of the stock you selected, this table shows the top 10 stocks most correlated with the 
-            keyword selected; within the filters applied
-                
-            **11:** This table is the same as #10, but ordered by stocks inversely correlated with the selected keyword
-            '''),
+            **10:** The number of times the stock follows the moves of the keyword mentions with the filters applied. Example:
+            you have the delay filter set to 2 weeks and the keyword mentions increase in a one week timeframe. Then two 
+            weeks later, the stock price increases as well. That would count as a match. If the moves match 50 out of 
+            100 times, this value will show 50%.
+            
+            **11:** Total number of times this keyword is mentioned within the timeframe selected
+            
+            **12:** The correlation ratio between the stock and the keyword selected, within the given filters
+            
+            **13:** This table is not affected by the filters, but instead updates everyday to show the 10 sets of 
+            filters with the strongest correlation
+                                '''), ],
+                        title="What's on the Historical Dashboard?", )],
+                start_collapsed=True, )
         ]),
-            style={'textAlign': 'left'},
-            width={"size": 6, "offset": 3},
+            style={'textAlign': 'left', 'color': colors['text']},
+            width={"size": 8, "offset": 2}
         )
     ),
     dbc.Row(
         dbc.Col(html.Div([
-            html.H3('''How is the public filing data normalized?''', className="text-muted")
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        [
+                            dcc.Markdown(
+                                '''The data is pulled from SEC public filings. Text is then extracted from the sections 
+                4 "Risk Factors" and 7 "Management’s Discussion and Analysis of Financial Condition and Results of 
+                Operations"'''), ],
+                        title="How is the SEC filing data normalized?", )],
+                start_collapsed=True, )
         ]),
             style={'textAlign': 'center', 'color': colors['text']},
             width={"size": 8, "offset": 2}
@@ -168,31 +168,23 @@ layout = dbc.Container([
     ),
     dbc.Row(
         dbc.Col(html.Div([
-            html.P(
-                '''The data is pulled from SEC public filings. Text is then extracted from the sections 
-                4 "Risk Factors" and 7 "Management’s Discussion and Analysis of Financial Condition and Results of Operations"''')
-        ]),
-            style={'textAlign': 'center'},
-            width={"size": 8, "offset": 2},
-        )
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-            html.H3('''Why isn't the start date what I selected?''', className="text-muted")
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        [
+                            dcc.Markdown(
+                                '''
+                                The chart includes the 12 week rolling average of keyword mentions- this ensures that 
+                                a slow week in filings doesn't distort the data. But to ensure that the first few weeks 
+                                also aren't dramatic swings, the first 6 datapoints are disregarded. 
+                                
+                                This is true both for the chart on the historical dashboard, and for the data used to 
+                                build the ML Models'''), ],
+                        title="Why isn't the start date on the chart what I selected?", )],
+                start_collapsed=True, )
         ]),
             style={'textAlign': 'center', 'color': colors['text']},
             width={"size": 8, "offset": 2}
-        )
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-            html.P(
-                '''The chart includes the 12 week rolling average of keyword mentions- this ensures that a slow week
-                in filings doesn't distort the data. But to ensure that the first few weeks also aren't dramatic swings,
-                the first 6 datapoints are disregarded.''')
-        ]),
-            style={'textAlign': 'center'},
-            width={"size": 8, "offset": 2},
         )
     ),
 ])

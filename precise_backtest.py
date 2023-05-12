@@ -202,6 +202,8 @@ def build_backtest_prediction_table(model_type):
 
         #build the table with all of the predictions
         # pd.set_option("display.max_columns", 20)
+        print("start:", correlation_start_date_list, "end:", monday_end_date_list)
+        print(stock_symbol_list)
         df_test = pd.DataFrame(test_results, columns=['predicted_price'])
         full_results_df = pd.concat(full_test_data, ignore_index=True)
         df_full = pd.DataFrame(full_results_df)
@@ -218,10 +220,10 @@ def build_backtest_prediction_table(model_type):
         df_for_calculating_backtest = df_for_calculating_backtest.append(df_full, ignore_index=True)
     return df_for_calculating_backtest
 
-# model_type = 'linear'
+# model_type = 'random_forest'
 # df_for_calculating_backtest = build_backtest_prediction_table(model_type)
 # print(df_for_calculating_backtest)
-# forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions', 'replace')
+# forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions_2', 'replace')
 
 #model_type options are decision_tree, random_forest, and linear
 def backtesting_buy_recommendation_list(model_type):

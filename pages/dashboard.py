@@ -20,6 +20,12 @@ layout = html.Div(children=[dbc.Container([
              ]),
     dbc.Row(html.Div(html.Hr(className="my-2"))),
     dbc.Row(html.Div(html.H1(""))),
+    # dbc.Row(
+    #     dbc.Col(html.P(children='''Please be patient with the slow load times.
+    #     This is an MVP and hasn't yet been optimized''',
+    #                    style={'textAlign': 'center'}
+    #                    ),
+    #             )),
 
     #Filters
     dbc.Row(html.Div(html.H4(""))),
@@ -88,7 +94,7 @@ layout = html.Div(children=[dbc.Container([
                               }), width={"size": 3, "offset": 2}),
              ]
             ),
-    dbc.Row(dbc.Col(html.Div([html.H3("Stock Follows SEC Direction:"),
+    dbc.Row(dbc.Col(html.Div([html.H3("Stock Follows Keyword Moves:"),
                           html.H3(id='stock_and_sec_move_table'),
                               html.H3("")],
                          style={
