@@ -23,7 +23,7 @@ layout = dbc.Container([
 
     #Recommendation Section
     html.Div(html.H1(
-        children='Stocks to Buy This Week',
+        children='Stock Predictions This Week',
         style={
             'textAlign': 'center',
             'color': colors['text']
@@ -31,10 +31,11 @@ layout = dbc.Container([
 
     # webfom
     dbc.Row(dbc.Col([
-        html.Div(html.H6(dcc.Markdown('''This week's recommendations will soon be moving exclusively to our newsletter.
-        Sign up here!'''),
+        html.Div(html.H6(dcc.Markdown('''Predictions are refreshed every Sunday morning for the next Monday. Never miss 
+        the latest prediction by signing up for our newsletter!'''),
                          style={
                              'textAlign': 'center',
+                             'fontWeight': '400',
                              'color': colors['text']
                          })),
     html.Form(
@@ -62,8 +63,9 @@ layout = dbc.Container([
                 [Check out our blog](/blog)!'''),
                                  style={
                                      'textAlign': 'center',
-
-                                 })), width={"size": 10, "offset": 1})
+                                     'fontWeight': '600',
+                                 })),
+                    width={"size": 10, "offset": 1})
     ),
 
     #last week. Need to fix the query before this can be put back in

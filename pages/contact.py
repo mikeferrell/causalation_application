@@ -19,20 +19,24 @@ layout = dbc.Container([
 
     dbc.Row(
                 dbc.Col(html.Div([
-                html.P('''Is there more data you want to see here? Email us and let us know what charts or datasets to add!''',
-                        className="text-primary")
+                html.H6('''Is there more data you want to see here? Email us and let us know what charts or datasets to add!''')
                         ]),
-                    style={'textAlign': 'center'},
+                    style={'textAlign': 'center', 'fontWeight': '400',},
                     width={"size": 8, "offset": 2},
-                )
+                ),
+        className="p-3"
             ),
             dbc.Row(
                 dbc.Col(html.Div([
-                    html.H3('''causalation@gmail.com''', className="text-muted")
+                    html.H3('''causalation@gmail.com''')
                 ]),
-                    style={'textAlign': 'center','color': colors['text']},
+                    style={'textAlign': 'center','color': colors['dark_theme']},
                     width={"size": 8, "offset": 2}
                 )
             ),
+    dbc.Row(html.Div([html.Hr(className="my-2"),
+                      html.H1("")],
+                     style={'padding': 15}),
+            className="h-10"),
 ])
 

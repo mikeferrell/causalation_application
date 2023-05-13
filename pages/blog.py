@@ -29,10 +29,16 @@ layout = dbc.Container([
             html.H4('''Follow along as I improve the model 
             and attempt to beat the market by blindly trusting it's recommendations''')
         ]),
-            style={'textAlign': 'center', 'color': colors['text']},
+            style={'textAlign': 'center', 'fontWeight': '300', 'color': colors['text']},
             width={"size": 8, "offset": 2}
         )
     ),
+    dbc.Row(html.Div([html.Hr(className="my-2"),
+                      html.H1("")],
+                     style={'padding': 15}),
+            className="h-10"),
+
+    #blog pages
     dbc.Row(
         dbc.Col(html.Div([dbc.NavLink(html.H3("Update 5/7/2023"),
                                       href="/blog_pages/5_7_23_blog"),

@@ -25,7 +25,7 @@ nav_items = dbc.Nav(
                  [
                  dbc.NavItem(dbc.NavLink("Home", href="/", active="exact",
                                          style={"color": colors['background']})),
-                          dbc.NavItem(dbc.NavLink("AI Predictions", href="/predictions", active="exact",
+                          dbc.NavItem(dbc.NavLink("ML Predictions", href="/predictions", active="exact",
                                                   style={"color": colors['background']})),
                           dbc.NavItem(dbc.NavLink("Dashboard", href="/dashboard", active="exact",
                                                   style={"color": colors['background']})),

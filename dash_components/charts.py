@@ -119,3 +119,8 @@ def generate_table_with_filters(dataframe):
                           'color': 'white',
                       })
     return table
+
+
+
+
+

@@ -23,8 +23,9 @@ layout = dbc.Container([
             # className="h-100 p-5 text-white bg-dark rounded-3",
             ), width={"size": 6},
             style={"height": "100%"}),
-    ],
-    className="h-35"),
+            ],
+        className="p-1 px-0 py-0 pt-0 pb-1"
+        ),
 
     #Buttons
     dbc.Row(html.Div([html.Hr(className="my-2"),

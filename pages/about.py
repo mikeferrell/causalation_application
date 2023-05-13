@@ -10,17 +10,20 @@ dash.register_page(__name__, path='/about')
 layout = dbc.Container([
     #image
     dbc.Row([dbc.Col(html.Div(html.Img(src=images.logo_image_direct,
-                                       style={'height': '2%', 'width': '50%'})),
+                                       style={'width': '50%'})),
                      width={"size": 6, "offset": 4}),
-             ]),
-    dbc.Row(html.Div(html.Hr(className="my-2"))),
-    dbc.Row(html.Div(html.H1(""))),
+             ],
+            className="p-1 px-0 py-0"),
+    dbc.Row(html.Div([html.Hr(className="my-2"),
+                      html.H1("")],
+                     ),
+            className="h-10"),
 
     # Disclaimer
     dbc.Row(
         dbc.Col(html.Div([
             html.H6(dcc.Markdown('''**DISCMLAIMER**: This is not financial advice, this is just a data project. 
-            What you do with that data is up to you. Any "recommendations" are simply machine learning results based on 
+            What you do with that data is up to you. Any predictions are simply machine learning results based on 
             the underlying data, and not actual financial recommendations.
             '''))
         ]),
@@ -28,6 +31,10 @@ layout = dbc.Container([
             width={"size": 8, "offset": 2}
         )
     ),
+    dbc.Row(html.Div([html.Hr(className="my-2"),
+                      html.H1("")],
+                     ),
+            className="h-10"),
 
     #     #
     # FAQ #
@@ -50,7 +57,7 @@ layout = dbc.Container([
                         dcc.Markdown('''**Causalation** Is a project to designed to make it easier to use information
                     from SEC filings in quantitative analysis.'''),
 
-                        dcc.Markdown('''**My Thesis: ** There is so much data available today, and retail traders want 
+                        dcc.Markdown('''There is so much data available today, and retail traders want 
                     to use that data to inform their stock picks. However, data analysis is hard, and the only 
                     options available today are: 
                     '''),
@@ -60,14 +67,15 @@ layout = dbc.Container([
                         **2.** Pay someone for their own picks that lack transparency around the process and the 
                         success of the models
 
-                        My primary goal is to find somewhere inbetween where I can surface interesting and actionable
+                        **My primary goal** is to find somewhere inbetween where I can surface interesting and actionable
                         data for everyone. I started with SEC data because that seems the most interesting for 
                         momentum based strategies, but I will consider adding other data sources in the future.
 
-                        As a secondary goal, I want to take this data one step further and use it myself to build an 
+                        **As a secondary goal**, I want to take this data one step further and use it myself to build an 
                         effective quantitative strategy.
 
-                        The blog will follow the results of that secondary focus to see if it's possible.
+                        The blog will follow the results of that secondary focus and use that information to improve
+                        this website.
 
                         '''),
                     ],
@@ -79,25 +87,7 @@ layout = dbc.Container([
     )
     ),
 
-    #AI Strategy
-    dbc.Row(
-        dbc.Col(html.Div([
-            dbc.Accordion(
-                [
-                dbc.AccordionItem(
-                    [
-                        dcc.Markdown(
-                            '''**My Current Trading Strategy:** SEC Filings contain language in the sections about risk 
-                            that are meant to be boiler plate and broad. However, when you assess the trends over time 
-                            of companies deciding these warnings are/aren't necessary, you can accurately predict the 
-                            directional movement of stocks that are strongly correlated to broad market shifts.'''),],
-                    title="What's the Strategy for the AI Predictions'?",)],
-                    start_collapsed=True,)
-        ]),
-            style={'textAlign': 'center', 'color': colors['text']},
-            width={"size": 8, "offset": 2}
-        )
-    ),
+    #Dashboard Details
     dbc.Row(
         dbc.Col(html.Div([
             dbc.Accordion(
@@ -149,6 +139,49 @@ layout = dbc.Container([
             width={"size": 8, "offset": 2}
         )
     ),
+
+    # ML Strategy
+    dbc.Row(
+        dbc.Col(html.Div([
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        [
+                            dcc.Markdown(
+                                '''**Current Model Strategy:** SEC Filings contain language in the sections about risk 
+                                that are meant to be boiler plate and broad. However, when you assess the trends over time 
+                                of companies deciding these warnings are/aren't necessary, you can accurately predict the 
+                                directional movement of stocks that are strongly correlated to broad market shifts.'''), ],
+                        title="What's the Strategy for the ML Predictions?", )],
+                start_collapsed=True, )
+        ]),
+            style={'textAlign': 'left', 'color': colors['text']},
+            width={"size": 8, "offset": 2}
+        )
+    ),
+
+    #Data Details
+    dbc.Row(
+        dbc.Col(html.Div([
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        [
+                            dcc.Markdown(
+                                '''
+                                The stock data is the current S&P 500, plus some meme stocks that people have asked
+                                for. The SEC filings are only from the S&P 500 companies. 
+                                
+                                By using the current list of S&P 500 companies, that will create some survivorship bias.
+                                Maybe in the future we will use point in time data.
+                                '''), ],
+                        title="What data is Being Used?", )],
+                start_collapsed=True, )
+        ]),
+            style={'textAlign': 'left', 'color': colors['text']},
+            width={"size": 8, "offset": 2}
+        )
+    ),
     dbc.Row(
         dbc.Col(html.Div([
             dbc.Accordion(
@@ -162,7 +195,7 @@ layout = dbc.Container([
                         title="How is the SEC filing data normalized?", )],
                 start_collapsed=True, )
         ]),
-            style={'textAlign': 'center', 'color': colors['text']},
+            style={'textAlign': 'left', 'color': colors['text']},
             width={"size": 8, "offset": 2}
         )
     ),
@@ -183,9 +216,10 @@ layout = dbc.Container([
                         title="Why isn't the start date on the chart what I selected?", )],
                 start_collapsed=True, )
         ]),
-            style={'textAlign': 'center', 'color': colors['text']},
-            width={"size": 8, "offset": 2}
-        )
+            style={'textAlign': 'left', 'color': colors['text']},
+            width={"size": 8, "offset": 2},
+        ),
+        className="p-5 px-0 py-0 pb-5"
     ),
 ])
 
