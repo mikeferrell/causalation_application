@@ -175,7 +175,7 @@ layout = dbc.Container([
                                 By using the current list of S&P 500 companies, that will create some survivorship bias.
                                 Maybe in the future we will use point in time data.
                                 '''), ],
-                        title="What data is Being Used?", )],
+                        title="What Data is Being Used?", )],
                 start_collapsed=True, )
         ]),
             style={'textAlign': 'left', 'color': colors['text']},
@@ -192,7 +192,7 @@ layout = dbc.Container([
                                 '''The data is pulled from SEC public filings. Text is then extracted from the sections 
                 4 "Risk Factors" and 7 "Management’s Discussion and Analysis of Financial Condition and Results of 
                 Operations"'''), ],
-                        title="How is the SEC filing data normalized?", )],
+                        title="How is the SEC Filing Data Normalized?", )],
                 start_collapsed=True, )
         ]),
             style={'textAlign': 'left', 'color': colors['text']},
@@ -213,7 +213,7 @@ layout = dbc.Container([
                                 
                                 This is true both for the chart on the historical dashboard, and for the data used to 
                                 build the ML Models'''), ],
-                        title="Why isn't the start date on the chart what I selected?", )],
+                        title="Why isn't the Start Date on the Chart What I Selected?", )],
                 start_collapsed=True, )
         ]),
             style={'textAlign': 'left', 'color': colors['text']},

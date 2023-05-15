@@ -20,12 +20,7 @@ layout = html.Div(children=[dbc.Container([
              ]),
     dbc.Row(html.Div(html.Hr(className="my-2"))),
     dbc.Row(html.Div(html.H1(""))),
-    # dbc.Row(
-    #     dbc.Col(html.P(children='''Please be patient with the slow load times.
-    #     This is an MVP and hasn't yet been optimized''',
-    #                    style={'textAlign': 'center'}
-    #                    ),
-    #             )),
+
 
     #Filters
     dbc.Row(html.Div(html.H4(""))),
@@ -70,6 +65,13 @@ layout = html.Div(children=[dbc.Container([
 
     #table
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='date_and_stock_for_chart', figure={})), width={"size": 9, "offset": 2})),
+    dbc.Row(dbc.Col(html.Div(html.H6(dcc.Markdown('''Unsure what this data represents? [Check out the FAQ](/about)!'''),
+                                     style={
+                                         'textAlign': 'center',
+                                         'fontWeight': '600',
+                                     })),
+                    width={"size": 9, "offset": 2})
+            ),
     dbc.Row(html.Div(html.Hr(className="my-2"))),
 
     # stock returns
