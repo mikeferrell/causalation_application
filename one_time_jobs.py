@@ -8,6 +8,7 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
+import yfinance as yf
 import top_correlations
 
 url = passwords.rds_access
@@ -16,8 +17,6 @@ connect = engine.connect()
 
 symbols_list = dataframes_from_queries.stock_dropdown()
 
-
-# symbols_list = ['COIN', 'AAPL']
 
 def get_dates():
     today = date.today()
@@ -90,12 +89,13 @@ def full_edgar_job_10qs():
 # full_edgar_job_10ks()
 # full_edgar_job_10qs()
 
+# symbols_list = []
 
 def one_time_update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = yf.download(ticker, start='2023-03-06', end=date.today())
+            downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -107,7 +107,7 @@ def one_time_update_stock_data():
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    # append_to_postgres(df, 'ticker_data', 'replace')
+    append_to_postgres(df, 'ticker_data', 'append')
     print("stocks done")
 
 

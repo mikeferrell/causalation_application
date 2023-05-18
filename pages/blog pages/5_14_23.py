@@ -64,7 +64,7 @@ layout = dbc.Container([
     dbc.Row(
         dbc.Col(html.Div([
             dcc.Markdown('''    
-            As we can see, we edged out a slight profit of 0.2%, which has a CAGR of 10.9%- not bad. Unfortunately, this
+            As we can see, we edged out a slight profit of 0.269%, which has a CAGR of 14.05%- not bad. Unfortunately, this
             likely would have been about break even if we factored in transactions costs. This strategy keeps 
             transaction costs low because it's long only, stocks only, and no leverage. That means most trading platforms
             will give you commission free trades so the only cost will be the bid-ask spread on these stocks, all of

@@ -193,7 +193,7 @@ def weekly_stock_opening_cron_job():
 
 # For each critieria in the lists, pull the stocks with the top 10 correlation scores. Loop through all the different
 # options
-def top_correlation_scores():
+def top_correlation_scores(asc_or_desc):
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
     # time delays to test
@@ -277,7 +277,7 @@ def top_correlation_scores():
                             where week_opening_date >= '{dates}'
                             and week_opening_date <= '{get_dates()}'
                             group by 1, 2
-                            order by Correlation desc
+                            order by Correlation {asc_or_desc}
                             limit 10
                             '''
                         df_results = pd.read_sql(query_results, con=connect)
@@ -286,24 +286,19 @@ def top_correlation_scores():
 
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
     print("finished correlation for loop")
-    # df = pd.DataFrame(list_of_all_correlations)
-    # conn_string = passwords.rds_access
-    # db = create_engine(conn_string)
-    # conn = db.connect()
-    # df.to_sql('all_correlation_scores', con=conn, if_exists='replace',
-    #           index=False)
-    # conn = psycopg2.connect(conn_string)
-    # conn.autocommit = True
-    # cursor = conn.cursor()
-    # conn.close()
-    append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
-    time.sleep(5)
+    if asc_or_desc == 'desc':
+        append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
+        time.sleep(5)
+    if asc_or_desc == 'asc':
+        append_to_postgres(list_of_all_correlations, 'all_inverse_correlation_scores', 'replace')
+        time.sleep(5)
     if datetime.today().weekday() == 1:
         append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'append')
     else:
         pass
     print("done with top correlations")
 
+top_correlation_scores('asc')
 
 def last_week_top_correlation_scores():
     query_results = f'''
