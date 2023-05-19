@@ -100,10 +100,14 @@ def top_correlation_query_results(table_for_this_week_or_last):
     
             select distinct on (stock_symbol) *
             from top_correlations
-            order by stock_symbol, correlation desc
+            order by stock_symbol, correlation {order}
         '''
         query_df = pd.read_sql(top_correlation_query_results, con=connect)
-        query_df = query_df.sort_values(by=['correlation'], ascending=False)
+        if order == 'asc':
+            ascending_oder = True
+        if order == 'desc':
+            ascending_oder = False
+        query_df = query_df.sort_values(by=['correlation'], ascending=ascending_oder)
         query_df = query_df.head(10)
     return query_df
 

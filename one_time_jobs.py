@@ -111,7 +111,7 @@ def one_time_update_stock_data():
     print("stocks done")
 
 
-def one_time_backfill_correlation_scores():
+def one_time_backfill_correlation_scores(asc_or_desc):
     yesterday, today_minus_one_eighty = get_dates_multiple()
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
@@ -129,7 +129,7 @@ def one_time_backfill_correlation_scores():
     print(end_dates)
     # time delays to test
     time_delay_dict = ['1', '2', '4', '8']
-    filing_type = ['10-K', '10-Q']
+    filing_type = ['10-K']
     # grab the first date of each week within the time bound we're interested in. Right now, Aug 2021-Yesterday
     dates_dict = f'''
             with first_week_dates as (
@@ -214,7 +214,7 @@ def one_time_backfill_correlation_scores():
                                 where week_opening_date >= '{start_date}'
                                 and week_opening_date <= '{end_date}'
                                 group by 1, 2
-                                order by Correlation desc
+                                order by Correlation {asc_or_desc}
                                 limit 10
                                 '''
                             df_results = pd.read_sql(query_results, con=connect)
@@ -222,9 +222,15 @@ def one_time_backfill_correlation_scores():
                             list_of_all_correlations.append(df_results)
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
     print("finished correlation for loop")
-    append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'replace')
+    if asc_or_desc == 'asc':
+        append_to_postgres(list_of_all_correlations, 'inverse_correlation_scores_for_backtest', 'replace')
+    if asc_or_desc == 'desc':
+        append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'replace')
+    else:
+        pass
     print("done with top correlations")
 
+# one_time_backfill_correlation_scores('asc')
 
 
 

@@ -286,19 +286,34 @@ def top_correlation_scores(asc_or_desc):
 
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
     print("finished correlation for loop")
+    append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
+    time.sleep(5)
     if asc_or_desc == 'desc':
         append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
         time.sleep(5)
+        if datetime.today().weekday() == 1:
+            append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'append')
+        else:
+            pass
     if asc_or_desc == 'asc':
         append_to_postgres(list_of_all_correlations, 'all_inverse_correlation_scores', 'replace')
         time.sleep(5)
-    if datetime.today().weekday() == 1:
-        append_to_postgres(list_of_all_correlations, 'correlation_scores_for_backtest', 'append')
+        if datetime.today().weekday() == 1:
+            append_to_postgres(list_of_all_correlations, 'inverse_correlation_scores_for_backtest', 'append')
+        else:
+            pass
     else:
         pass
     print("done with top correlations")
 
-top_correlation_scores('asc')
+
+def wrapper_top_correlation_scores_asc():
+    top_correlation_scores('asc')
+
+
+def wrapper_top_correlation_scores_desc():
+    top_correlation_scores('desc')
+
 
 def last_week_top_correlation_scores():
     query_results = f'''
