@@ -1,17 +1,9 @@
-import numpy as np
 import pandas as pd
-from pandas_datareader import data
-from datetime import date, timedelta, datetime
-import time
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
+from datetime import date, timedelta
 from sqlalchemy import create_engine
 import psycopg2
 import passwords
-import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
+import older_versions.forecast_top_stocks_model as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)

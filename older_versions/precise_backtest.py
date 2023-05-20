@@ -1,14 +1,11 @@
 import dataframes_from_queries
-from datetime import date, timedelta, datetime
 from sqlalchemy import create_engine
-import psycopg2
 import passwords
 import pandas as pd
 from datetime import date, timedelta, datetime
 from pandasql import sqldf
 import numpy as np
-from sklearn import datasets
-import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
+import older_versions.forecast_top_stocks_model as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -17,6 +14,7 @@ connect = engine.connect()
 
 def format_percent(value):
     return "{:.0%}".format(value)
+
 
 def format_dollar(value):
     return "${:.2f}".format(value)
@@ -27,9 +25,11 @@ engine = create_engine(url)
 connect = engine.connect()
 
 symbols_list = dataframes_from_queries.stock_dropdown()
- # symbols_list = ['COIN', 'AAPL']
 
-#returns a string
+
+# symbols_list = ['COIN', 'AAPL']
+
+# returns a string
 def get_dates():
     today = date.today()
     yesterdays_date = today - timedelta(days=1)
@@ -42,11 +42,12 @@ def get_dates():
     today_minus_one_eighty = today - timedelta(days=180)
     return yesterday, today_minus_one_eighty
 
+
 # def backtest_correlation_scores():
-#see if there's a more efficient way to ensure that for the correlation query, we only check timelines of between, idk
+# see if there's a more efficient way to ensure that for the correlation query, we only check timelines of between, idk
 # 12 and 52 weeks. or less. No need to try every month. So do some filtering on the dates_dict within the end_dates
-#portion of the for loop to reduce that. Right now, we're looking at generating 3.7MM rows
-#did this, double check the expected size output now and estimate time to run. this may work now, or may need more work
+# portion of the for loop to reduce that. Right now, we're looking at generating 3.7MM rows
+# did this, double check the expected size output now and estimate time to run. this may work now, or may need more work
 
 #
 # def all_time_top_correlation_query_results():
@@ -92,12 +93,13 @@ def get_dates():
 
 
 def build_backtest_prediction_table(model_type):
-    df_for_calculating_backtest = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
-                                             'current_close_price', 'next_week_close_price', 'predicted_price',
-                                             'stock_symbol', 'keyword', 'start_date', 'monday_end_date',
-                                             'friday_end_date', 'time_delay', 'filing_type'])
+    df_for_calculating_backtest = pd.DataFrame(
+        columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
+                 'current_close_price', 'next_week_close_price', 'predicted_price',
+                 'stock_symbol', 'keyword', 'start_date', 'monday_end_date',
+                 'friday_end_date', 'time_delay', 'filing_type'])
 
-    #find each end date, then use that for the backtest process. exclude recent results where we might have incomplete data
+    # find each end date, then use that for the backtest process. exclude recent results where we might have incomplete data
     today = date.today()
     end_dates_query = f'''
     select distinct end_date from correlation_scores_for_backtest
@@ -107,7 +109,7 @@ def build_backtest_prediction_table(model_type):
     end_date_df = pd.read_sql(end_dates_query, con=connect)
     end_date_list = end_date_df.values.tolist()
     # print("end date list", end_date_list)
-    #for each week in the table, find the top 10 correlation scores and return them
+    # for each week in the table, find the top 10 correlation scores and return them
     for dates in end_date_list:
         dates = dates[0]
         # print("date for lopp", dates)
@@ -151,7 +153,7 @@ def build_backtest_prediction_table(model_type):
         filing_type_list = []
 
         row_range = range(0, 10)
-        #for each of the top 10 correlation scores for each week, train the ML model then predict the following weekly
+        # for each of the top 10 correlation scores for each week, train the ML model then predict the following weekly
         # close (while hiding what that data is from the model)
         for rows in row_range:
             df_row = query_df.iloc[rows]
@@ -162,10 +164,10 @@ def build_backtest_prediction_table(model_type):
             interval = df_row['time_delay']
             filing_type = df_row['filing_type']
 
-            #adjusts start date and end dates to the real start & end dates as pulled from the DB
-            #rounded_friday is the friday occuring before the last week of the data returned. Should it be the next Friday?
-            #because we are returning data for the week of the monday_end_date. Fix this if we use friday_end_date for
-            #anything important
+            # adjusts start date and end dates to the real start & end dates as pulled from the DB
+            # rounded_friday is the friday occuring before the last week of the data returned. Should it be the next Friday?
+            # because we are returning data for the week of the monday_end_date. Fix this if we use friday_end_date for
+            # anything important
             correlation_start_date = datetime.strptime(correlation_start_date, '%Y-%m-%d').date()
             correlation_start_date = correlation_start_date + timedelta((0 - correlation_start_date.weekday()) % 7)
             monday_end_date = datetime.strptime(monday_end_date, '%Y-%m-%d').date()
@@ -178,8 +180,10 @@ def build_backtest_prediction_table(model_type):
 
             # print("row data", stock_symbol, keyword, correlation_start_date, monday_end_date, interval, filing_type)
             df_test_full, df_test, mae, model = forecast_top_stocks_model.train_narrow_ml_model(keyword, filing_type,
-                                                                            stock_symbol, interval, monday_end_date,
-                                                                            correlation_start_date, model_type)
+                                                                                                stock_symbol, interval,
+                                                                                                monday_end_date,
+                                                                                                correlation_start_date,
+                                                                                                model_type)
 
             # print("df test full", df_test_full)
             full_test_data.append(df_test_full)
@@ -200,7 +204,7 @@ def build_backtest_prediction_table(model_type):
             interval_list.append(interval)
             filing_type_list.append(filing_type)
 
-        #build the table with all of the predictions
+        # build the table with all of the predictions
         # pd.set_option("display.max_columns", 20)
         print("start:", correlation_start_date_list, "end:", monday_end_date_list)
         print(stock_symbol_list)
@@ -220,12 +224,13 @@ def build_backtest_prediction_table(model_type):
         df_for_calculating_backtest = df_for_calculating_backtest.append(df_full, ignore_index=True)
     return df_for_calculating_backtest
 
-# model_type = 'random_forest'
+
+# model_type = 'decision_tree'
 # df_for_calculating_backtest = build_backtest_prediction_table(model_type)
 # print(df_for_calculating_backtest)
-# forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions_2', 'replace')
+# forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions', 'replace')
 
-#model_type options are decision_tree, random_forest, and linear
+# model_type options are decision_tree, random_forest, and linear
 def backtesting_buy_recommendation_list(model_type):
     buy_rec_query = f'''
         with stock_opening_dates as ( 
@@ -239,7 +244,7 @@ def backtesting_buy_recommendation_list(model_type):
         from distinct_dates
         order by week_opening_date asc
         )
-        
+
         select 
             next_week_opening_date as week_to_buy
           , {model_type}_backtest_top_predictions.stock_symbol
@@ -273,7 +278,7 @@ def backtesting_buy_recommendation_list(model_type):
     # Iterate through each unique buy_week date and calculate returns
     for index, row in df_for_buys.iterrows():
         buy_week = row['buy_week']
-        #dataframe of which stocks to buy, and the weight for how many shares to buy
+        # dataframe of which stocks to buy, and the weight for how many shares to buy
         query_for_buys = f'''
         with stock_selections as (
           SELECT
@@ -311,8 +316,10 @@ def backtesting_buy_recommendation_list(model_type):
         df_for_calculating_returns = sqldf(query_for_buys)
         # print(df_for_calculating_returns)
 
-        returns_for_date = ((df_for_calculating_returns['cashout_price'] * df_for_calculating_returns['number_of_shares_to_buy'])
-                                             - (df_for_calculating_returns['buy_price'] * df_for_calculating_returns['number_of_shares_to_buy'])).sum()
+        returns_for_date = ((df_for_calculating_returns['cashout_price'] * df_for_calculating_returns[
+            'number_of_shares_to_buy'])
+                            - (df_for_calculating_returns['buy_price'] * df_for_calculating_returns[
+                    'number_of_shares_to_buy'])).sum()
         # print("returns", returns_for_date)
 
         # print("cash in hand before:", cash_in_hand)
@@ -323,8 +330,9 @@ def backtesting_buy_recommendation_list(model_type):
     performance_at_each_week_df = pd.DataFrame(performance_at_each_week,
                                                columns=['week_of_purchases', 'portfolio_value'])
 
-    #df to be displayed on the website
-    buy_rec_df['predicted_price_change_percentage'] = buy_rec_df['predicted_price_change_percentage'].apply(format_percent)
+    # df to be displayed on the website
+    buy_rec_df['predicted_price_change_percentage'] = buy_rec_df['predicted_price_change_percentage'].apply(
+        format_percent)
     buy_rec_df['current_close_price'] = buy_rec_df['current_close_price'].apply(format_dollar)
     buy_rec_df['predicted_price'] = buy_rec_df['predicted_price'].apply(format_dollar)
     buy_rec_df['buy_open_price'] = buy_rec_df['buy_open_price'].apply(format_dollar)
@@ -333,14 +341,15 @@ def backtesting_buy_recommendation_list(model_type):
     buy_rec_df.rename(columns={'predicted_price_change_percentage': 'Predicted Change',
                                'current_close_price': 'Close Price',
                                'predicted_price': 'Predicted Price',
-                               'buy_open_price':'Purchase Price',
-                               'buy_close_price':'Sale Price',
-                               'predicted_price_movement':'Recommendation',
-                               'week_to_buy':"Purchase Week"
+                               'buy_open_price': 'Purchase Price',
+                               'buy_close_price': 'Sale Price',
+                               'predicted_price_movement': 'Recommendation',
+                               'week_to_buy': "Purchase Week"
                                }, inplace=True)
     buy_rec_df = buy_rec_df.drop(columns=['start_date', 'time_delay', 'filing_type'])
 
     return cash_in_hand, performance_at_each_week_df, buy_rec_df
+
 
 # cash_in_hand, performance_at_each_week_df = backtesting_buy_recommendation_list('decision_tree')
 # print(performance_at_each_week_df)
@@ -364,7 +373,7 @@ def comparing_returns_vs_sandp(model_type):
     returns_df['week_of_purchases'] = pd.to_datetime(returns_df['week_of_purchases'])
     df_for_chart = pd.merge(df_for_join, returns_df, how='inner', on='week_of_purchases')
 
-    #calculate S&P ROI
+    # calculate S&P ROI
     starting_price_sp = df_for_join['s_and_p_price'].values[:1]
     ending_price_sp = df_for_join['s_and_p_price'].values[-1:]
     starting_price_sp = starting_price_sp[0]
@@ -382,7 +391,7 @@ def comparing_returns_vs_sandp(model_type):
     backtest_number = backtest_returns
     backtest_returns = "{:.1%}".format(backtest_returns)
 
-    #calculate Sharpe Ratio. This first way is from the book, the second one looks cleaner
+    # calculate Sharpe Ratio. This first way is from the book, the second one looks cleaner
     # weekly_returns = np.log(1 + returns_df.loc[:, 'portfolio_value'].pct_change())
     # excess_returns = (weekly_returns-risk_free_rate)/52
     # sharpe_ratio = np.sqrt(52)*np.mean(excess_returns)/np.std(excess_returns)
@@ -393,6 +402,5 @@ def comparing_returns_vs_sandp(model_type):
     sharpe_ratio = round(sharpe_ratio, 3)
     return df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio, returns_df
 
-
 # df_for_chart, s_and_p_returns, backtest_returns, sharpe_ratio, returns_df = comparing_returns_vs_sandp('random_forest')
-# print(sharpe_ratio)
+# print(df_for_chart, sharpe_ratio)

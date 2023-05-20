@@ -74,14 +74,6 @@ layout = dbc.Container([
                 width={"size": 8, "offset": 2},
                 )
     ),
-    dbc.Row(
-        dbc.Col(html.Div([dbc.NavLink(html.H3("Update 2/13/2023"),
-                                      href="/blog_pages/2_12_23_blog"),
-                          ]),
-                style={'textAlign': 'center', 'color': colors['mid_theme']},
-                width={"size": 8, "offset": 2},
-                )
-    ),
     dbc.Row(html.P()),
     dbc.Row(html.P()),
     dbc.Row(html.P()),

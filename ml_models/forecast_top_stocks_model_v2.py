@@ -71,6 +71,8 @@ def append_to_postgres(df, table, append_or_replace):
 # this is the list of the top 10 correlations from the all_correlation_scores table, with some filtering
 def top_correlation_query_results(table_for_this_week_or_last):
     asc_or_desc = ['asc', 'desc']
+    query_df = pd.DataFrame(columns=['stock_symbol', 'keyword', 'start_date', 'end_date', 'time_delay',
+                                     'filing_type', 'correlation'])
     for order in asc_or_desc:
         #need to fix this, since it doesn't account for what happens when the table is backtest, instead of just this week
         #I think I need to make this work for all 4 possibilities (which means I need to add a table for historical inverse
@@ -94,6 +96,7 @@ def top_correlation_query_results(table_for_this_week_or_last):
               and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
               and correlation != 1
               and "Keyword" != 'cryptocurrency Mentions'
+              and time_delay != '8'
             order by correlation {order}
             limit 250
             )
@@ -102,13 +105,14 @@ def top_correlation_query_results(table_for_this_week_or_last):
             from top_correlations
             order by stock_symbol, correlation {order}
         '''
-        query_df = pd.read_sql(top_correlation_query_results, con=connect)
+        half_query_df = pd.read_sql(top_correlation_query_results, con=connect)
         if order == 'asc':
             ascending_oder = True
         if order == 'desc':
             ascending_oder = False
-        query_df = query_df.sort_values(by=['correlation'], ascending=ascending_oder)
-        query_df = query_df.head(10)
+        half_query_df = half_query_df.sort_values(by=['correlation'], ascending=ascending_oder)
+        half_query_df = half_query_df.head(10)
+        query_df = query_df.append(half_query_df, ignore_index=True)
     return query_df
 
 
@@ -392,7 +396,8 @@ def calculate_top_ten_forecasts(testing_timeline):
 
     query_df = top_correlation_query_results()
 
-    row_range = range(0, 10)
+    row_count = query_df.shape[0]
+    row_range = range(0, row_count)
     for rows in row_range:
         df_row = query_df.iloc[rows]
         stock_symbol = df_row['stock_symbol']
@@ -463,7 +468,8 @@ def weekly_buy_recommendation_list(this_week_or_last):
     else:
         query_df = top_correlation_query_results('last_week_correlation_scores')
 
-    row_range = range(0, 10)
+    row_count = query_df.shape[0]
+    row_range = range(0, row_count)
     for rows in row_range:
         df_row = query_df.iloc[rows]
         stock_symbol = df_row['stock_symbol']
@@ -570,7 +576,7 @@ def weekly_buy_recommendation_list(this_week_or_last):
     return df_for_pg_upload
 
 
-#
+
 # df_for_upload = weekly_buy_recommendation_list('this week')
 # print(df_for_upload)
 # append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')

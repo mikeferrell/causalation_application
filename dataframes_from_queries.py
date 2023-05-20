@@ -2,7 +2,7 @@ import pandas as pd
 import passwords
 from sqlalchemy import create_engine
 from static.stock_list import stock_list
-import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
+import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -460,4 +460,4 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
     sec_and_stock_move_together = "{:.1%}".format(sec_and_stock_move_together)
     return sec_and_stock_move_together
 
-stock_moving_with_sec_data('ETSY', '2021-01-01', "2022-02-02", 'cloud', '2', '10-Q')
+# stock_moving_with_sec_data('ETSY', '2021-01-01', "2022-02-02", 'cloud', '2', '10-Q')

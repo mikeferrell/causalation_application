@@ -120,13 +120,14 @@ def one_time_backfill_correlation_scores(asc_or_desc):
         select distinct(to_char(week_opening_date, 'YYYY-MM-DD')) as date_strings
         from public.weekly_stock_openings
         where week_opening_date is not null
-        and week_opening_date >= '{today_minus_one_eighty}'
+        and week_opening_date >= '2022-09-26'
         and week_opening_date <= '{yesterday}'
         order by  date_strings asc
         '''
+    #         and week_opening_date >= '{today_minus_one_eighty}'
     end_dates = pd.read_sql(end_dates_query, con=connect)
     end_dates = end_dates['date_strings'].tolist()
-    print(end_dates)
+    # print(end_dates)
     # time delays to test
     time_delay_dict = ['1', '2', '4', '8']
     filing_type = ['10-K']
@@ -171,7 +172,7 @@ def one_time_backfill_correlation_scores(asc_or_desc):
                                                                      timedelta(days=365))) and (
                     datetime.strptime(start_date, '%Y-%m-%d').date()
                     <= (datetime.strptime(end_date, '%Y-%m-%d').date() - timedelta(days=180))):
-                print("working")
+                print("working", start_date, end_date)
                 for time_delays in time_delay_dict:
                     for keywords in keywords_dict:
                         for filings in filing_type:
@@ -230,9 +231,13 @@ def one_time_backfill_correlation_scores(asc_or_desc):
         pass
     print("done with top correlations")
 
-# one_time_backfill_correlation_scores('asc')
+
+def backfill_score_wrapper_asc():
+    one_time_backfill_correlation_scores('asc')
 
 
+def backfill_score_wrapper_desc():
+    one_time_backfill_correlation_scores('desc')
 
 # def listener(event):
 #     print("starting listener", datetime.now())

@@ -9,7 +9,7 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
-import ml_models.forecast_top_stocks_model as forecast_top_stocks_model
+import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
 
 url = passwords.rds_access
 engine = create_engine(url)

@@ -11,3 +11,4 @@
 /ml_models/forecast_top_stocks_model_v2.py
 /ml_models/rnn_forecast.py
 /static/navbar.html
+/precise_backtest_v2.py
