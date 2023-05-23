@@ -68,51 +68,63 @@ def append_to_postgres(df, table, append_or_replace):
         conn.rollback()
 
 
-# this is the list of the top 10 correlations from the all_correlation_scores table, with some filtering
+# this is the list of the top 25 correlations from the all_correlation_scores table, with some filtering
+#this only works for this week, not last week. if we want to add last week into the dash, we need to fix this
 def top_correlation_query_results(table_for_this_week_or_last):
-    asc_or_desc = ['asc', 'desc']
-    query_df = pd.DataFrame(columns=['stock_symbol', 'keyword', 'start_date', 'end_date', 'time_delay',
-                                     'filing_type', 'correlation'])
-    for order in asc_or_desc:
-        #need to fix this, since it doesn't account for what happens when the table is backtest, instead of just this week
-        #I think I need to make this work for all 4 possibilities (which means I need to add a table for historical inverse
-        #correlations as well)
-        if order == 'asc':
-            table_for_this_week_or_last = 'all_inverse_correlation_scores'
-        else:
-            table_for_this_week_or_last = 'all_correlation_scores'
-        top_correlation_query_results = f'''
-            with top_correlations as (
-            select stock_symbol
-            , split_part("Keyword", ' Mentions', 1) as keyword
-            , start_date
-            , end_date
-            , time_delay
-            , filing_type
-            , correlation
-            from public.{table_for_this_week_or_last}
-            where correlation is not null
-              and date(start_date) <= current_date - interval '40 week'
-              and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
-              and correlation != 1
-              and "Keyword" != 'cryptocurrency Mentions'
-              and time_delay != '8'
-            order by correlation {order}
-            limit 250
-            )
-    
-            select distinct on (stock_symbol) *
-            from top_correlations
-            order by stock_symbol, correlation {order}
-        '''
-        half_query_df = pd.read_sql(top_correlation_query_results, con=connect)
-        if order == 'asc':
-            ascending_oder = True
-        if order == 'desc':
-            ascending_oder = False
-        half_query_df = half_query_df.sort_values(by=['correlation'], ascending=ascending_oder)
-        half_query_df = half_query_df.head(10)
-        query_df = query_df.append(half_query_df, ignore_index=True)
+    top_correlation_query_results = f'''
+    with top_absolute_scores AS (
+      with correlated as (select stock_symbol
+      , split_part("Keyword", ' Mentions', 1) as keyword
+      , start_date
+      , end_date
+      , time_delay
+      , filing_type
+      , correlation
+      , abs(correlation) as abs_corr
+      from public.all_correlation_scores
+      where correlation is not null
+        and date(start_date) <= current_date - interval '40 week'
+        and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
+        and correlation != 1
+        and "Keyword" != 'cryptocurrency Mentions'
+        and time_delay != '8'
+      order by correlation desc
+      limit 250),
+      
+      inverse as (
+      select stock_symbol
+      , split_part("Keyword", ' Mentions', 1) as keyword
+      , start_date
+      , end_date
+      , time_delay
+      , filing_type
+      , correlation
+      , abs(correlation) as abs_corr
+      from public.all_inverse_correlation_scores
+      where correlation is not null
+        and date(start_date) <= current_date - interval '40 week'
+        and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
+        and correlation != 1
+        and "Keyword" != 'cryptocurrency Mentions'
+        and time_delay != '8'
+      order by correlation asc
+      limit 250
+      )
+      
+      select * from correlated
+      union all
+      select * from inverse 
+      order by abs_corr desc
+      )
+      
+    select distinct on (stock_symbol) *
+    from top_absolute_scores
+    order by stock_symbol, abs_corr desc
+    '''
+    query_df = pd.read_sql(top_correlation_query_results, con=connect)
+    query_df = query_df.sort_values(by=['abs_corr'], ascending=False)
+    query_df = query_df.head(25)
+    query_df = query_df.drop(columns=['abs_corr'])
     return query_df
 
 
@@ -594,6 +606,8 @@ def calculate_purchase_amounts(principal):
       FROM
           public.future_buy_recommendations
       WHERE predicted_weekly_close_price > previous_weekly_close_price
+      order by predicted_price_change_percentage desc
+      limit 5
     ),
 
     total_estimation as (

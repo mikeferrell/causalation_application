@@ -46,28 +46,10 @@ layout = dbc.Container([
                     height="100",
                     style={"border": "1px solid #EEE", "background": "white"},
                 )
-            ]
+            ],
         ),],
         width={"size": 10, "offset": 1}
     )),
-    # html.Form(
-    #     action="https://buttondown.email/api/emails/embed-subscribe/Causalation?tag=website",
-    #     method="post",
-    #     target="popupwindow",
-    #     className="embeddable-buttondown-form",
-    #     children=[
-    #         dcc.Input(type="email", name="email", placeholder="you@example.com"),
-    #         dcc.Input(type="hidden", value="1", name="embed"),
-    #         dcc.Input(type="submit", value="Subscribe"),
-    #         html.P(
-    #             html.A("Powered by Buttondown.", href="https://buttondown.email/Causalation", target="_blank")
-    #         ),
-    #     ],
-    #     style={
-    #         'textAlign': 'center',
-    #         'color': colors['text']
-    #     })], width={"size": 10, "offset": 1})
-    # ),
     dbc.Row(
         dbc.Col(html.Div(id="stocks_to_buy_table"), width={"size": 10, "offset": 1})
     ),

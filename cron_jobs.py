@@ -286,8 +286,6 @@ def top_correlation_scores(asc_or_desc):
 
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
     print("finished correlation for loop")
-    append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
-    time.sleep(5)
     if asc_or_desc == 'desc':
         append_to_postgres(list_of_all_correlations, 'all_correlation_scores', 'replace')
         time.sleep(5)
@@ -372,3 +370,4 @@ def predicted_prices_for_next_week():
 def predicted_prices_for_last_week():
     df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list('last week')
     append_to_postgres(df_for_upload, 'last_week_buy_recommendations', 'replace')
+

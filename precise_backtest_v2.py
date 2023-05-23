@@ -65,50 +65,64 @@ def build_backtest_prediction_table(model_type):
     # print("end date list", end_date_list)
     # for each week in the table, find the top 10 correlation scores and return them
     for dates in end_date_list:
-        query_df = pd.DataFrame(columns=['stock_symbol', 'keyword', 'start_date', 'end_date', 'time_delay',
-                                         'filing_type', 'correlation'])
         dates = dates[0]
-        # print("date for lopp", dates)
-        order_types = ['asc', 'desc']
-        for orders in order_types:
-            if orders == 'asc':
-                table_for_order_type = 'inverse_correlation_scores_for_backtest'
-            else:
-                table_for_order_type = 'correlation_scores_for_backtest'
-            # print(orders, table_for_order_type)
-            top_correlation_query_results = f'''
-                with top_correlations as (
-                select stock_symbol
-                , split_part("Keyword", ' Mentions', 1) as keyword
-                , start_date
-                , end_date
-                , time_delay
-                , filing_type
-                , correlation
-                from {table_for_order_type}
-                where correlation is not null
-                  and date(start_date) <= current_date - interval '40 week'
-                  and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
-                  and correlation != 1
-                  and "Keyword" != 'cryptocurrency Mentions'
-                  and end_date = '{dates}'
-                  and time_delay != '8'
-                order by correlation {orders}
-                limit 250
-                )
-
-                select distinct on (stock_symbol) *
-                from top_correlations
-                order by stock_symbol, correlation {orders}
-            '''
-            half_query_df = pd.read_sql(top_correlation_query_results, con=connect)
-            if orders == 'asc':
-                ascending_oder = True
-            if orders == 'desc':
-                ascending_oder = False
-            half_query_df = half_query_df.sort_values(by=['correlation'], ascending=ascending_oder)
-            half_query_df = half_query_df.head(10)
-            query_df = query_df.append(half_query_df, ignore_index=True)
+        print("date for lopp", dates)
+        top_correlation_query_results = f'''
+        with top_absolute_scores AS (
+          with correlated as (select stock_symbol
+          , split_part("Keyword", ' Mentions', 1) as keyword
+          , start_date
+          , end_date
+          , time_delay
+          , filing_type
+          , correlation
+          , abs(correlation) as abs_corr
+          from public.correlation_scores_for_backtest
+          where correlation is not null
+            and date(start_date) <= current_date - interval '40 week'
+            and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
+            and correlation != 1
+            and "Keyword" != 'cryptocurrency Mentions'
+            and time_delay != '8'
+            and end_date = '{dates}'
+          order by correlation desc
+          limit 250),
+          
+          inverse as (
+          select stock_symbol
+          , split_part("Keyword", ' Mentions', 1) as keyword
+          , start_date
+          , end_date
+          , time_delay
+          , filing_type
+          , correlation
+          , abs(correlation) as abs_corr
+          from public.inverse_correlation_scores_for_backtest
+          where correlation is not null
+            and date(start_date) <= current_date - interval '40 week'
+            and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
+            and correlation != 1
+            and "Keyword" != 'cryptocurrency Mentions'
+            and time_delay != '8'
+            and end_date = '{dates}'
+          order by correlation asc
+          limit 250
+          )
+          
+          select * from correlated
+          union all
+          select * from inverse 
+          order by abs_corr desc
+          )
+          
+        select distinct on (stock_symbol) *
+        from top_absolute_scores
+        order by stock_symbol, abs_corr desc
+        '''
+        query_df = pd.read_sql(top_correlation_query_results, con=connect)
+        query_df = query_df.sort_values(by=['abs_corr'], ascending=False)
+        query_df = query_df.head(25)
+        query_df = query_df.drop(columns=['abs_corr'])
         # print("head sorted", query_df)
 
         test_results = []
@@ -197,7 +211,7 @@ def build_backtest_prediction_table(model_type):
 
 # model_type = 'decision_tree'
 # df_for_calculating_backtest = build_backtest_prediction_table(model_type)
-# print(df_for_calculating_backtest)
+# # print(df_for_calculating_backtest)
 # forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions_2', 'replace')
 
 # model_type options are decision_tree, random_forest, and linear
@@ -242,7 +256,7 @@ def backtesting_buy_recommendation_list(model_type):
     df_for_buys = sqldf(date_query)
     # print("weeks", df_for_buys)
 
-    cash_in_hand = 10000
+    cash_in_hand = 1000
 
     performance_at_each_week = []
     # Iterate through each unique buy_week date and calculate returns
@@ -254,13 +268,15 @@ def backtesting_buy_recommendation_list(model_type):
           SELECT
               stock_symbol,
               week_to_buy as buy_week,
-              buy_open_price as buy_price,
-              buy_close_price as cashout_price,
+              buy_open_price + 0.03 as buy_price,
+              buy_close_price - 0.03 as cashout_price,
               predicted_price_change_percentage
           FROM
               buy_rec_df
             WHERE predicted_price_movement = 'buy recommended'
             and week_to_buy = '{buy_week}'
+            order by predicted_price_change_percentage desc
+            limit 5
         ),
 
         total_estimation as (
