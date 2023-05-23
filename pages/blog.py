@@ -33,6 +33,36 @@ layout = dbc.Container([
             width={"size": 8, "offset": 2}
         )
     ),
+    dbc.Row(dbc.Col([
+        html.Div(html.H6(dcc.Markdown('''Predictions are refreshed every Sunday morning for the next Monday. Never miss 
+    the latest prediction by signing up for our newsletter!'''),
+                         style={
+                             'textAlign': 'center',
+                             'fontWeight': '400',
+                             'color': colors['text']
+                         })),
+        html.Div(
+            children=[
+                html.Iframe(
+                    src="https://causalation.substack.com/embed",
+                    width="100%",
+                    height="260",
+                    style={"border": "1px solid #EEE", "background": "white"},
+                )
+            ],
+        ), ],
+        width={"size": 10, "offset": 1}
+    )),
+    dbc.Row(html.Div([html.Hr(className="my-2"),
+                      html.H1("")],
+                     style={'padding': 15}),
+            className="h-10"),
+    dbc.Row(dbc.Col([html.Div(
+        html.H4('''As of 5/21/2023, updates will be published via Substack. Follow the link, or subscribe to 
+            receive them straight in your inbox!'''))],
+        style={'textAlign': 'center', 'fontWeight': '300', 'color': colors['text']},
+        width={"size": 10, "offset": 1}),
+    ),
     dbc.Row(html.Div([html.Hr(className="my-2"),
                       html.H1("")],
                      style={'padding': 15}),
@@ -41,6 +71,8 @@ layout = dbc.Container([
     #blog pages
     dbc.Row(
         dbc.Col(html.Div([
+            dbc.NavLink(html.H3("Update 5/21/2023"),
+                        href="https://causalation.substack.com/p/causalation-weekly-results"),
             dbc.NavLink(html.H3("Update 5/14/2023"),
                         href="/blog_pages/5_14_23_blog"),
             dbc.NavLink(html.H3("Update 5/7/2023"),
