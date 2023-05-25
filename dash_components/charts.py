@@ -1,15 +1,9 @@
-from flask import Flask
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-import pandas as pd
-import dataframes_from_queries
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
 from dash.dash_table import DataTable
 from static.color_palette import colors
-from dash.dash_table.Format import Format, Group
 import passwords
 
 url = passwords.rds_access
@@ -90,7 +84,7 @@ def backtest_Mult_Y_Axis_Lines(dataframe_input):
     fig.update_xaxes(title_text="Date")
     # Set y-axes titles
     fig.update_yaxes(title_text=f"<b>Backtested Value", range=[1000, 2000], secondary_y=False)
-    fig.update_yaxes(title_text=f"<b>S&P 500 Value", range=[3500, 5000], secondary_y=True)
+    fig.update_yaxes(title_text=f"<b>S&P 500 Value", range=[3500, 7000], secondary_y=True)
 
     return fig
 

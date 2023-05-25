@@ -1,4 +1,4 @@
-import dataframes_from_queries
+from ml_models import dataframes_from_queries
 import os
 import pandas as pd
 import yfinance as yf

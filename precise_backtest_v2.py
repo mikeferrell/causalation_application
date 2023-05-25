@@ -1,13 +1,10 @@
-import dataframes_from_queries
-from datetime import date, timedelta, datetime
+from ml_models import dataframes_from_queries
 from sqlalchemy import create_engine
-import psycopg2
 import passwords
 import pandas as pd
 from datetime import date, timedelta, datetime
 from pandasql import sqldf
 import numpy as np
-from sklearn import datasets
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
 
 url = passwords.rds_access

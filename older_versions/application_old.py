@@ -1,10 +1,7 @@
 from flask import Flask
 from dash import Dash, dcc, html, Input, Output
-import dash_bootstrap_components as dbc
 import pandas as pd
-import dataframes_from_queries
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from ml_models import dataframes_from_queries
 from sqlalchemy import create_engine
 import passwords
 import dash_components.charts as my_dash_charts

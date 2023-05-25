@@ -1,4 +1,4 @@
-import dataframes_from_queries
+from ml_models import dataframes_from_queries
 from sqlalchemy import create_engine
 import passwords
 import pandas as pd

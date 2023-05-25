@@ -461,3 +461,32 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
     return sec_and_stock_move_together
 
 # stock_moving_with_sec_data('ETSY', '2021-01-01', "2022-02-02", 'cloud', '2', '10-Q')
+
+##                                          ##
+## Calculations for finding undervalued Stocks
+##                                          ##
+
+def biggest_price_drop(stock_dropdown):
+    query_df = f'''select stock_symbol, created_at, close_price from ticker_data'''
+    df_results = pd.read_sql(query_df, con=connect)
+    highest_price = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
+    most_recent_price = df_results.loc[df_results.groupby('stock_symbol')['created_at'].idxmax()]
+    merged_df = pd.merge(highest_price, most_recent_price, how='inner', on=['stock_symbol'])
+    merged_df = merged_df.rename(columns={'close_price_x': 'highest_price', 'close_price_y': 'current_price',
+                                          'created_at_x': 'highest_price_date', 'created_at_y': 'current_date'})
+    merged_df['price_drop'] = 1 - (merged_df['current_price'] / merged_df['highest_price'])
+    merged_df['days_since_ath'] = merged_df['current_date'] - merged_df['highest_price_date']
+    #format
+    merged_df['price_drop'] = merged_df['price_drop'].apply(lambda x: "{:.1%}".format(x))
+    merged_df['current_price'] = merged_df['current_price'].apply(format_dollar)
+    merged_df['highest_price'] = merged_df['highest_price'].apply(format_dollar)
+    merged_df['days_since_ath'] = pd.to_timedelta(merged_df['days_since_ath'])
+    merged_df['days_since_ath'] = merged_df['days_since_ath'].apply(lambda x: x.days)
+    merged_df = merged_df.sort_values(by=['price_drop'], ascending=False)
+
+    #data with filters applied
+    if stock_dropdown == '':
+        stock_filter = merged_df
+    else:
+        stock_filter = merged_df.loc[merged_df['stock_symbol'] == stock_dropdown]
+    return stock_filter

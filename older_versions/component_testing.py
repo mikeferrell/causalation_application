@@ -1,7 +1,7 @@
 from flask import Flask
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html
 import pandas as pd
-import dataframes_from_queries
+from ml_models import dataframes_from_queries
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sqlalchemy import create_engine

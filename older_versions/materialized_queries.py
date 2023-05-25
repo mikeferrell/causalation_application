@@ -1,5 +1,4 @@
-import dataframes_from_queries
-
+from ml_models import dataframes_from_queries
 
 print(dataframes_from_queries.top_keyword_correlations_with_rolling_avg('asc'))
 

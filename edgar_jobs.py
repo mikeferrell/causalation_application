@@ -9,7 +9,7 @@ import passwords
 from sqlalchemy import create_engine
 import psycopg2
 import time
-import dataframes_from_queries
+from ml_models import dataframes_from_queries
 from datetime import datetime
 
 ticker_list = dataframes_from_queries.stock_dropdown()

@@ -14,7 +14,7 @@
 
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
-import dataframes_from_queries
+from ml_models import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 
 app = Dash(__name__)
