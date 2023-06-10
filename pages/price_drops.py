@@ -7,6 +7,7 @@ from ml_models import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 from cron_jobs import get_dates
 from static.color_palette import colors
+import static.stock_list as stock_lists
 import static.images as images
 
 dash.register_page(__name__, path='/price_drops', name="Price Drops")
@@ -36,7 +37,7 @@ layout = dbc.Container([
     dbc.Row(html.Div(html.H4(""))),
     dbc.Row(
         [
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown(),
+            dbc.Col(html.Div([dcc.Dropdown(stock_lists.russell3k,
                                            id='stock_dropdown', placeholder='stock', value='')
                               ],
                              ), width={"size": 1, "offset": 2}),
@@ -76,7 +77,9 @@ layout = dbc.Container([
 def price_drop_update_output(n_clicks, stock_dropdown, start_date, end_date):
     if len(start_date) > 0:
         print(n_clicks)
-        price_drop_table = my_dash_charts.generate_table(dataframes_from_queries.biggest_price_drop(stock_dropdown))
+        price_drop_table = my_dash_charts.generate_table(dataframes_from_queries.biggest_price_drop(stock_dropdown,
+                                                                                                    start_date,
+                                                                                                    end_date))
         print("filter_applied")
     elif len(start_date) == 0:
         raise exceptions.PreventUpdate

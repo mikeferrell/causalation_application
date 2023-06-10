@@ -7,13 +7,16 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
+import requests
+import json
 import yfinance as yf
+import static.stock_list as stock_list
 
 url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-symbols_list = dataframes_from_queries.stock_dropdown()
+# symbols_list = dataframes_from_queries.stock_dropdown()
 
 
 def get_dates():
@@ -87,13 +90,13 @@ def full_edgar_job_10qs():
 # full_edgar_job_10ks()
 # full_edgar_job_10qs()
 
-# symbols_list = []
+symbols_list = ['ETHE', 'VICE']
 
 def one_time_update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
+            downloaded_data = yf.download(ticker, start='2017-01-01', end='2023-05-17')
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -108,6 +111,7 @@ def one_time_update_stock_data():
     append_to_postgres(df, 'ticker_data', 'append')
     print("stocks done")
 
+# one_time_update_stock_data()
 
 def one_time_backfill_correlation_scores(asc_or_desc):
     yesterday, today_minus_one_eighty = get_dates_multiple()
@@ -237,32 +241,172 @@ def backfill_score_wrapper_asc():
 def backfill_score_wrapper_desc():
     one_time_backfill_correlation_scores('desc')
 
-# def listener(event):
-#     print("starting listener", datetime.now())
-#     if not event.exception:
-#         job = scheduler.get_job(event.job_id)
-#         if job.name == 'download_10ks':
-#             scheduler.add_job(lambda: edgar_jobs.analyze_edgar_files_10k())
-#             print("finished edgar jobs")
-#     print("done with listener", datetime.now())
 
-# if __name__ == '__main__':
-#     scheduler = BackgroundScheduler()
-#     # scheduler.add_listener(execution_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-#     # scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-#     # scheduler.add_job(full_edgar_job_10ks, 'cron', hour=10, minute=45, name='full_edgar_10ks')
-#     # scheduler.add_job(full_edgar_job_10qs, 'cron', hour=10, minute=45, name='full_edgar_10qs')
-#     # scheduler.add_job(update_stock_data, 'cron', hour=7, minute=47)
-#     scheduler.add_job(keyword_count_cron_job, 'cron', hour=11, minute=15)
-# #     scheduler.add_job(weekly_stock_opening_cron_job, 'cron', hour=11, minute=2)
-#     scheduler.start()
-#     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
-# # # day_of_week='tue-sat'
-#
-#     try:
-#         # This is here to simulate application activity (which keeps the main thread alive).
-#         while True:
-#             time.sleep(2)
-#     except (KeyboardInterrupt, SystemExit):
-#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
-#         scheduler.shutdown()
+def stock_earnings_data_old():
+    symbols_list = ['IBM', 'BBBY', 'CRM', 'ETSY', 'DDOG', 'COIN', 'CVNA', 'AMC']
+    df_for_pg_upload = pd.DataFrame(columns=['stock_symbol', 'peak_price_reported_eps', 'peak_price_eps_date',
+                                             'most_recent_reported_eps', 'most_recent_eps_date'])
+    api_limit = 499
+    api_calls = 0
+
+    #create a list of dates associated with the max prices
+    query_df = f'''select stock_symbol, date(created_at) as created_at, close_price 
+            from ticker_data
+            '''
+    df_results = pd.read_sql(query_df, con=connect)
+    max_price_date_df = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
+    max_price_date_df = max_price_date_df.drop(columns=['close_price'])
+    # print("dates and symbol", max_price_date_df)
+
+    for symbol in symbols_list:
+        print(api_calls)
+        if api_calls >= api_limit:
+            # handle the daily limit of API calls and pause the function
+            print("API limit reached. Waiting for 23 hours to resume.")
+            time.sleep(23 * 60 * 60)
+            # Reset the API calls counter for the new day
+            api_calls = 0
+        api_calls += 1
+
+        #select date for the max price from above
+        max_price_row = max_price_date_df.loc[max_price_date_df['stock_symbol'] == symbol]
+        max_price_date = str(max_price_row.at[max_price_row.index[0], 'created_at'])
+        #pull earnings data
+        try:
+            earning_url = f'https://www.alphavantage.co/query?function=EARNINGS&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
+            r = requests.get(earning_url)
+            data = r.json()
+            #most recent earnings data
+            most_recent_earnings_report = data["quarterlyEarnings"]
+            most_recent_reported_eps = most_recent_earnings_report[0]["reportedEPS"]
+            most_recent_eps_date = most_recent_earnings_report[0]["fiscalDateEnding"]
+            # print("most recent:", most_recent_earnings_eps, most_recent_earnings_date)
+            #earnings data at stock peak
+            max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
+            filtered_earnings = [earnings for earnings in data["quarterlyEarnings"]
+                                 if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
+            sorted_earnings = sorted(filtered_earnings,
+                                     key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
+            if sorted_earnings:
+                reported_eps = sorted_earnings[0]["reportedEPS"]
+                peak_price_eps_date = sorted_earnings[0]["fiscalDateEnding"]
+                peak_price_reported_eps = round(float(reported_eps), 2)
+                # print("Reported EPS:", reported_eps, "date", reported_eps_date)
+            else:
+                pass
+            #build a df row with all the data to append to the full df for uplaod to postgres
+            df_full = pd.DataFrame({'stock_symbol': [symbol],
+                               'peak_price_reported_eps': [peak_price_reported_eps],
+                               'peak_price_eps_date': [peak_price_eps_date],
+                               'most_recent_reported_eps': [most_recent_reported_eps],
+                               'most_recent_eps_date': [most_recent_eps_date]})
+            df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
+        except Exception as e:
+            print(f"Error occurred for symbol '{symbol}': {e}")
+            continue  # Skip the current loop iteration
+        time.sleep(13)
+    append_to_postgres(df_for_pg_upload, 'eps_for_russell_3k', 'replace')
+    print(df_for_pg_upload)
+
+
+
+def stock_earnings_data(start_symbol):
+    symbols_list = stock_list.stock_list
+    if start_symbol:
+        start_index = symbols_list.index(start_symbol) + 1
+        symbols_list = symbols_list[start_index:]
+
+    df_for_pg_upload = pd.DataFrame(columns=['stock_symbol', 'peak_price_reported_eps', 'peak_price_eps_date',
+                                             'most_recent_reported_eps', 'most_recent_eps_date'])
+    api_limit = 300
+    api_calls = 0
+
+    # Create a list of dates associated with the max prices
+    query_df = f'''
+    select stock_symbol, date(created_at) as created_at, close_price 
+    from ticker_data
+    '''
+    df_results = pd.read_sql(query_df, con=connect)
+    max_price_date_df = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
+    max_price_date_df = max_price_date_df.drop(columns=['close_price'])
+
+    for symbol in symbols_list:
+        print(api_calls)
+        if api_calls >= api_limit:
+            # Handle the daily limit of API calls and end the loop
+            print("API limit reached. Ending the loop.")
+            last_processed_symbol = symbol  # Store the value of the most recent symbol
+            break
+
+        # Select date for the max price from above
+        max_price_row = max_price_date_df.loc[max_price_date_df['stock_symbol'] == symbol]
+        max_price_date = str(max_price_row.at[max_price_row.index[0], 'created_at'])
+
+        # Pull earnings data
+        try:
+            earning_url = f'https://www.alphavantage.co/query?function=EARNINGS&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
+            r = requests.get(earning_url)
+            data = r.json()
+
+            # Most recent earnings data
+            most_recent_earnings_report = data["quarterlyEarnings"]
+            most_recent_reported_eps = most_recent_earnings_report[0]["reportedEPS"]
+            most_recent_eps_date = most_recent_earnings_report[0]["fiscalDateEnding"]
+
+            # Earnings data at stock peak
+            max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
+            filtered_earnings = [earnings for earnings in data["quarterlyEarnings"]
+                                 if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
+            sorted_earnings = sorted(filtered_earnings,
+                                     key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
+
+            if sorted_earnings:
+                reported_eps = sorted_earnings[0]["reportedEPS"]
+                peak_price_eps_date = sorted_earnings[0]["fiscalDateEnding"]
+                peak_price_reported_eps = round(float(reported_eps), 2)
+            else:
+                pass
+
+            # Build a df row with all the data to append to the full df for upload to postgres
+            df_full = pd.DataFrame({
+                'stock_symbol': [symbol],
+                'peak_price_reported_eps': [peak_price_reported_eps],
+                'peak_price_eps_date': [peak_price_eps_date],
+                'most_recent_reported_eps': [most_recent_reported_eps],
+                'most_recent_eps_date': [most_recent_eps_date]
+            })
+            df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
+
+            api_calls += 1
+            time.sleep(13)
+
+        except Exception as e:
+            print(f"Error occurred for symbol '{symbol}': {e}")
+            continue
+
+    append_to_postgres(df_for_pg_upload, 'eps_for_russell_3k', 'append')
+    print(df_for_pg_upload)
+    return last_processed_symbol
+
+stock_earnings_data('MAR')
+
+#this works, but needs to be rate limited to 500 a day before running
+def pull_sector_data():
+    last_iteration = 0
+    query_results = f'''SELECT MAX(ID) FROM ticker_and_sector'''
+    df_results = pd.read_sql(query_results, con=connect)
+    last_iteration = df_results.scalar() or 0
+    tickers = ['CRM', 'IBM']
+    ticker_and_sector = pd.DataFrame(columns=['ID', 'Symbol', 'Sector'])
+    for i, symbol in enumerate(tickers[last_iteration:]):
+        overview_url = f'https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
+        response = requests.get(overview_url)
+        data = response.json()
+        sector = data['Sector']
+        ticker_and_sector = ticker_and_sector.append({'ID': i + 1, 'Symbol': symbol, 'Sector': sector}, ignore_index=True)
+
+        time.sleep(.5)
+    # append_to_postgres(ticker_and_sector, 'ticker_sectors', 'append')
+    print(ticker_and_sector)
+
+# pull_sector_data()

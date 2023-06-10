@@ -85,7 +85,7 @@ def top_correlation_query_results(table_for_this_week_or_last):
       where correlation is not null
         and date(start_date) <= current_date - interval '40 week'
         and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
-        and correlation != 1
+        and abs(correlation) != 1
         and "Keyword" != 'cryptocurrency Mentions'
         and time_delay != '8'
       order by correlation desc
@@ -104,7 +104,7 @@ def top_correlation_query_results(table_for_this_week_or_last):
       where correlation is not null
         and date(start_date) <= current_date - interval '40 week'
         and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
-        and correlation != 1
+        and abs(correlation) != 1
         and "Keyword" != 'cryptocurrency Mentions'
         and time_delay != '8'
       order by correlation asc
@@ -482,6 +482,7 @@ def weekly_buy_recommendation_list(this_week_or_last):
 
     row_count = query_df.shape[0]
     row_range = range(0, row_count)
+    # print(query_df)
     for rows in row_range:
         df_row = query_df.iloc[rows]
         stock_symbol = df_row['stock_symbol']
@@ -502,6 +503,7 @@ def weekly_buy_recommendation_list(this_week_or_last):
         most_recent_date = datetime_list.pop()
 
         try:
+            # print(keyword, filing_type, stock_symbol, interval, most_recent_date, correlation_start_date)
             df_test_full, df_test, mae, model = train_ml_model(keyword, filing_type, stock_symbol, interval,
                                                                most_recent_date, correlation_start_date)
             full_test_data.append(df_test_full)

@@ -466,8 +466,20 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
 ## Calculations for finding undervalued Stocks
 ##                                          ##
 
-def biggest_price_drop(stock_dropdown):
-    query_df = f'''select stock_symbol, created_at, close_price from ticker_data'''
+def biggest_price_drop(stock_dropdown, start_date, end_date):
+    if stock_dropdown == '':
+        query_df = f'''select stock_symbol, created_at, close_price 
+                from ticker_data
+                where created_at >= '{start_date}'
+                and created_at <= '{end_date}'
+                '''
+    else:
+        query_df = f'''select stock_symbol, created_at, close_price 
+                from ticker_data
+                where created_at >= '{start_date}'
+                and created_at <= '{end_date}'
+                and stock_symbol = {stock_dropdown}
+                '''
     df_results = pd.read_sql(query_df, con=connect)
     highest_price = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
     most_recent_price = df_results.loc[df_results.groupby('stock_symbol')['created_at'].idxmax()]
@@ -482,11 +494,7 @@ def biggest_price_drop(stock_dropdown):
     merged_df['highest_price'] = merged_df['highest_price'].apply(format_dollar)
     merged_df['days_since_ath'] = pd.to_timedelta(merged_df['days_since_ath'])
     merged_df['days_since_ath'] = merged_df['days_since_ath'].apply(lambda x: x.days)
+    merged_df['highest_price_date'] = merged_df['highest_price_date'].apply(lambda x: x.date())
+    merged_df['current_date'] = merged_df['current_date'].apply(lambda x: x.date())
     merged_df = merged_df.sort_values(by=['price_drop'], ascending=False)
-
-    #data with filters applied
-    if stock_dropdown == '':
-        stock_filter = merged_df
-    else:
-        stock_filter = merged_df.loc[merged_df['stock_symbol'] == stock_dropdown]
-    return stock_filter
+    return merged_df

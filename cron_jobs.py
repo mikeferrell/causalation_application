@@ -371,3 +371,4 @@ def predicted_prices_for_last_week():
     df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list('last week')
     append_to_postgres(df_for_upload, 'last_week_buy_recommendations', 'replace')
 
+# predicted_prices_for_next_week()
