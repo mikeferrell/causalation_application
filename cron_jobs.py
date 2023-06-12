@@ -90,6 +90,7 @@ def append_to_postgres(df, table, append_or_replace):
 
 def update_stock_data():
     symbols = []
+    symbols_list = ['CRM', 'IBM']
     for ticker in symbols_list:
         try:
             # downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
@@ -101,10 +102,16 @@ def update_stock_data():
         symbols.append(downloaded_data)
     df = pd.concat(symbols)
     df = df.reset_index()
+    trading_volume_df = df[['Symbol', 'Volume']]
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
     append_to_postgres(df, 'ticker_data', 'append')
+
+    #yesterdays trading volume table
+    trading_volume_df.columns = ['stock_symbol', 'yesterday_trading_volume']
+    trading_volume_df = trading_volume_df.drop_duplicates()
+    append_to_postgres(trading_volume_df, 'ticker_trading_volume', 'replace')
     print("Stock Done")
 
 

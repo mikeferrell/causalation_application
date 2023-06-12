@@ -89,8 +89,8 @@ def full_edgar_job_10qs():
 
 # full_edgar_job_10ks()
 # full_edgar_job_10qs()
-
-symbols_list = ['ETHE', 'VICE']
+#
+symbols_list = ['CRM']
 
 def one_time_update_stock_data():
     symbols = []
@@ -108,7 +108,7 @@ def one_time_update_stock_data():
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    append_to_postgres(df, 'ticker_data', 'append')
+    # append_to_postgres(df, 'ticker_data', 'append')
     print("stocks done")
 
 # one_time_update_stock_data()
@@ -242,8 +242,7 @@ def backfill_score_wrapper_desc():
     one_time_backfill_correlation_scores('desc')
 
 
-#can redo this with balance sheet data such as cash/cash equivelents and debt (maybe make a ratio of the two)
-#total revenue & gross profit are both on the income statement API
+#Already updated. Only need to rerun if expanding to cover russell3k
 def stock_earnings_data(start_symbol):
     symbols_list = stock_list.stock_list
     if start_symbol:
@@ -320,9 +319,7 @@ def stock_earnings_data(start_symbol):
     append_to_postgres(df_for_pg_upload, 'eps_for_russell_3k', 'append')
     print(df_for_pg_upload)
 
-# stock_earnings_data('MAR')
 
-#this works, run tomorrow
 def pull_sector_data(start_symbol):
     symbols_list = stock_list.stock_list
     # symbols_list = ['^GSPC', 'CRM', 'IBM']
@@ -330,7 +327,7 @@ def pull_sector_data(start_symbol):
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
 
-    df_for_pg_upload = pd.DataFrame(columns=['Symbol', 'Sector'])
+    df_for_pg_upload = pd.DataFrame(columns=['Symbol', 'Sector', 'PERatio', 'EVToEBITDA'])
     api_limit = 499
     api_calls = 0
 
@@ -347,29 +344,31 @@ def pull_sector_data(start_symbol):
             response = requests.get(overview_url)
             data = response.json()
             sector = data['Sector']
-            df_for_pg_upload = df_for_pg_upload.append({'Symbol': symbol, 'Sector': sector}, ignore_index=True)
+            pe_ratio = data['PERatio']
+            ev_to_ebitda = data['EVToEBITDA']
+            df_for_pg_upload = df_for_pg_upload.append({'Symbol': symbol, 'Sector': sector, 'PERatio': pe_ratio,
+                                                        'EVToEBITDA': ev_to_ebitda},
+                                                       ignore_index=True)
 
             api_calls += 1
             time.sleep(13)
         except Exception as e:
             print(f"Error occurred for symbol '{symbol}': {e}")
             continue
-    # append_to_postgres(ticker_and_sector, 'ticker_sectors', 'append')
+    append_to_postgres(df_for_pg_upload, 'ticker_sectors', 'replace')
     print(df_for_pg_upload)
 
-pull_sector_data('^GSPC')
 
-#under construction
-#pull totalRevenue for the past 5 years, store as JSON in a column. then, total revenue year of ATH and most recent revenue
 def income_statement_data(start_symbol):
     symbols_list = stock_list.stock_list
+    # symbols_list = ['^GSPC', 'CRM', 'IBM']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
 
-    df_for_pg_upload = pd.DataFrame(columns=['stock_symbol', 'peak_price_annual_revenue', 'peak_price_revenue_date',
-                                             'revenue_last_5_years', 'most_recent_annual_revenue',
-                                             'most_recent_revenue_date'])
+    df_for_pg_upload = pd.DataFrame(columns=['stock_symbol', 'peak_price_ebitda', 'peak_price_ebitda_date',
+                                             'ebitda_last_5_years', 'most_recent_ebitda',
+                                             'most_recent_ebitda_date'])
     api_limit = 499
     api_calls = 0
 
@@ -387,7 +386,6 @@ def income_statement_data(start_symbol):
         if api_calls >= api_limit:
             # Handle the daily limit of API calls and end the loop
             print("API limit reached. Ending the loop.")
-            last_processed_symbol = symbol  # Store the value of the most recent symbol
             break
 
         # Select date for the max price from above
@@ -402,7 +400,99 @@ def income_statement_data(start_symbol):
 
             # Most recent revenue data
             most_recent_earnings_report = data["annualReports"]
-            most_recent_annual_revenue = most_recent_earnings_report[0]["totalRevenue"]
+            most_recent_annual_revenue = most_recent_earnings_report[0]["ebitda"]
+            most_recent_revenue_date = most_recent_earnings_report[0]["fiscalDateEnding"]
+
+            # Earnings data at stock peak
+            max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
+            filtered_earnings = [earnings for earnings in data["annualReports"]
+                                 if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
+            sorted_earnings = sorted(filtered_earnings,
+                                     key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
+
+            # Earnings over the last 5 years
+            revenue_last_5_years = {}
+            for report in most_recent_earnings_report[:5]:
+                try:
+                    fiscal_date_ending = report['fiscalDateEnding']
+                    total_revenue = report['ebitda']
+                    revenue_last_5_years[fiscal_date_ending] = total_revenue
+                except Exception as e:
+                    print("error:", e)
+                    pass
+            last_5_years_revenue_json = json.dumps(revenue_last_5_years)
+
+            if sorted_earnings:
+                peak_price_annual_revenue = sorted_earnings[0]["ebitda"]
+                peak_price_revenue_date = sorted_earnings[0]["fiscalDateEnding"]
+            else:
+                pass
+
+
+            # Build a df row with all the data to append to the full df for upload to postgres
+            df_full = pd.DataFrame({
+                'stock_symbol': [symbol],
+                'peak_price_ebitda': [peak_price_annual_revenue],
+                'peak_price_ebitda_date': [peak_price_revenue_date],
+                'ebitda_last_5_years': [last_5_years_revenue_json],
+                'most_recent_ebitda': [most_recent_annual_revenue],
+                'most_recent_ebitda_date': [most_recent_revenue_date]
+            })
+            df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
+
+            api_calls += 1
+            time.sleep(13)
+
+        except Exception as e:
+            print(f"Error occurred for symbol '{symbol}': {e}")
+            continue
+
+    append_to_postgres(df_for_pg_upload, 'ticker_revenue_data', 'replace')
+    print(df_for_pg_upload)
+
+
+#can find shares outstanding point in time. need to fix everything below though
+def balance_sheet_data(start_symbol):
+    symbols_list = stock_list.stock_list
+    if start_symbol:
+        start_index = symbols_list.index(start_symbol) + 1
+        symbols_list = symbols_list[start_index:]
+
+    df_for_pg_upload = pd.DataFrame(columns=['stock_symbol', 'peak_price_ebitda', 'peak_price_ebitda_date',
+                                             'ebitda_last_5_years', 'most_recent_ebitda',
+                                             'most_recent_ebitda_date'])
+    api_limit = 499
+    api_calls = 0
+
+    # Create a list of dates associated with the max prices
+    query_df = f'''
+    select stock_symbol, date(created_at) as created_at, close_price 
+    from ticker_data
+    '''
+    df_results = pd.read_sql(query_df, con=connect)
+    max_price_date_df = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
+    max_price_date_df = max_price_date_df.drop(columns=['close_price'])
+
+    for symbol in symbols_list:
+        print(api_calls)
+        if api_calls >= api_limit:
+            # Handle the daily limit of API calls and end the loop
+            print("API limit reached. Ending the loop.")
+            break
+
+        # Select date for the max price from above
+        max_price_row = max_price_date_df.loc[max_price_date_df['stock_symbol'] == symbol]
+        max_price_date = str(max_price_row.at[max_price_row.index[0], 'created_at'])
+
+        # Pull earnings data
+        try:
+            icome_statement_url = f'https://www.alphavantage.co/query?function=BALANCE_SHEET&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
+            r = requests.get(icome_statement_url)
+            data = r.json()
+
+            # Most recent revenue data
+            most_recent_earnings_report = data["annualReports"]
+            most_recent_annual_revenue = most_recent_earnings_report[0]["ebitda"]
             most_recent_revenue_date = most_recent_earnings_report[0]["fiscalDateEnding"]
 
             # Earnings data at stock peak
@@ -416,7 +506,7 @@ def income_statement_data(start_symbol):
             recent_total_revenues = {}
             for report in most_recent_earnings_report[:16]:
                 fiscal_date_ending = report['fiscalDateEnding']
-                total_revenue = report['totalRevenue']
+                total_revenue = report['ebitda']
                 recent_total_revenues[fiscal_date_ending] = total_revenue
 
             # Print the captured key-value pairs
@@ -433,11 +523,11 @@ def income_statement_data(start_symbol):
             # Build a df row with all the data to append to the full df for upload to postgres
             df_full = pd.DataFrame({
                 'stock_symbol': [symbol],
-                'peak_price_annual_revenue': [peak_price_annual_revenue],
-                'peak_price_revenue_date': [peak_price_revenue_date],
-                'revenue_last_5_years': [revenue_last_5_years],
-                'most_recent_annual_revenue': [most_recent_annual_revenue],
-                'most_recent_revenue_date': [most_recent_revenue_date]
+                'peak_price_ebitda': [peak_price_annual_revenue],
+                'peak_price_ebitda_date': [peak_price_revenue_date],
+                'ebitda_last_5_years': [revenue_last_5_years],
+                'most_recent_ebitda': [most_recent_annual_revenue],
+                'most_recent_ebitda_date': [most_recent_revenue_date]
             })
             df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
 
@@ -450,26 +540,8 @@ def income_statement_data(start_symbol):
 
     append_to_postgres(df_for_pg_upload, 'revenue_for_russell_3k', 'append')
     print(df_for_pg_upload)
-    return last_processed_symbol
 
 
-#this works, but needs to be rate limited to 500 a day before running
-# def pull_sector_data_old():
-#     last_iteration = 0
-#     query_results = f'''SELECT MAX(ID) FROM ticker_and_sector'''
-#     df_results = pd.read_sql(query_results, con=connect)
-#     last_iteration = df_results.scalar() or 0
-#     tickers = ['CRM', 'IBM']
-#     ticker_and_sector = pd.DataFrame(columns=['ID', 'Symbol', 'Sector'])
-#     for i, symbol in enumerate(tickers[last_iteration:]):
-#         overview_url = f'https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
-#         response = requests.get(overview_url)
-#         data = response.json()
-#         sector = data['Sector']
-#         ticker_and_sector = ticker_and_sector.append({'ID': i + 1, 'Symbol': symbol, 'Sector': sector}, ignore_index=True)
-#
-#         time.sleep(.5)
-#     # append_to_postgres(ticker_and_sector, 'ticker_sectors', 'append')
-#     print(ticker_and_sector)
-
-# pull_sector_data()
+#These are both ready to go
+# pull_sector_data('^GSPC')
+# income_statement_data('^GSPC')
