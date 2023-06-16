@@ -32,6 +32,16 @@ def close_prices(stock_symbol, start_date, end_date):
     recent_prices_df = pd.read_sql(recent_prices, con=connect)
     return recent_prices_df
 
+def sector_list():
+    sector_query = f'''select distinct sector
+    from ticker_sectors '''
+    sector_list = pd.read_sql(sector_query, con=connect)
+    sector_list = sector_list['sector'].tolist()
+    return sector_list
+
+sector_list()
+
+
 def stock_dropdown():
     # stock_dropdown_list_query = 'select distinct stock_symbol from ticker_data order by stock_symbol asc'
     # stock_symbol_dropdown_list_df = pd.read_sql(stock_dropdown_list_query, con=connect)
@@ -466,30 +476,50 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
 ## Calculations for finding undervalued Stocks
 ##                                          ##
 
-def biggest_price_drop(stock_dropdown, start_date, end_date):
+def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date):
     if stock_dropdown == '':
-        query_df = f'''select stock_symbol, created_at, close_price 
-                from ticker_data
-                where created_at >= '{start_date}'
-                and created_at <= '{end_date}'
-                '''
+        stock_symbol = ''
     else:
-        query_df = f'''select stock_symbol, created_at, close_price 
-                from ticker_data
-                where created_at >= '{start_date}'
-                and created_at <= '{end_date}'
-                and stock_symbol = {stock_dropdown}
-                '''
+        stock_symbol = f'''and ticker_data.stock_symbol = '{stock_dropdown}' '''
+    if sector_dropdown == '':
+        sector = ''
+    else:
+        sector = f'''and sector = '{sector_dropdown}' '''
+    query_df = f'''select ticker_data.stock_symbol, created_at, close_price, sector as Sector,
+            ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
+            , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
+            from ticker_data join ticker_sectors on ticker_data.stock_symbol = ticker_sectors.stock_symbol
+            join ticker_balance_sheet_data on ticker_data.stock_symbol = ticker_balance_sheet_data.stock_symbol
+            where created_at >= '{start_date}'
+            and created_at <= '{end_date}'
+            {stock_symbol}
+            {sector}
+            '''
+    # else:
+    #     query_df = f'''select ticker_data.stock_symbol, created_at, close_price, sector as Sector,
+    #             ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
+    #             , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
+    #             from ticker_data join ticker_sectors on ticker_data.stock_symbol = ticker_sectors.stock_symbol
+    #             join ticker_balance_sheet_data on ticker_data.stock_symbol = ticker_balance_sheet_data.stock_symbol
+    #             where created_at >= '{start_date}'
+    #             and created_at <= '{end_date}'
+    #             and stock_symbol = {stock_dropdown}
+    #             '''
     df_results = pd.read_sql(query_df, con=connect)
     highest_price = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
     most_recent_price = df_results.loc[df_results.groupby('stock_symbol')['created_at'].idxmax()]
     merged_df = pd.merge(highest_price, most_recent_price, how='inner', on=['stock_symbol'])
     merged_df = merged_df.rename(columns={'close_price_x': 'highest_price', 'close_price_y': 'current_price',
-                                          'created_at_x': 'highest_price_date', 'created_at_y': 'current_date'})
+                                          'created_at_x': 'highest_price_date', 'created_at_y': 'current_date',
+                                          'sector_x': 'Sector', 'cash_growth_since_peak_x': 'cash_growth_since_peak',
+                                          'asset_growth_since_peak_x': 'asset_growth_since_peak'})
     merged_df['price_drop'] = 1 - (merged_df['current_price'] / merged_df['highest_price'])
     merged_df['days_since_ath'] = merged_df['current_date'] - merged_df['highest_price_date']
+    merged_df = merged_df.drop(columns=['sector_y', 'asset_growth_since_peak_y', 'cash_growth_since_peak_y'])
     #format
     merged_df['price_drop'] = merged_df['price_drop'].apply(lambda x: "{:.1%}".format(x))
+    merged_df['asset_growth_since_peak'] = merged_df['asset_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
+    merged_df['cash_growth_since_peak'] = merged_df['cash_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
     merged_df['current_price'] = merged_df['current_price'].apply(format_dollar)
     merged_df['highest_price'] = merged_df['highest_price'].apply(format_dollar)
     merged_df['days_since_ath'] = pd.to_timedelta(merged_df['days_since_ath'])

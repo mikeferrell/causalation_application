@@ -37,10 +37,14 @@ layout = dbc.Container([
     dbc.Row(html.Div(html.H4(""))),
     dbc.Row(
         [
-            dbc.Col(html.Div([dcc.Dropdown(stock_lists.russell3k,
+            dbc.Col(html.Div([dcc.Dropdown(stock_lists.stock_list,
                                            id='stock_dropdown', placeholder='stock', value='')
                               ],
                              ), width={"size": 1, "offset": 2}),
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.sector_list(),
+                                           id='sector_dropdown', placeholder='sector', value='')
+                              ],
+                             ), width={"size": 3}),
             dbc.Col(html.Div([dcc.DatePickerRange(id='date_range',
                                                   start_date=date(2017, 1, 1),
                                                   end_date=get_dates(),
@@ -69,15 +73,17 @@ layout = dbc.Container([
     Output('price_drop_table', 'children'),
     Input('price_drop_button', 'n_clicks'),
     [State('stock_dropdown', 'value'),
+     State('sector_dropdown', 'value'),
      State('date_range', 'start_date'),
      State('date_range', 'end_date')
      ],
     prevent_initial_call=False,
 )
-def price_drop_update_output(n_clicks, stock_dropdown, start_date, end_date):
+def price_drop_update_output(n_clicks, stock_dropdown, sector_dropdown, start_date, end_date):
     if len(start_date) > 0:
         print(n_clicks)
         price_drop_table = my_dash_charts.generate_table(dataframes_from_queries.biggest_price_drop(stock_dropdown,
+                                                                                                    sector_dropdown,
                                                                                                     start_date,
                                                                                                     end_date))
         print("filter_applied")

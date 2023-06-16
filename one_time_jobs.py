@@ -242,7 +242,14 @@ def backfill_score_wrapper_desc():
     one_time_backfill_correlation_scores('desc')
 
 
-#Already updated. Only need to rerun if expanding to cover russell3k
+##______________##
+
+##Alpha Vantage company data one time pulls
+
+##______________##
+
+
+
 def stock_earnings_data(start_symbol):
     symbols_list = stock_list.stock_list
     if start_symbol:
@@ -320,15 +327,17 @@ def stock_earnings_data(start_symbol):
     print(df_for_pg_upload)
 
 
+#test first, then rerun to add everything from the russell3k over the next few days. once that's done, can do the other
+#below jobs with only the technology companies
 def pull_sector_data(start_symbol):
-    symbols_list = stock_list.stock_list
-    # symbols_list = ['^GSPC', 'CRM', 'IBM']
+    symbols_list = [item for item in stock_list.russell3k if item not in stock_list.stock_list]
+    # symbols_list = ['^GSPC', 'CRM']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
 
     df_for_pg_upload = pd.DataFrame(columns=['Symbol', 'Sector', 'PERatio', 'EVToEBITDA'])
-    api_limit = 499
+    api_limit = 498
     api_calls = 0
 
     for symbol in symbols_list:
@@ -355,7 +364,7 @@ def pull_sector_data(start_symbol):
         except Exception as e:
             print(f"Error occurred for symbol '{symbol}': {e}")
             continue
-    append_to_postgres(df_for_pg_upload, 'ticker_sectors', 'replace')
+    append_to_postgres(df_for_pg_upload, 'ticker_sectors_russell', 'append')
     print(df_for_pg_upload)
 
 
@@ -399,20 +408,20 @@ def income_statement_data(start_symbol):
             data = r.json()
 
             # Most recent revenue data
-            most_recent_earnings_report = data["annualReports"]
+            most_recent_earnings_report = data["quarterlyReports"]
             most_recent_annual_revenue = most_recent_earnings_report[0]["ebitda"]
             most_recent_revenue_date = most_recent_earnings_report[0]["fiscalDateEnding"]
 
             # Earnings data at stock peak
             max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
-            filtered_earnings = [earnings for earnings in data["annualReports"]
+            filtered_earnings = [earnings for earnings in data["quarterlyReports"]
                                  if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
             sorted_earnings = sorted(filtered_earnings,
                                      key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
 
             # Earnings over the last 5 years
             revenue_last_5_years = {}
-            for report in most_recent_earnings_report[:5]:
+            for report in most_recent_earnings_report[:20]:
                 try:
                     fiscal_date_ending = report['fiscalDateEnding']
                     total_revenue = report['ebitda']
@@ -454,13 +463,13 @@ def income_statement_data(start_symbol):
 #can find shares outstanding point in time. need to fix everything below though
 def balance_sheet_data(start_symbol):
     symbols_list = stock_list.stock_list
+    # symbols_list = ['^GSPC', 'IBM', 'CRM']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
 
-    df_for_pg_upload = pd.DataFrame(columns=['stock_symbol', 'peak_price_ebitda', 'peak_price_ebitda_date',
-                                             'ebitda_last_5_years', 'most_recent_ebitda',
-                                             'most_recent_ebitda_date'])
+    df_for_pg_upload = pd.DataFrame()
+
     api_limit = 499
     api_calls = 0
 
@@ -486,35 +495,28 @@ def balance_sheet_data(start_symbol):
 
         # Pull earnings data
         try:
-            icome_statement_url = f'https://www.alphavantage.co/query?function=BALANCE_SHEET&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
-            r = requests.get(icome_statement_url)
+            income_statement_url = f'https://www.alphavantage.co/query?function=BALANCE_SHEET&symbol={symbol}&apikey={passwords.alpha_vantage_api}'
+            r = requests.get(income_statement_url)
             data = r.json()
 
-            # Most recent revenue data
-            most_recent_earnings_report = data["annualReports"]
-            most_recent_annual_revenue = most_recent_earnings_report[0]["ebitda"]
-            most_recent_revenue_date = most_recent_earnings_report[0]["fiscalDateEnding"]
+            # Most recent balance sheet data
+            most_recent_earnings_report = data["quarterlyReports"]
+            most_recent_shares_outstanding = most_recent_earnings_report[0]["commonStockSharesOutstanding"]
+            most_recent_total_assets = most_recent_earnings_report[0]["totalAssets"]
+            most_recent_total_cash_and_equivelants = most_recent_earnings_report[0]["cashAndCashEquivalentsAtCarryingValue"]
+            most_recent_shares_date = most_recent_earnings_report[0]["fiscalDateEnding"]
 
-            # Earnings data at stock peak
+            # data at stock peak
             max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
-            filtered_earnings = [earnings for earnings in data["annualReports"]
+            filtered_earnings = [earnings for earnings in data["quarterlyReports"]
                                  if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
             sorted_earnings = sorted(filtered_earnings,
                                      key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
 
-            # Earnings over the last 5 years
-            recent_total_revenues = {}
-            for report in most_recent_earnings_report[:16]:
-                fiscal_date_ending = report['fiscalDateEnding']
-                total_revenue = report['ebitda']
-                recent_total_revenues[fiscal_date_ending] = total_revenue
-
-            # Print the captured key-value pairs
-            for fiscal_date, total_revenue in recent_total_revenues.items():
-                print(f'{fiscal_date}: {total_revenue}')
-
             if sorted_earnings:
-                peak_price_annual_revenue = sorted_earnings[0]["annualReports"]
+                peak_price_shares_outstanding = sorted_earnings[0]["commonStockSharesOutstanding"]
+                peak_price_total_assets = sorted_earnings[0]["totalAssets"]
+                peak_price_total_cash_and_equivelants = sorted_earnings[0]["cashAndCashEquivalentsAtCarryingValue"]
                 peak_price_revenue_date = sorted_earnings[0]["fiscalDateEnding"]
             else:
                 pass
@@ -523,11 +525,14 @@ def balance_sheet_data(start_symbol):
             # Build a df row with all the data to append to the full df for upload to postgres
             df_full = pd.DataFrame({
                 'stock_symbol': [symbol],
-                'peak_price_ebitda': [peak_price_annual_revenue],
-                'peak_price_ebitda_date': [peak_price_revenue_date],
-                'ebitda_last_5_years': [revenue_last_5_years],
-                'most_recent_ebitda': [most_recent_annual_revenue],
-                'most_recent_ebitda_date': [most_recent_revenue_date]
+                'peak_price_shares_outstanding': [peak_price_shares_outstanding],
+                'peak_price_total_assets': [peak_price_total_assets],
+                'peak_price_total_cash_and_equivelants': [peak_price_total_cash_and_equivelants],
+                'peak_price_revenue_date': [peak_price_revenue_date],
+                'most_recent_shares_outstanding': [most_recent_shares_outstanding],
+                'most_recent_total_assets': [most_recent_total_assets],
+                'most_recent_total_cash_and_equivelants': [most_recent_total_cash_and_equivelants],
+                'most_recent_shares_date': [most_recent_shares_date]
             })
             df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
 
@@ -538,10 +543,11 @@ def balance_sheet_data(start_symbol):
             print(f"Error occurred for symbol '{symbol}': {e}")
             continue
 
-    append_to_postgres(df_for_pg_upload, 'revenue_for_russell_3k', 'append')
+    append_to_postgres(df_for_pg_upload, 'ticker_balance_sheet_data', 'replace')
     print(df_for_pg_upload)
 
 
 #These are both ready to go
-# pull_sector_data('^GSPC')
+# pull_sector_data('HUN')
 # income_statement_data('^GSPC')
+# balance_sheet_data('^GSPC')
