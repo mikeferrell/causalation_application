@@ -38,11 +38,11 @@ layout = dbc.Container([
     dbc.Row(
         [
             dbc.Col(html.Div([dcc.Dropdown(stock_lists.stock_list,
-                                           id='stock_dropdown', placeholder='stock', value='')
+                                           id='stock_dropdown', placeholder='Stock', value='')
                               ],
-                             ), width={"size": 1, "offset": 2}),
+                             ), width={"size": 1, "offset": 1}),
             dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.sector_list(),
-                                           id='sector_dropdown', placeholder='sector', value='')
+                                           id='sector_dropdown', placeholder='Sector', value='')
                               ],
                              ), width={"size": 3}),
             dbc.Col(html.Div([dcc.DatePickerRange(id='date_range',
@@ -50,6 +50,12 @@ layout = dbc.Container([
                                                   end_date=get_dates(),
                                                   clearable=False)], ),
                     width={"size": 3}),
+            dbc.Col(html.Div([dcc.Dropdown(['stock_symbol', 'highest_price_date', 'highest_price', 'Sector',
+                                            'asset_growth_since_peak', 'cash_growth_since_peak', 'price_drop',
+                                            'days_since_ath'],
+                                           id='order_by', placeholder='Order By', value='')
+                              ],
+                             ), width={"size": 2}),
             dbc.Col(
                 html.Div([
                     dcc.Loading(id='loading_price_drop', fullscreen=False, color=colors['mid_theme'],
@@ -75,17 +81,16 @@ layout = dbc.Container([
     [State('stock_dropdown', 'value'),
      State('sector_dropdown', 'value'),
      State('date_range', 'start_date'),
-     State('date_range', 'end_date')
+     State('date_range', 'end_date'),
+     State('order_by', 'value')
      ],
     prevent_initial_call=False,
 )
-def price_drop_update_output(n_clicks, stock_dropdown, sector_dropdown, start_date, end_date):
+def price_drop_update_output(n_clicks, stock_dropdown, sector_dropdown, start_date, end_date, order_by):
     if len(start_date) > 0:
         print(n_clicks)
-        price_drop_table = my_dash_charts.generate_table(dataframes_from_queries.biggest_price_drop(stock_dropdown,
-                                                                                                    sector_dropdown,
-                                                                                                    start_date,
-                                                                                                    end_date))
+        price_drop_table = my_dash_charts.generate_table(
+            dataframes_from_queries.biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, order_by))
         print("filter_applied")
     elif len(start_date) == 0:
         raise exceptions.PreventUpdate

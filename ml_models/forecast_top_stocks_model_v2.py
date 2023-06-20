@@ -458,7 +458,6 @@ def calculate_top_ten_forecasts(testing_timeline):
         df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
     return df_for_pg_upload
 
-
 #
 # full_df_for_upload = calculate_top_ten_forecasts('backtest')
 # print(full_df_for_upload)

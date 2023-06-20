@@ -337,7 +337,7 @@ def pull_sector_data(start_symbol):
         symbols_list = symbols_list[start_index:]
 
     df_for_pg_upload = pd.DataFrame(columns=['Symbol', 'Sector', 'PERatio', 'EVToEBITDA'])
-    api_limit = 498
+    api_limit = 499
     api_calls = 0
 
     for symbol in symbols_list:
@@ -548,6 +548,7 @@ def balance_sheet_data(start_symbol):
 
 
 #These are both ready to go
-# pull_sector_data('HUN')
+# pull_sector_data('PSTL')
 # income_statement_data('^GSPC')
 # balance_sheet_data('^GSPC')
+

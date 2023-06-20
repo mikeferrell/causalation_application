@@ -19,7 +19,7 @@ def format_percent(value):
     return "{:.0%}".format(value)
 
 def format_dollar(value):
-    return "${:.2f}".format(value)
+    return "${:,.2f}".format(value)
 
 def close_prices(stock_symbol, start_date, end_date):
     recent_prices = f'''select stock_symbol, close_price, date(created_at) as close_date
@@ -476,7 +476,7 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
 ## Calculations for finding undervalued Stocks
 ##                                          ##
 
-def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date):
+def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, order_by):
     if stock_dropdown == '':
         stock_symbol = ''
     else:
@@ -485,6 +485,11 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date):
         sector = ''
     else:
         sector = f'''and sector = '{sector_dropdown}' '''
+    if order_by == '':
+        order_by = 'price_drop'
+    else:
+        order_by = order_by
+
     query_df = f'''select ticker_data.stock_symbol, created_at, close_price, sector as Sector,
             ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
             , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
@@ -495,16 +500,7 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date):
             {stock_symbol}
             {sector}
             '''
-    # else:
-    #     query_df = f'''select ticker_data.stock_symbol, created_at, close_price, sector as Sector,
-    #             ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
-    #             , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
-    #             from ticker_data join ticker_sectors on ticker_data.stock_symbol = ticker_sectors.stock_symbol
-    #             join ticker_balance_sheet_data on ticker_data.stock_symbol = ticker_balance_sheet_data.stock_symbol
-    #             where created_at >= '{start_date}'
-    #             and created_at <= '{end_date}'
-    #             and stock_symbol = {stock_dropdown}
-    #             '''
+
     df_results = pd.read_sql(query_df, con=connect)
     highest_price = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
     most_recent_price = df_results.loc[df_results.groupby('stock_symbol')['created_at'].idxmax()]
@@ -515,16 +511,46 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date):
                                           'asset_growth_since_peak_x': 'asset_growth_since_peak'})
     merged_df['price_drop'] = 1 - (merged_df['current_price'] / merged_df['highest_price'])
     merged_df['days_since_ath'] = merged_df['current_date'] - merged_df['highest_price_date']
-    merged_df = merged_df.drop(columns=['sector_y', 'asset_growth_since_peak_y', 'cash_growth_since_peak_y'])
+
+    #Max company value
+    company_value_query = f'''
+        select stock_symbol,
+        (peak_price_shares_outstanding::DECIMAL) as peak_price_shares_outstanding,
+        (most_recent_shares_outstanding::DECIMAL) as most_recent_shares_outstanding
+        from ticker_balance_sheet_data
+        '''
+    company_value_df = pd.read_sql(company_value_query, con=connect)
+    merged_company_value_df = pd.merge(merged_df, company_value_df, how='inner', on=['stock_symbol'])
+    merged_company_value_df['max_company_value'] =\
+        merged_company_value_df['highest_price'] * merged_company_value_df['peak_price_shares_outstanding']
+    merged_company_value_df['most_recent_company_value'] =\
+        merged_company_value_df['current_price'] * merged_company_value_df['most_recent_shares_outstanding']
+    merged_company_value_df['company_value_change'] =\
+        ((merged_company_value_df['current_price'] * merged_company_value_df['most_recent_shares_outstanding']) /
+            (merged_company_value_df['highest_price'] * merged_company_value_df['peak_price_shares_outstanding'])) - 1
+    #notes
+
     #format
-    merged_df['price_drop'] = merged_df['price_drop'].apply(lambda x: "{:.1%}".format(x))
-    merged_df['asset_growth_since_peak'] = merged_df['asset_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
-    merged_df['cash_growth_since_peak'] = merged_df['cash_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
-    merged_df['current_price'] = merged_df['current_price'].apply(format_dollar)
-    merged_df['highest_price'] = merged_df['highest_price'].apply(format_dollar)
-    merged_df['days_since_ath'] = pd.to_timedelta(merged_df['days_since_ath'])
-    merged_df['days_since_ath'] = merged_df['days_since_ath'].apply(lambda x: x.days)
-    merged_df['highest_price_date'] = merged_df['highest_price_date'].apply(lambda x: x.date())
-    merged_df['current_date'] = merged_df['current_date'].apply(lambda x: x.date())
-    merged_df = merged_df.sort_values(by=['price_drop'], ascending=False)
-    return merged_df
+    merged_company_value_df = merged_company_value_df.drop(
+        columns=['sector_y', 'asset_growth_since_peak_y', 'cash_growth_since_peak_y', 'current_date',
+                 'peak_price_shares_outstanding', 'most_recent_shares_outstanding'])
+    merged_company_value_df['price_drop'] = merged_company_value_df['price_drop'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df['asset_growth_since_peak'] = merged_company_value_df['asset_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df['cash_growth_since_peak'] = merged_company_value_df['cash_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df['current_price'] = merged_company_value_df['current_price'].apply(format_dollar)
+    merged_company_value_df['highest_price'] = merged_company_value_df['highest_price'].apply(format_dollar)
+    merged_company_value_df['days_since_ath'] = pd.to_timedelta(merged_company_value_df['days_since_ath'])
+    merged_company_value_df['days_since_ath'] = merged_company_value_df['days_since_ath'].apply(lambda x: x.days)
+    merged_company_value_df['highest_price_date'] = merged_company_value_df['highest_price_date'].apply(lambda x: x.date())
+    merged_company_value_df['max_company_value'] = merged_company_value_df['max_company_value'].apply(format_dollar)
+    merged_company_value_df['most_recent_company_value'] = merged_company_value_df['most_recent_company_value'].apply(format_dollar)
+    merged_company_value_df['company_value_change'] = merged_company_value_df['company_value_change'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df = merged_company_value_df.sort_values(by=[f'{order_by}'], ascending=False)
+    # merged_company_value_df = merged_company_value_df.rename(columns={'price_drop': 'Price Drop', 'asset_growth_since_peak': 'Asset Growth Since Peak',
+    #                                       'cash_growth_since_peak': 'Cash Growth Since Peak', 'current_price': 'Current Price',
+    #                                       'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
+    #                                       'highest_price_date': 'Peak Price Date', 'max_company_value': 'Peak Company Value',
+    #                                       'most_recent_company_value': 'Most Recent Company Value', 'company_value_change': 'Company Value Change'})
+    return merged_company_value_df
+
+# biggest_price_drop('', '', '2017-01-01', '2023-06-10', '')
