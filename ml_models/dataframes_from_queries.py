@@ -528,7 +528,42 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
     merged_company_value_df['company_value_change'] =\
         ((merged_company_value_df['current_price'] * merged_company_value_df['most_recent_shares_outstanding']) /
             (merged_company_value_df['highest_price'] * merged_company_value_df['peak_price_shares_outstanding'])) - 1
-    #notes
+
+    #Earning to company value
+    company_earnings_query = f'''
+    select stock_symbol, 
+    case when peak_price_ebitda = 'None' then 0 else (peak_price_ebitda::decimal) end as peak_price_ebitda,
+    case when most_recent_ebitda = 'None' then 0 else (most_recent_ebitda::decimal) end as most_recent_ebitda
+    from ticker_revenue_data
+    '''
+    company_earnings_df = pd.read_sql(company_earnings_query, con=connect)
+
+    #P/S Ratio
+    merged_company_value_df = pd.merge(company_earnings_df, merged_company_value_df, how='inner', on=['stock_symbol'])
+    merged_company_value_df['peak_price_to_sale_ratio'] = \
+        (merged_company_value_df['highest_price'] * merged_company_value_df['peak_price_shares_outstanding']) / \
+        merged_company_value_df['peak_price_ebitda']
+    merged_company_value_df['current_price_to_sale_ratio'] = \
+        (merged_company_value_df['current_price'] * merged_company_value_df['most_recent_shares_outstanding']) / \
+        merged_company_value_df['most_recent_ebitda']
+    merged_company_value_df['p_s_ratio_change'] = (merged_company_value_df['current_price_to_sale_ratio'] /
+                                                   merged_company_value_df['peak_price_to_sale_ratio']) - 1
+    #EPS
+    merged_company_value_df.loc[merged_company_value_df['peak_price_ebitda'] <= 0, 'peak_eps'] = 0
+    merged_company_value_df.loc[merged_company_value_df['most_recent_ebitda'] <= 0, 'most_recent_eps'] = 0
+    merged_company_value_df.loc[merged_company_value_df['peak_price_ebitda'] > 0, 'peak_eps'] = (
+            merged_company_value_df['peak_price_ebitda'] / merged_company_value_df['peak_price_shares_outstanding'])
+    merged_company_value_df.loc[merged_company_value_df['most_recent_ebitda'] > 0, 'most_recent_eps'] = (
+            merged_company_value_df['most_recent_ebitda'] / merged_company_value_df['most_recent_shares_outstanding'])
+    merged_company_value_df['eps_change'] = (merged_company_value_df['most_recent_eps'] /
+                                             merged_company_value_df['peak_eps']) - 1
+
+    #PE Ratio
+    merged_company_value_df['peak_pe_ratio'] = merged_company_value_df['highest_price'] / merged_company_value_df['peak_eps']
+    merged_company_value_df['most_recent_pe_ratio'] = merged_company_value_df['current_price'] / merged_company_value_df[
+        'most_recent_eps']
+    merged_company_value_df['pe_ratio_change'] = (merged_company_value_df['most_recent_pe_ratio'] /
+                                                  merged_company_value_df['peak_pe_ratio']) - 1
 
     #format
     merged_company_value_df = merged_company_value_df.drop(
@@ -551,6 +586,11 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
     #                                       'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
     #                                       'highest_price_date': 'Peak Price Date', 'max_company_value': 'Peak Company Value',
     #                                       'most_recent_company_value': 'Most Recent Company Value', 'company_value_change': 'Company Value Change'})
-    return merged_company_value_df
+
+    eps_df = merged_company_value_df.loc[:, ['stock_symbol', 'most_recent_ebitda', 'most_recent_eps',
+                                             'peak_price_ebitda', 'peak_eps', 'pe_ratio_change']].copy()
+    price_drop_df = merged_company_value_df.loc[:, ['stock_symbol', 'days_since_ath', 'price_drop', 'max_company_value',
+                                             'most_recent_company_value', 'company_value_change']].copy()
+    return price_drop_df, eps_df
 
 # biggest_price_drop('', '', '2017-01-01', '2023-06-10', '')

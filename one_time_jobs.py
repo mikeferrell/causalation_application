@@ -90,13 +90,14 @@ def full_edgar_job_10qs():
 # full_edgar_job_10ks()
 # full_edgar_job_10qs()
 #
-symbols_list = ['CRM']
+# symbols_list = ['CRM']
+symbols_list = stock_list.russell_finance_and_technology
 
 def one_time_update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = yf.download(ticker, start='2017-01-01', end='2023-05-17')
+            downloaded_data = yf.download(ticker, start='2017-01-01', end='2023-06-20')
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -108,7 +109,7 @@ def one_time_update_stock_data():
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    # append_to_postgres(df, 'ticker_data', 'append')
+    append_to_postgres(df, 'ticker_data_russell', 'append')
     print("stocks done")
 
 # one_time_update_stock_data()
@@ -369,7 +370,7 @@ def pull_sector_data(start_symbol):
 
 
 def income_statement_data(start_symbol):
-    symbols_list = stock_list.stock_list
+    symbols_list = stock_list.russell_finance_and_technology
     # symbols_list = ['^GSPC', 'CRM', 'IBM']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
@@ -384,7 +385,7 @@ def income_statement_data(start_symbol):
     # Create a list of dates associated with the max prices
     query_df = f'''
     select stock_symbol, date(created_at) as created_at, close_price 
-    from ticker_data
+    from ticker_data_russell
     '''
     df_results = pd.read_sql(query_df, con=connect)
     max_price_date_df = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
@@ -456,13 +457,13 @@ def income_statement_data(start_symbol):
             print(f"Error occurred for symbol '{symbol}': {e}")
             continue
 
-    append_to_postgres(df_for_pg_upload, 'ticker_revenue_data', 'replace')
+    append_to_postgres(df_for_pg_upload, 'ticker_revenue_data_russell', 'replace')
     print(df_for_pg_upload)
 
 
 #can find shares outstanding point in time. need to fix everything below though
 def balance_sheet_data(start_symbol):
-    symbols_list = stock_list.stock_list
+    symbols_list = stock_list.russell_finance_and_technology
     # symbols_list = ['^GSPC', 'IBM', 'CRM']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
@@ -470,13 +471,13 @@ def balance_sheet_data(start_symbol):
 
     df_for_pg_upload = pd.DataFrame()
 
-    api_limit = 499
+    api_limit = 498
     api_calls = 0
 
     # Create a list of dates associated with the max prices
     query_df = f'''
     select stock_symbol, date(created_at) as created_at, close_price 
-    from ticker_data
+    from ticker_data_russell
     '''
     df_results = pd.read_sql(query_df, con=connect)
     max_price_date_df = df_results.loc[df_results.groupby('stock_symbol')['close_price'].idxmax()]
@@ -543,7 +544,7 @@ def balance_sheet_data(start_symbol):
             print(f"Error occurred for symbol '{symbol}': {e}")
             continue
 
-    append_to_postgres(df_for_pg_upload, 'ticker_balance_sheet_data', 'replace')
+    append_to_postgres(df_for_pg_upload, 'ticker_balance_sheet_data_russell', 'replace')
     print(df_for_pg_upload)
 
 

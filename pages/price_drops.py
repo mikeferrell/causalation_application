@@ -71,12 +71,14 @@ layout = dbc.Container([
 
     #Price Drops Tables
     dbc.Row(dbc.Col(html.Div(id="price_drop_table"), width={"size": 10, "offset": 1})),
+    dbc.Row(dbc.Col(html.Div(id="eps_table"), width={"size": 10, "offset": 1})),
 
     ])
 
 
 @callback(
     Output('price_drop_table', 'children'),
+    Output('eps_table', 'children'),
     Input('price_drop_button', 'n_clicks'),
     [State('stock_dropdown', 'value'),
      State('sector_dropdown', 'value'),
@@ -89,12 +91,16 @@ layout = dbc.Container([
 def price_drop_update_output(n_clicks, stock_dropdown, sector_dropdown, start_date, end_date, order_by):
     if len(start_date) > 0:
         print(n_clicks)
-        price_drop_table = my_dash_charts.generate_table(
-            dataframes_from_queries.biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, order_by))
+        price_drop_df, eps_df = dataframes_from_queries.biggest_price_drop(stock_dropdown, sector_dropdown, start_date,
+                                                                           end_date, order_by)
+        price_drop_df = price_drop_df.head(100)
+        eps_df = eps_df.head(100)
+        price_drop_table = my_dash_charts.generate_table(price_drop_df)
+        eps_table = my_dash_charts.generate_table(eps_df)
         print("filter_applied")
     elif len(start_date) == 0:
         raise exceptions.PreventUpdate
-    return price_drop_table
+    return price_drop_table, eps_table
 
 
 #callback for the loading of the button
