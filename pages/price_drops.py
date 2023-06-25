@@ -37,7 +37,7 @@ layout = dbc.Container([
     dbc.Row(html.Div(html.H4(""))),
     dbc.Row(
         [
-            dbc.Col(html.Div([dcc.Dropdown(stock_lists.stock_list,
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown_for_price_drops(),
                                            id='stock_dropdown', placeholder='Stock', value='')
                               ],
                              ), width={"size": 1, "offset": 1}),
@@ -68,39 +68,89 @@ layout = dbc.Container([
         className="g-2"
     ),
 
+    #checklist filters
+    # dbc.Row(dbc.Col(
+    #     html.Div([
+    #         html.H3("Column Selection"),
+    #         dcc.Checklist(
+    #             options=[
+    #                 {'label': 'Financial Data', 'value': 'price_drop'},
+    #                 {'label': 'EPS Data', 'value': ['price_drop', 'eps_change']},
+    #                 {'label': 'P/E Data', 'value': 'SF'},
+    #             ],
+    #             value=['Financial Data']
+    #         )
+    #     ]),
+    # )),
 
     #Price Drops Tables
-    dbc.Row(dbc.Col(html.Div(id="price_drop_table"), width={"size": 10, "offset": 1})),
-    dbc.Row(dbc.Col(html.Div(id="eps_table"), width={"size": 10, "offset": 1})),
+    dbc.Row(dbc.Col(html.Div(id="price_drop_table"), width={"size": 10, "offset": 1},))
+    # dbc.Row(
+    #     dbc.Col(html.Div([
+    #         dbc.Accordion(
+    #             [
+    #                 dbc.AccordionItem(
+    #                     [
+    #                         html.Div(id="price_drop_table")
+    #                     ],
+    #                     title="Price Data Table", )],
+    #             start_collapsed=True, )
+    #     ]),
+    #         style={'textAlign': 'center', 'color': colors['text']},
+    #         width={"size": 10, "offset": 1},
+    #     ),
+    #     className="p-5 px-0 py-0 pb-5"
+    # ),
+    # dbc.Row(
+    #     dbc.Col(html.Div([
+    #         dbc.Accordion(
+    #             [
+    #                 dbc.AccordionItem(
+    #                     [
+    #                         html.Div(id="collapse_eps_table")
+    #                     ],
+    #                     title="EPS Data Table", )],
+    #             start_collapsed=True, )
+    #     ]),
+    #         style={'textAlign': 'center', 'color': colors['text']},
+    #         width={"size": 10, "offset": 1},
+    #     ),
+    #     className="p-5 px-0 py-0 pb-5"
+    # ),
 
     ])
 
 
 @callback(
     Output('price_drop_table', 'children'),
-    Output('eps_table', 'children'),
+    # Output('column-selection', 'options'),
+    # Output('eps_table', 'children'),
     Input('price_drop_button', 'n_clicks'),
     [State('stock_dropdown', 'value'),
      State('sector_dropdown', 'value'),
      State('date_range', 'start_date'),
      State('date_range', 'end_date'),
-     State('order_by', 'value')
+     State('order_by', 'value'),
+     # State("column-selection", "value"),
      ],
     prevent_initial_call=False,
 )
 def price_drop_update_output(n_clicks, stock_dropdown, sector_dropdown, start_date, end_date, order_by):
     if len(start_date) > 0:
+        # if selected_columns == '':
+        #     selected_columns = 'stock_symbol'
+        # else:
+        #     selected_columns = selected_columns
         print(n_clicks)
-        price_drop_df, eps_df = dataframes_from_queries.biggest_price_drop(stock_dropdown, sector_dropdown, start_date,
-                                                                           end_date, order_by)
+        price_drop_df = dataframes_from_queries.biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date,
+                                                                   order_by)
         price_drop_df = price_drop_df.head(100)
-        eps_df = eps_df.head(100)
+        # price_drop_df = price_drop_df[selected_columns]
         price_drop_table = my_dash_charts.generate_table(price_drop_df)
-        eps_table = my_dash_charts.generate_table(eps_df)
         print("filter_applied")
     elif len(start_date) == 0:
         raise exceptions.PreventUpdate
-    return price_drop_table, eps_table
+    return price_drop_table
 
 
 #callback for the loading of the button
@@ -111,3 +161,14 @@ def price_drop_update_output(n_clicks, stock_dropdown, sector_dropdown, start_da
 def update_output(n_clicks):
     if n_clicks is not None:
         time.sleep(5)
+
+
+# @callback(
+# Output('collapse_eps_table', 'is_open'),
+# [Input('collapse-button-price-drop', 'n_clicks')],
+# State('collapse_eps_table', 'is_open')
+# )
+# def toggle_collapse_table(n_clicks, is_open):
+#     if n_clicks:
+#         return not is_open
+#     return is_open

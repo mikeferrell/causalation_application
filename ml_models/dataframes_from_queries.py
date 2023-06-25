@@ -39,7 +39,19 @@ def sector_list():
     sector_list = sector_list['sector'].tolist()
     return sector_list
 
-sector_list()
+def stock_dropdown_for_price_drops():
+    query = f'''select distinct stock_symbol
+    from ticker_data
+
+    union all
+
+    select distinct stock_symbol
+    from ticker_data_russell'''
+    query_df = pd.read_sql(query, con=connect)
+    query_df = query_df.sort_values(by=['stock_symbol'], ascending=False)
+    query_df = query_df['stock_symbol'].tolist()
+    return query_df
+
 
 
 def stock_dropdown():
@@ -499,6 +511,18 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
             and created_at <= '{end_date}'
             {stock_symbol}
             {sector}
+            
+            union all
+        
+            select ticker_data_russell.stock_symbol, created_at, close_price, sector as Sector,
+            ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
+            , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
+            from ticker_data_russell join ticker_sectors_russell on ticker_data_russell.stock_symbol = ticker_sectors_russell.stock_symbol
+            join public.ticker_balance_sheet_data_russell on ticker_data_russell.stock_symbol = ticker_balance_sheet_data_russell.stock_symbol
+            where created_at >= '{start_date}'
+            and created_at <= '{end_date}'
+            {stock_symbol}
+            {sector}
             '''
 
     df_results = pd.read_sql(query_df, con=connect)
@@ -518,6 +542,13 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
         (peak_price_shares_outstanding::DECIMAL) as peak_price_shares_outstanding,
         (most_recent_shares_outstanding::DECIMAL) as most_recent_shares_outstanding
         from ticker_balance_sheet_data
+        
+        union all
+        
+        select stock_symbol,
+        (peak_price_shares_outstanding::DECIMAL) as peak_price_shares_outstanding,
+        (most_recent_shares_outstanding::DECIMAL) as most_recent_shares_outstanding
+        from ticker_balance_sheet_data_russell
         '''
     company_value_df = pd.read_sql(company_value_query, con=connect)
     merged_company_value_df = pd.merge(merged_df, company_value_df, how='inner', on=['stock_symbol'])
@@ -535,6 +566,13 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
     case when peak_price_ebitda = 'None' then 0 else (peak_price_ebitda::decimal) end as peak_price_ebitda,
     case when most_recent_ebitda = 'None' then 0 else (most_recent_ebitda::decimal) end as most_recent_ebitda
     from ticker_revenue_data
+    
+    union all
+    
+        select stock_symbol, 
+    case when peak_price_ebitda = 'None' then 0 else (peak_price_ebitda::decimal) end as peak_price_ebitda,
+    case when most_recent_ebitda = 'None' then 0 else (most_recent_ebitda::decimal) end as most_recent_ebitda
+    from ticker_revenue_data_russell
     '''
     company_earnings_df = pd.read_sql(company_earnings_query, con=connect)
 
@@ -586,11 +624,13 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
     #                                       'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
     #                                       'highest_price_date': 'Peak Price Date', 'max_company_value': 'Peak Company Value',
     #                                       'most_recent_company_value': 'Most Recent Company Value', 'company_value_change': 'Company Value Change'})
+    #
+    # eps_df = merged_company_value_df.loc[:, ['stock_symbol', 'most_recent_ebitda', 'most_recent_eps',
+    #                                          'peak_price_ebitda', 'peak_eps', 'pe_ratio_change']].copy()
+    # price_drop_df = merged_company_value_df.loc[:, ['stock_symbol', 'days_since_ath', 'price_drop', 'max_company_value',
+    #                                          'most_recent_company_value', 'company_value_change']].copy()
+    return merged_company_value_df
 
-    eps_df = merged_company_value_df.loc[:, ['stock_symbol', 'most_recent_ebitda', 'most_recent_eps',
-                                             'peak_price_ebitda', 'peak_eps', 'pe_ratio_change']].copy()
-    price_drop_df = merged_company_value_df.loc[:, ['stock_symbol', 'days_since_ath', 'price_drop', 'max_company_value',
-                                             'most_recent_company_value', 'company_value_change']].copy()
-    return price_drop_df, eps_df
+#format the tables, then get checklist working, then put them into foldables
 
 # biggest_price_drop('', '', '2017-01-01', '2023-06-10', '')
