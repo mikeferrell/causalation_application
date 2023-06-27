@@ -71,6 +71,8 @@ layout = dbc.Container([
     #blog pages
     dbc.Row(
         dbc.Col(html.Div([
+            dbc.NavLink(html.H3("Update 5/29/2023"),
+                        href="https://causalation.substack.com/p/returns-for-the-week-of-522"),
             dbc.NavLink(html.H3("Update 5/21/2023"),
                         href="https://causalation.substack.com/p/causalation-weekly-results"),
             dbc.NavLink(html.H3("Update 5/14/2023"),

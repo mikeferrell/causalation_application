@@ -18,8 +18,13 @@ keyword_list = ['advertising', 'blockchain', 'cloud', 'COVID', 'credit', 'curren
 def format_percent(value):
     return "{:.0%}".format(value)
 
+
 def format_dollar(value):
     return "${:,.2f}".format(value)
+
+
+def format_rounded_dollar(value):
+    return "${:,.0f}".format(value)
 
 def close_prices(stock_symbol, start_date, end_date):
     recent_prices = f'''select stock_symbol, close_price, date(created_at) as close_date
@@ -490,15 +495,17 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
 
 def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, order_by):
     if stock_dropdown == '':
-        stock_symbol = ''
+        stock_symbol_s_and_p = ''
+        stock_symbol_russell = ''
     else:
-        stock_symbol = f'''and ticker_data.stock_symbol = '{stock_dropdown}' '''
+        stock_symbol_s_and_p = f'''and ticker_data.stock_symbol = '{stock_dropdown}' '''
+        stock_symbol_russell = f'''and ticker_data_russell.stock_symbol = '{stock_dropdown}' '''
     if sector_dropdown == '':
-        sector = ''
+        sector = f'''and sector = 'TECHNOLOGY' '''
     else:
         sector = f'''and sector = '{sector_dropdown}' '''
     if order_by == '':
-        order_by = 'price_drop'
+        order_by = 'Price Drop'
     else:
         order_by = order_by
 
@@ -509,7 +516,7 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
             join ticker_balance_sheet_data on ticker_data.stock_symbol = ticker_balance_sheet_data.stock_symbol
             where created_at >= '{start_date}'
             and created_at <= '{end_date}'
-            {stock_symbol}
+            {stock_symbol_s_and_p}
             {sector}
             
             union all
@@ -521,7 +528,7 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
             join public.ticker_balance_sheet_data_russell on ticker_data_russell.stock_symbol = ticker_balance_sheet_data_russell.stock_symbol
             where created_at >= '{start_date}'
             and created_at <= '{end_date}'
-            {stock_symbol}
+            {stock_symbol_russell}
             {sector}
             '''
 
@@ -575,15 +582,18 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
     from ticker_revenue_data_russell
     '''
     company_earnings_df = pd.read_sql(company_earnings_query, con=connect)
-
-    #P/S Ratio
     merged_company_value_df = pd.merge(company_earnings_df, merged_company_value_df, how='inner', on=['stock_symbol'])
+
+    #EBITDA
+    merged_company_value_df['ebitda_change'] = (merged_company_value_df['most_recent_ebitda'] /
+                                                merged_company_value_df['peak_price_ebitda']) - 1
+    #P/S Ratio
     merged_company_value_df['peak_price_to_sale_ratio'] = \
         (merged_company_value_df['highest_price'] * merged_company_value_df['peak_price_shares_outstanding']) / \
-        merged_company_value_df['peak_price_ebitda']
+        (merged_company_value_df['peak_price_ebitda'] * 4)
     merged_company_value_df['current_price_to_sale_ratio'] = \
         (merged_company_value_df['current_price'] * merged_company_value_df['most_recent_shares_outstanding']) / \
-        merged_company_value_df['most_recent_ebitda']
+        (merged_company_value_df['most_recent_ebitda'] * 4)
     merged_company_value_df['p_s_ratio_change'] = (merged_company_value_df['current_price_to_sale_ratio'] /
                                                    merged_company_value_df['peak_price_to_sale_ratio']) - 1
     #EPS
@@ -604,27 +614,58 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
                                                   merged_company_value_df['peak_pe_ratio']) - 1
 
     #format
+    merged_company_value_df = merged_company_value_df.rename(columns={'stock_symbol': 'Stock Symbol',
+        'price_drop': 'Price Drop', 'asset_growth_since_peak': 'Asset Growth Since Peak',
+        'cash_growth_since_peak': 'Cash Growth Since Peak', 'current_price': 'Current Price',
+        'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
+        'highest_price_date': 'Peak Price Date', 'max_company_value': 'Peak Company Value',
+        'most_recent_company_value': 'Most Recent Company Value',
+        'company_value_change': 'Company Value Change', 'peak_eps': 'EPS at Peak Price',
+        'most_recent_eps': 'Most Recent EPS', 'eps_change': 'EPS Change',
+        'peak_price_to_sale_ratio': 'Peak Price to Sales Ratio', 'current_price_to_sale_ratio': 'Most Recent Price to Sales Ratio',
+        'p_s_ratio_change': 'Price to Sales Ratio Change', 'peak_pe_ratio': 'Peak P/E Ratio',
+        'most_recent_pe_ratio': 'Most Recent P/E Ratio', 'pe_ratio_change': 'P/E Ratio Change', 'peak_price_ebitda': 'Peak Price EBITDA',
+        'most_recent_ebitda': 'Most Recent EBITDA', 'ebitda_change': 'EBITDA Change'})
     merged_company_value_df = merged_company_value_df.drop(
         columns=['sector_y', 'asset_growth_since_peak_y', 'cash_growth_since_peak_y', 'current_date',
                  'peak_price_shares_outstanding', 'most_recent_shares_outstanding'])
-    merged_company_value_df['price_drop'] = merged_company_value_df['price_drop'].apply(lambda x: "{:.1%}".format(x))
-    merged_company_value_df['asset_growth_since_peak'] = merged_company_value_df['asset_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
-    merged_company_value_df['cash_growth_since_peak'] = merged_company_value_df['cash_growth_since_peak'].apply(lambda x: "{:.1%}".format(x))
-    merged_company_value_df['current_price'] = merged_company_value_df['current_price'].apply(format_dollar)
-    merged_company_value_df['highest_price'] = merged_company_value_df['highest_price'].apply(format_dollar)
-    merged_company_value_df['days_since_ath'] = pd.to_timedelta(merged_company_value_df['days_since_ath'])
-    merged_company_value_df['days_since_ath'] = merged_company_value_df['days_since_ath'].apply(lambda x: x.days)
-    merged_company_value_df['highest_price_date'] = merged_company_value_df['highest_price_date'].apply(lambda x: x.date())
-    merged_company_value_df['max_company_value'] = merged_company_value_df['max_company_value'].apply(format_dollar)
-    merged_company_value_df['most_recent_company_value'] = merged_company_value_df['most_recent_company_value'].apply(format_dollar)
-    merged_company_value_df['company_value_change'] = merged_company_value_df['company_value_change'].apply(lambda x: "{:.1%}".format(x))
+
+    #order by
+    #working here to fix the order by filter. not working yet
+    columns = [col for col in merged_company_value_df.columns if col != 'Sector']
+    for column in columns:
+        merged_company_value_df[column] = merged_company_value_df[column].astype(float)
     merged_company_value_df = merged_company_value_df.sort_values(by=[f'{order_by}'], ascending=False)
-    # merged_company_value_df = merged_company_value_df.rename(columns={'price_drop': 'Price Drop', 'asset_growth_since_peak': 'Asset Growth Since Peak',
-    #                                       'cash_growth_since_peak': 'Cash Growth Since Peak', 'current_price': 'Current Price',
-    #                                       'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
-    #                                       'highest_price_date': 'Peak Price Date', 'max_company_value': 'Peak Company Value',
-    #                                       'most_recent_company_value': 'Most Recent Company Value', 'company_value_change': 'Company Value Change'})
-    #
+
+    #Financial Data
+    merged_company_value_df['Price Drop'] = merged_company_value_df['Price Drop'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df['Asset Growth Since Peak'] = merged_company_value_df['Asset Growth Since Peak'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df['Cash Growth Since Peak'] = merged_company_value_df['Cash Growth Since Peak'].apply(lambda x: "{:.1%}".format(x))
+    merged_company_value_df['Current Price'] = merged_company_value_df['Current Price'].apply(format_dollar)
+    merged_company_value_df['Highest Price'] = merged_company_value_df['Highest Price'].apply(format_dollar)
+    merged_company_value_df['Days Since Peak Price'] = pd.to_timedelta(merged_company_value_df['Days Since Peak Price'])
+    merged_company_value_df['Days Since Peak Price'] = merged_company_value_df['Days Since Peak Price'].apply(lambda x: x.days)
+    merged_company_value_df['Peak Price Date'] = merged_company_value_df['Peak Price Date'].apply(lambda x: x.date())
+    merged_company_value_df['Peak Company Value'] = merged_company_value_df['Peak Company Value'].apply(format_rounded_dollar)
+    merged_company_value_df['Most Recent Company Value'] = merged_company_value_df['Most Recent Company Value'].apply(format_rounded_dollar)
+    merged_company_value_df['Company Value Change'] = merged_company_value_df['Company Value Change'].apply(lambda x: "{:.1%}".format(x))
+    #EBITDA
+    merged_company_value_df['Peak Price EBITDA'] = merged_company_value_df['Peak Price EBITDA'].apply(format_rounded_dollar)
+    merged_company_value_df['Most Recent EBITDA'] = merged_company_value_df['Most Recent EBITDA'].apply(format_rounded_dollar)
+    merged_company_value_df['EBITDA Change'] = merged_company_value_df['EBITDA Change'].apply(lambda x: "{:.1%}".format(x))
+    #EPS
+    merged_company_value_df['EPS at Peak Price'] = merged_company_value_df['EPS at Peak Price'].apply(format_dollar)
+    merged_company_value_df['Most Recent EPS'] = merged_company_value_df['Most Recent EPS'].apply(format_dollar)
+    merged_company_value_df['EPS Change'] = merged_company_value_df['EPS Change'].apply(lambda x: "{:.1%}".format(x))
+    #P/S
+    merged_company_value_df['Peak Price to Sales Ratio'] = round(merged_company_value_df['Peak Price to Sales Ratio'])
+    merged_company_value_df['Most Recent Price to Sales Ratio'] = round(merged_company_value_df['Most Recent Price to Sales Ratio'])
+    merged_company_value_df['Price to Sales Ratio Change'] = merged_company_value_df['Price to Sales Ratio Change'].apply(lambda x: "{:.1%}".format(x))
+    #PE
+    merged_company_value_df['Peak P/E Ratio'] = round(merged_company_value_df['Peak P/E Ratio'])
+    merged_company_value_df['Most Recent P/E Ratio'] = round(merged_company_value_df['Most Recent P/E Ratio'])
+    merged_company_value_df['P/E Ratio Change'] = merged_company_value_df['P/E Ratio Change'].apply(lambda x: "{:.1%}".format(x))
+
     # eps_df = merged_company_value_df.loc[:, ['stock_symbol', 'most_recent_ebitda', 'most_recent_eps',
     #                                          'peak_price_ebitda', 'peak_eps', 'pe_ratio_change']].copy()
     # price_drop_df = merged_company_value_df.loc[:, ['stock_symbol', 'days_since_ath', 'price_drop', 'max_company_value',
