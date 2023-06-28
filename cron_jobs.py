@@ -10,13 +10,13 @@ import psycopg2
 import passwords
 import edgar_jobs
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
+import static.stock_list as stock_list
 
 url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
 symbols_list = dataframes_from_queries.stock_dropdown()
- # symbols_list = ['COIN', 'AAPL']
 
 #returns a string
 def get_dates():
@@ -90,7 +90,7 @@ def append_to_postgres(df, table, append_or_replace):
 
 def update_stock_data():
     symbols = []
-    symbols_list = ['CRM', 'IBM']
+    # symbols_list = ['CRM', 'IBM']
     for ticker in symbols_list:
         try:
             # downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
@@ -112,6 +112,27 @@ def update_stock_data():
     trading_volume_df.columns = ['stock_symbol', 'yesterday_trading_volume']
     trading_volume_df = trading_volume_df.drop_duplicates()
     append_to_postgres(trading_volume_df, 'ticker_trading_volume', 'replace')
+    print("Stock Done")
+
+
+def update_stock_data_russell():
+    symbols = []
+    symbols_list_russell = stock_list.russell_finance_and_technology
+    for ticker in symbols_list_russell:
+        try:
+            # downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
+            downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
+        except (ValueError, KeyError, Exception) as error:
+            print(f"{error} for {ticker}")
+            continue
+        downloaded_data['Symbol'] = ticker
+        symbols.append(downloaded_data)
+    df = pd.concat(symbols)
+    df = df.reset_index()
+    df = df[['Date', 'Open', 'Close', 'Symbol']]
+    df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
+    df = df.drop_duplicates()
+    append_to_postgres(df, 'ticker_data_russell', 'append')
     print("Stock Done")
 
 

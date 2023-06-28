@@ -3450,6 +3450,7 @@ russell3k = [
 ]
 
 russell_finance_and_technology = [
+'^GSPC',
 'ALRM',
 'ALRS',
 'ALHC',

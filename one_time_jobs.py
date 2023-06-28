@@ -90,14 +90,15 @@ def full_edgar_job_10qs():
 # full_edgar_job_10ks()
 # full_edgar_job_10qs()
 #
-# symbols_list = ['CRM']
-symbols_list = stock_list.russell_finance_and_technology
+symbols_list = ['CRM']
+# symbols_list = stock_list.russell_finance_and_technology
+# symbols_list = dataframes_from_queries.stock_dropdown()
 
 def one_time_update_stock_data():
     symbols = []
     for ticker in symbols_list:
         try:
-            downloaded_data = yf.download(ticker, start='2017-01-01', end='2023-06-20')
+            downloaded_data = yf.download(ticker, start='2023-06-24', end='2023-06-28')
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
@@ -417,6 +418,9 @@ def income_statement_data(start_symbol):
             max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
             filtered_earnings = [earnings for earnings in data["quarterlyReports"]
                                  if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
+            if not filtered_earnings:
+                filtered_earnings = [max(data["quarterlyReports"],
+                                         key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))]
             sorted_earnings = sorted(filtered_earnings,
                                      key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
 
@@ -464,7 +468,7 @@ def income_statement_data(start_symbol):
 #can find shares outstanding point in time. need to fix everything below though
 def balance_sheet_data(start_symbol):
     symbols_list = stock_list.russell_finance_and_technology
-    # symbols_list = ['^GSPC', 'IBM', 'CRM']
+    # symbols_list = ['^GSPC', 'CACI']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
@@ -511,8 +515,12 @@ def balance_sheet_data(start_symbol):
             max_price_date = datetime.strptime(max_price_date, "%Y-%m-%d")
             filtered_earnings = [earnings for earnings in data["quarterlyReports"]
                                  if datetime.strptime(earnings["fiscalDateEnding"], "%Y-%m-%d") > max_price_date]
+            if not filtered_earnings:
+                filtered_earnings = [max(data["quarterlyReports"],
+                                         key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))]
             sorted_earnings = sorted(filtered_earnings,
                                      key=lambda x: datetime.strptime(x["fiscalDateEnding"], "%Y-%m-%d"))
+            # print('most recent', most_recent_earnings_report, 'filtered', filtered_earnings)
 
             if sorted_earnings:
                 peak_price_shares_outstanding = sorted_earnings[0]["commonStockSharesOutstanding"]
@@ -548,8 +556,10 @@ def balance_sheet_data(start_symbol):
     print(df_for_pg_upload)
 
 
-#These are both ready to go
+#Need to run income statement data tomorrow
 # pull_sector_data('PSTL')
 # income_statement_data('^GSPC')
 # balance_sheet_data('^GSPC')
+
+
 

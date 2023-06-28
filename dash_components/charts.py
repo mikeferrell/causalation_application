@@ -93,6 +93,26 @@ def generate_table(dataframe):
     table = dbc.Table.from_dataframe(dataframe, striped=True, bordered=True, hover=True, responsive=True)
     return table
 
+def generate_table_price_drops(dataframe):
+    table = DataTable(
+        id='datatable',
+        data=dataframe.to_dict('records'),
+        columns=[{'name': col, 'id': col} for col in dataframe.columns],
+        fixed_rows={'headers': True},
+        style_table={'overflowY': 'scroll'},
+        style_cell={'minWidth': '150px', 'width': '150px', 'maxWidth': '150px'},
+        style_header={
+            'position': 'sticky',
+            'top': '0'},
+        style_data_conditional=[{
+            'if': {'row_index': 'odd'},
+            'backgroundColor': colors['light_theme']
+        }]
+    )
+
+    return table
+
+
 
 def generate_table_with_filters(dataframe):
     table = DataTable(data=dataframe.to_dict('records'), columns=[{"name": i, "id": i} for i in dataframe.columns],
@@ -101,7 +121,7 @@ def generate_table_with_filters(dataframe):
                         'width': '150px', 'minWidth': '50px', 'maxWidth': '100px',
                         'overflow': 'hidden',
                         'textOverflow': 'inherit',
-                          'font-family': 'Calibri'
+                        'font-family': 'Calibri'
                       },
                       style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': colors['light_theme']}
                                               ],
@@ -111,7 +131,9 @@ def generate_table_with_filters(dataframe):
                           'backgroundColor': colors['mid_theme'],
                           'fontWeight': '400',
                           'color': 'white',
-                      })
+                      },
+                      )
+
     return table
 
 
