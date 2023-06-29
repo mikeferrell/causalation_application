@@ -110,10 +110,16 @@ def one_time_update_stock_data():
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
-    append_to_postgres(df, 'ticker_data_russell', 'append')
+    # append_to_postgres(df, 'ticker_data_russell', 'append')
     print("stocks done")
 
 # one_time_update_stock_data()
+
+def upload_csv_to_postgres():
+    df = pd.read_csv('/Users/michaelferrell/PycharmProjects/causalation_dashboard/static/company_name.csv')
+    append_to_postgres(df, 'stock_names', 'replace')
+
+# upload_csv_to_postgres()
 
 def one_time_backfill_correlation_scores(asc_or_desc):
     yesterday, today_minus_one_eighty = get_dates_multiple()

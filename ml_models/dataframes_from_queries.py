@@ -45,20 +45,23 @@ def sector_list():
     return sector_list
 
 def stock_dropdown_for_price_drops():
-    query = f'''select distinct stock_symbol
+    query = f'''select distinct on (ticker_data.stock_symbol) ticker_data.stock_symbol, company_name
     from ticker_data
-    where stock_symbol != '^GSPC'
+    inner join stock_names on ticker_data.stock_symbol = stock_names.stock_symbol
+    where ticker_data.stock_symbol != '^GSPC'
 
     union all
 
-    select distinct stock_symbol
+    select distinct on (ticker_data_russell.stock_symbol) ticker_data_russell.stock_symbol, company_name
     from ticker_data_russell
-    where stock_symbol != '^GSPC'
+    inner join stock_names on ticker_data_russell.stock_symbol = stock_names.stock_symbol
+    where ticker_data_russell.stock_symbol != '^GSPC'
     '''
     query_df = pd.read_sql(query, con=connect)
     query_df = query_df.sort_values(by=['stock_symbol'], ascending=True)
-    query_df = query_df['stock_symbol'].tolist()
-    return query_df
+    stock_symbols = query_df['stock_symbol'].tolist()
+    company_names = query_df['company_name'].tolist()
+    return stock_symbols, company_names
 
 
 
@@ -496,13 +499,17 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
 ## Calculations for finding undervalued Stocks
 ##                                          ##
 
-def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, order_by, order_by_order):
+def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_date, end_date, order_by, order_by_order):
     if stock_dropdown == '':
         stock_symbol_s_and_p = ''
         stock_symbol_russell = ''
     else:
         stock_symbol_s_and_p = f'''and ticker_data.stock_symbol = '{stock_dropdown}' '''
         stock_symbol_russell = f'''and ticker_data_russell.stock_symbol = '{stock_dropdown}' '''
+    if company_dropdown == '':
+        company_dropdown = ''
+    else:
+        company_dropdown = f'''and company_name = '{company_dropdown}' '''
     if sector_dropdown == '':
         sector = f'''and sector = 'TECHNOLOGY' '''
     else:
@@ -517,27 +524,31 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
         order_by_order = False
 
 
-    query_df = f'''select ticker_data.stock_symbol, created_at, close_price, sector as Sector,
+    query_df = f'''select company_name, ticker_data.stock_symbol, created_at, close_price, sector as Sector,
             ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
             , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
             from ticker_data join ticker_sectors on ticker_data.stock_symbol = ticker_sectors.stock_symbol
             join ticker_balance_sheet_data on ticker_data.stock_symbol = ticker_balance_sheet_data.stock_symbol
+            join stock_names on ticker_data.stock_symbol = stock_names.stock_symbol
             where created_at >= '{start_date}'
             and created_at <= '{end_date}'
             {stock_symbol_s_and_p}
             {sector}
+            {company_dropdown}
             
             union all
         
-            select ticker_data_russell.stock_symbol, created_at, close_price, sector as Sector,
+            select company_name, ticker_data_russell.stock_symbol, created_at, close_price, sector as Sector,
             ((most_recent_total_assets::DECIMAL) / (peak_price_total_assets::DECIMAL)) - 1 as asset_growth_since_peak
             , ((most_recent_total_cash_and_equivelants::DECIMAL) / (peak_price_total_cash_and_equivelants::DECIMAL)) - 1 as cash_growth_since_peak
             from ticker_data_russell join ticker_sectors_russell on ticker_data_russell.stock_symbol = ticker_sectors_russell.stock_symbol
             join public.ticker_balance_sheet_data_russell on ticker_data_russell.stock_symbol = ticker_balance_sheet_data_russell.stock_symbol
+            join stock_names on ticker_data_russell.stock_symbol = stock_names.stock_symbol
             where created_at >= '{start_date}'
             and created_at <= '{end_date}'
             {stock_symbol_russell}
             {sector}
+            {company_dropdown}
             '''
 
     df_results = pd.read_sql(query_df, con=connect)
@@ -625,8 +636,8 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
     merged_company_value_df = merged_company_value_df.drop(
         columns=['sector_y', 'asset_growth_since_peak_y', 'cash_growth_since_peak_y', 'current_date',
                  'peak_price_shares_outstanding', 'most_recent_shares_outstanding', 'Sector'])
-    merged_company_value_df = merged_company_value_df.rename(columns={'stock_symbol': 'Stock Symbol',
-        'price_change': 'Price Change', 'asset_growth_since_peak': 'Asset Growth Since Peak',
+    merged_company_value_df = merged_company_value_df.rename(columns={'company_name': 'Company Name',
+        'stock_symbol': 'Stock Symbol', 'price_change': 'Price Change', 'asset_growth_since_peak': 'Asset Growth Since Peak',
         'cash_growth_since_peak': 'Cash Growth Since Peak', 'current_price': 'Current Price',
         'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
         'highest_price_date': 'Peak Price Date', 'max_company_value': 'Peak Company Value',
@@ -637,7 +648,7 @@ def biggest_price_drop(stock_dropdown, sector_dropdown, start_date, end_date, or
         'p_s_ratio_change': 'Price to Sales Ratio Change', 'peak_pe_ratio': 'Peak P/E Ratio',
         'most_recent_pe_ratio': 'Most Recent P/E Ratio', 'pe_ratio_change': 'P/E Ratio Change', 'peak_price_ebitda': 'Peak Price EBITDA',
         'most_recent_ebitda': 'Most Recent EBITDA', 'ebitda_change': 'EBITDA Change'})
-    new_column_order = ['Stock Symbol', 'Price Change', 'Highest Price', 'Current Price', 'Days Since Peak Price',
+    new_column_order = ['Company Name', 'Stock Symbol', 'Price Change', 'Highest Price', 'Current Price', 'Days Since Peak Price',
                         'Peak Price Date', 'Cash Growth Since Peak', 'Asset Growth Since Peak',
                         'Company Value Change', 'Peak Company Value', 'Most Recent Company Value',
                         'EPS Change', 'EPS at Peak Price', 'Most Recent EPS',

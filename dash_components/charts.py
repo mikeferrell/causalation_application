@@ -100,14 +100,25 @@ def generate_table_price_drops(dataframe):
         columns=[{'name': col, 'id': col} for col in dataframe.columns],
         fixed_rows={'headers': True},
         style_table={'overflowY': 'scroll'},
-        style_cell={'minWidth': '150px', 'width': '150px', 'maxWidth': '150px'},
+        style_data={
+            'font-family': 'Calibri'
+        },
+        style_cell={'padding': '5px',
+                    'textAlign': 'center',
+                    'minWidth': '100px',
+                    },
         style_header={
             'position': 'sticky',
-            'top': '0'},
+            'top': '0',
+            'backgroundColor': colors['mid_theme'],
+            'color': 'white',
+            'whiteSpace': 'normal',
+            'overflow': 'auto'
+        },
         style_data_conditional=[{
             'if': {'row_index': 'odd'},
             'backgroundColor': colors['light_theme']
-        }]
+        }],
     )
 
     return table
