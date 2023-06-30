@@ -74,22 +74,29 @@ layout = dbc.Container([
                              ), width={"size": 3}),
             dbc.Col(html.Div(
                 [
-                    dbc.Input(type="number", size="md", step=1, id="numeric-input-low"),
-                    html.P(id='number_type_low')
+                    dbc.Input(type="number", size="md", id="numeric-input-low", placeholder='Minimum'),
+                    html.P(id="number_type_low_text",
+                           style={
+                               'textAlign': 'right',
+                               'color': colors['text']
+                           })
                 ],
             ), width={"size": 2}
             ),
             dbc.Col(html.Div(
                 [
-                    dbc.Input(type="number", size="md", step=1, id="numeric-input-high"),
-                    html.P(id='number_type_high')
+                    dbc.Input(type="number", size="md", id="numeric-input-high", placeholder='Maximum'),
+                    html.P(id="number_type_high_text",
+                            style={
+                                'textAlign': 'right',
+                                'color': colors['text']
+                            })
                 ],
             ), width={"size": 2}
             ),
-        dbc.Col(html.Div(html.P(id="number_type_low_text"))),
             dbc.Col(
                 html.Div([dcc.Dropdown(['Ascending', 'Descending'],
-                                       id='order_by_order', placeholder='Order By', value='Ascending')
+                                       id='order_by_order', placeholder='Order By', value='')
                           ],
                          ), width={"size": 2}),
         ],
@@ -147,6 +154,28 @@ layout = dbc.Container([
     ]
 )
 
+@callback(
+    Output('number_type_low_text', 'children'),
+    Output('number_type_high_text', 'children'),
+    Input('order_by', 'value'),
+)
+def number_type_text(order_by):
+    print(order_by)
+    if order_by in ['Price Change', 'Cash Growth Since Peak', 'Asset Growth Since Peak', 'Company Value Change',
+                    'EPS Change', 'Price to Sales Ratio Change', 'P/E Ratio Change', 'EBITDA Change']:
+        number_type_text = '% (e.g. .1 = 10%)'
+    elif order_by in ['Highest Price', 'Current Price', 'Peak Company Value', 'Most Recent Company Value',
+                        'EPS at Peak Price', 'Most Recent EPS', 'Peak Price EBITDA', 'Most Recent EBITDA']:
+        number_type_text = 'Dollar ($)'
+    elif order_by in ['Days Since Peak Price', 'Peak Price to Sales Ratio', 'Most Recent Price to Sales Ratio',
+                      'Peak P/E Ratio', 'Most Recent P/E Ratio']:
+        number_type_text = 'Number'
+    else:
+        number_type_text = 'Not Applicable'
+    number_type_low = number_type_text
+    number_type_high = number_type_text
+    return number_type_low, number_type_high
+
 
 @callback(
     Output('price_drop_table', 'children'),
@@ -187,39 +216,15 @@ def price_drop_update_output(n_clicks, stock_dropdown, company_dropdown, sector_
         selected_data = [value for sublist in selected_columns for value in sublist]
         print(n_clicks)
         price_drop_df = dataframes_from_queries.biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown,
-                                                                   start_date, end_date, order_by, order_by_order)
+                                                                   start_date, end_date, order_by, order_by_order,
+                                                                   numeric_input_low, numeric_input_high)
         price_drop_df = price_drop_df.head(100)
         price_drop_df = price_drop_df[selected_data]
         price_drop_table = my_dash_charts.generate_table_price_drops(price_drop_df)
         print("filter_applied")
-        # numeric_input_low = float(numeric_input_low)
-        # numeric_input_high = float(numeric_input_high)
-        numbers = numeric_input_low, numeric_input_high
-        print(numbers)
     elif len(start_date) == 0:
         raise exceptions.PreventUpdate
     return price_drop_table, {'is_loading': True}
-
-@callback(
-    Output('number_type_low_text', 'children'),
-    Output('number_type_high_text', 'children'),
-    Input('order_by', 'value'),
-)
-def number_type_text(order_by):
-    if order_by in ['Price Change', 'Cash Growth Since Peak', 'Asset Growth Since Peak', 'Company Value Change',
-                    'EPS Change', 'Price to Sales Ratio Change', 'P/E Ratio Change', 'EBITDA Change',]:
-        number_type_text = '%'
-    elif order_by in ['Highest Price', 'Current Price', 'Peak Company Value', 'Most Recent Company Value',
-                        'EPS at Peak Price', 'Most Recent EPS', 'Peak Price EBITDA', 'Most Recent EBITDA']:
-        number_type_text = '$'
-    elif order_by in ['Days Since Peak Price', 'Peak Price to Sales Ratio', 'Most Recent Price to Sales Ratio',
-                      'Peak P/E Ratio', 'Most Recent P/E Ratio']:
-        number_type_text = 'Number'
-    else:
-        number_type_text = 'N/A'
-    number_type_low = number_type_text
-    number_type_high = number_type_text
-    return number_type_low, number_type_high
 
 
 #callback for the loading of the button

@@ -499,7 +499,8 @@ def stock_moving_with_sec_data(stock_symbol, start_date, end_date, keyword, time
 ## Calculations for finding undervalued Stocks
 ##                                          ##
 
-def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_date, end_date, order_by, order_by_order):
+def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_date, end_date, order_by, order_by_order,
+                       numeric_input_low, numeric_input_high):
     if stock_dropdown == '':
         stock_symbol_s_and_p = ''
         stock_symbol_russell = ''
@@ -519,6 +520,8 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
     else:
         order_by = order_by
     if order_by_order == 'Ascending':
+        order_by_order = True
+    elif order_by_order == '':
         order_by_order = True
     else:
         order_by_order = False
@@ -657,12 +660,15 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
                         'EBITDA Change', 'Peak Price EBITDA', 'Most Recent EBITDA']
     merged_company_value_df = merged_company_value_df.reindex(columns=new_column_order)
 
-    #order by
+    #order by and filter
     columns = [col for col in merged_company_value_df.columns if col not in ['Sector', 'Stock Symbol', 'Peak Price Date',
                                                                              'Days Since Peak Price']]
     for column in columns:
         merged_company_value_df[column] = merged_company_value_df[column].astype(float)
     merged_company_value_df = merged_company_value_df.sort_values(by=[f'{order_by}'], ascending=order_by_order)
+    merged_company_value_df = merged_company_value_df[(merged_company_value_df[f'{order_by}'] >= numeric_input_low) &
+                                       (merged_company_value_df[f'{order_by}'] <= numeric_input_high)]
+
 
     #Financial Data
     merged_company_value_df['Price Change'] = merged_company_value_df['Price Change'].apply(lambda x: "{:.1%}".format(x))
@@ -693,9 +699,4 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
     merged_company_value_df['Most Recent P/E Ratio'] = round(merged_company_value_df['Most Recent P/E Ratio'])
     merged_company_value_df['P/E Ratio Change'] = merged_company_value_df['P/E Ratio Change'].apply(lambda x: "{:.1%}".format(x))
 
-
     return merged_company_value_df
-
-#format the tables, then get checklist working, then put them into foldables
-
-# biggest_price_drop('', '', '2017-01-01', '2023-06-10', '')
