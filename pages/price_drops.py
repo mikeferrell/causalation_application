@@ -39,28 +39,13 @@ layout = dbc.Container([
     dbc.Row(html.Div(html.Hr(className="my-2"))),
     dbc.Row(html.Div(html.H1(""))),
 
-
-    #Filters
-    dbc.Row(html.Div(html.H4(""))),
-    dbc.Row(
-        [
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown_for_price_drops()[0],
-                                           id='stock_dropdown', placeholder='Stock Symbol', value='')
-                              ],
-                             ), width={"size": 2}),
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown_for_price_drops()[1],
-                                           id='company_dropdown', placeholder='Company Name', value='')
-                              ],
-                             ), width={"size": 4}),
-            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.sector_list(),
-                                           id='sector_dropdown', placeholder='Sector', value='')
-                              ],
-                             ), width={"size": 3}),
-            dbc.Col(html.Div([dcc.DatePickerRange(id='date_range',
-                                                  start_date=date(2018, 6, 1),
-                                                  end_date=get_dates(),
-                                                  clearable=False)], ),
-                    width={"size": 3}),]),
+    #Numeric Filters
+    dbc.Row([html.H4("Related Filters"),
+        html.P(id="filter_error_message",
+                   style={
+                       'textAlign': 'left',
+                       'color': colors['red_button']
+                   })]),
     dbc.Row([
             dbc.Col(html.Div([dcc.Dropdown(['Company Name', 'Stock Symbol', 'Price Change', 'Highest Price', 'Current Price',
                         'Days Since Peak Price', 'Peak Price Date', 'Cash Growth Since Peak', 'Asset Growth Since Peak',
@@ -69,7 +54,7 @@ layout = dbc.Container([
                         'Price to Sales Ratio Change', 'Peak Price to Sales Ratio', 'Most Recent Price to Sales Ratio',
                         'P/E Ratio Change', 'Peak P/E Ratio', 'Most Recent P/E Ratio',
                         'EBITDA Change', 'Peak Price EBITDA', 'Most Recent EBITDA'],
-                                           id='order_by', placeholder='Price Change', value='')
+                                           id='order_by', placeholder='Filter by Column', value='')
                               ],
                              ), width={"size": 3}),
             dbc.Col(html.Div(
@@ -103,6 +88,29 @@ layout = dbc.Container([
         className="g-2"
     ),
 
+    #Optional Filters
+    # Filters
+    dbc.Row(html.Div(html.H4("Standalone Filters"))),
+    dbc.Row(
+        [
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown_for_price_drops()[0],
+                                           id='stock_dropdown', placeholder='Stock Symbol', value='')
+                              ],
+                             ), width={"size": 2}),
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown_for_price_drops()[1],
+                                           id='company_dropdown', placeholder='Company Name', value='')
+                              ],
+                             ), width={"size": 4}),
+            dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.sector_list(),
+                                           id='sector_dropdown', placeholder='Sector', value='')
+                              ],
+                             ), width={"size": 3}),
+            dbc.Col(html.Div([dcc.DatePickerRange(id='date_range',
+                                                  start_date=date(2018, 6, 1),
+                                                  end_date=get_dates(),
+                                                  clearable=False)], ),
+                    width={"size": 3}), ]),
+
     #checklist filters
     dbc.Row(dbc.Col(
         html.Div([
@@ -110,7 +118,7 @@ layout = dbc.Container([
             dcc.Checklist(id='selected_columns',
                           options=[
                               {'label': 'Stock Data',
-                               'value': ['Stock Symbol', 'Price Change', 'Highest Price', 'Current Price',
+                               'value': ['Company Name', 'Stock Symbol', 'Price Change', 'Highest Price', 'Current Price',
                                          'Days Since Peak Price', 'Peak Price Date']},
                               {'label': 'Financial Data',
                                'value': ['Cash Growth Since Peak', 'Asset Growth Since Peak', 'Company Value Change',
@@ -180,6 +188,7 @@ def number_type_text(order_by):
 @callback(
     Output('price_drop_table', 'children'),
     Output('price_drop_button', 'loading_state'),
+    Output('filter_error_message', 'children'),
     Input('price_drop_button', 'n_clicks'),
     [State('stock_dropdown', 'value'),
     State('company_dropdown', 'value'),
@@ -192,39 +201,41 @@ def number_type_text(order_by):
      State("numeric-input-low", "value"),
      State("numeric-input-high", "value"),
      ],
+    prevent_initial_call=True
 )
 def price_drop_update_output(n_clicks, stock_dropdown, company_dropdown, sector_dropdown, start_date, end_date, order_by,
                              order_by_order, selected_columns, numeric_input_low, numeric_input_high):
     if len(start_date) > 0:
         #filtering for number inputs
         if numeric_input_low is None:
-            numeric_input_low = -100000000000
+            numeric_input_low = float('-inf')
         else:
             numeric_input_low = numeric_input_low
         if numeric_input_high is None:
-            numeric_input_high = 100000000000
+            numeric_input_high = float('inf')
         else:
             numeric_input_high = numeric_input_high
         print(type(numeric_input_low), numeric_input_low, numeric_input_high)
         if numeric_input_low >= numeric_input_high:
-            numeric_input_low = -100000000000
-            numeric_input_high = 100000000000
+            numeric_input_low = float('-inf')
+            numeric_input_high = float('inf')
+            filter_error_message = 'Minimum value must be less than Maximum value'
         else:
             numeric_input_low = numeric_input_low
             numeric_input_high = numeric_input_high
+            filter_error_message = ''
 
         selected_data = [value for sublist in selected_columns for value in sublist]
         print(n_clicks)
         price_drop_df = dataframes_from_queries.biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown,
                                                                    start_date, end_date, order_by, order_by_order,
                                                                    numeric_input_low, numeric_input_high)
-        price_drop_df = price_drop_df.head(100)
         price_drop_df = price_drop_df[selected_data]
         price_drop_table = my_dash_charts.generate_table_price_drops(price_drop_df)
         print("filter_applied")
     elif len(start_date) == 0:
         raise exceptions.PreventUpdate
-    return price_drop_table, {'is_loading': True}
+    return price_drop_table, {'is_loading': True}, filter_error_message
 
 
 #callback for the loading of the button

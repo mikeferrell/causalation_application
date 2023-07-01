@@ -39,7 +39,8 @@ def close_prices(stock_symbol, start_date, end_date):
 
 def sector_list():
     sector_query = f'''select distinct sector
-    from ticker_sectors '''
+    from ticker_sectors
+    order by sector asc'''
     sector_list = pd.read_sql(sector_query, con=connect)
     sector_list = sector_list['sector'].tolist()
     return sector_list
@@ -512,7 +513,7 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
     else:
         company_dropdown = f'''and company_name = '{company_dropdown}' '''
     if sector_dropdown == '':
-        sector = f'''and sector = 'TECHNOLOGY' '''
+        sector = ''
     else:
         sector = f'''and sector = '{sector_dropdown}' '''
     if order_by == '':
@@ -639,7 +640,7 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
     merged_company_value_df = merged_company_value_df.drop(
         columns=['sector_y', 'asset_growth_since_peak_y', 'cash_growth_since_peak_y', 'current_date',
                  'peak_price_shares_outstanding', 'most_recent_shares_outstanding', 'Sector'])
-    merged_company_value_df = merged_company_value_df.rename(columns={'company_name': 'Company Name',
+    merged_company_value_df = merged_company_value_df.rename(columns={'company_name_x': 'Company Name',
         'stock_symbol': 'Stock Symbol', 'price_change': 'Price Change', 'asset_growth_since_peak': 'Asset Growth Since Peak',
         'cash_growth_since_peak': 'Cash Growth Since Peak', 'current_price': 'Current Price',
         'highest_price': 'Highest Price', 'days_since_ath': 'Days Since Peak Price',
@@ -659,10 +660,11 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
                         'P/E Ratio Change', 'Peak P/E Ratio', 'Most Recent P/E Ratio',
                         'EBITDA Change', 'Peak Price EBITDA', 'Most Recent EBITDA']
     merged_company_value_df = merged_company_value_df.reindex(columns=new_column_order)
+    # print(merged_company_value_df)
 
     #order by and filter
-    columns = [col for col in merged_company_value_df.columns if col not in ['Sector', 'Stock Symbol', 'Peak Price Date',
-                                                                             'Days Since Peak Price']]
+    columns = [col for col in merged_company_value_df.columns if col not in ['Company Name', 'Sector', 'Stock Symbol',
+                                                                             'Peak Price Date', 'Days Since Peak Price']]
     for column in columns:
         merged_company_value_df[column] = merged_company_value_df[column].astype(float)
     merged_company_value_df = merged_company_value_df.sort_values(by=[f'{order_by}'], ascending=order_by_order)
