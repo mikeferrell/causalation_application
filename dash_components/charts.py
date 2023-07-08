@@ -4,6 +4,7 @@ from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
 from dash.dash_table import DataTable
 from static.color_palette import colors
+import pandas as pd
 import passwords
 
 url = passwords.rds_access
@@ -87,6 +88,33 @@ def backtest_Mult_Y_Axis_Lines(dataframe_input):
     fig.update_yaxes(title_text=f"<b>S&P 500 Value", range=[3500, 7000], secondary_y=True)
 
     return fig
+
+#price drops page
+def annual_revenue_lines(dataframe_input, stock_name):
+    fig = make_subplots(specs=[[{"secondary_y": False}]])
+
+    # Add traces
+    fig.add_trace(
+        go.Scatter(x=dataframe_input["Reporting Date"], y=dataframe_input["Quarterly Revenue"], name=stock_name),
+        secondary_y=False,
+    )
+    # Add figure title
+    fig.update_layout(
+        title_text="Quarterly EBITDA"
+    )
+    # Set x-axis title
+    fig.update_xaxes(title_text="Reporting Date")
+    # Set y-axes titles
+    fig.update_yaxes(title_text="EBITDA", secondary_y=False)
+
+    # Set dynamic y-axis range
+    y_min = dataframe_input["Quarterly Revenue"].min()
+    y_max = dataframe_input["Quarterly Revenue"].max()
+    y_range_padding = (y_max - y_min) * 0.1  # 10% padding on both ends of the range
+    fig.update_yaxes(range=[y_min - y_range_padding, y_max + y_range_padding], tickprefix="$")
+
+    return fig
+
 
 
 def generate_table(dataframe):

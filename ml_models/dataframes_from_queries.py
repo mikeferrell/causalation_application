@@ -702,3 +702,29 @@ def biggest_price_drop(stock_dropdown, company_dropdown, sector_dropdown, start_
     merged_company_value_df['P/E Ratio Change'] = merged_company_value_df['P/E Ratio Change'].apply(lambda x: "{:.1%}".format(x))
 
     return merged_company_value_df
+
+
+#create revenue chart for price drop page
+def revenue_data_from_json_column(stock_symbol):
+    query_results = f'''with a as (
+    SELECT (json_each(cast(ebitda_last_5_years as json))).key AS "Reporting Date", 
+    (json_each(cast(ebitda_last_5_years as json))).value AS revenue
+    from public.ticker_revenue_data
+    where stock_symbol = '{stock_symbol}'
+    
+    union all 
+    
+    SELECT (json_each(cast(ebitda_last_5_years as json))).key AS "Reporting Date", 
+    (json_each(cast(ebitda_last_5_years as json))).value AS revenue
+    from public.ticker_revenue_data_russell
+    where stock_symbol = '{stock_symbol}'
+    )
+    
+    select "Reporting Date", (replace(revenue::text, '"', '')::DECIMAL) as "Quarterly Revenue" from a 
+    order by "Reporting Date" desc
+    '''
+    df_results = pd.read_sql(query_results, con=connect)
+    # df_results['Quarterly Revenue'] = df_results['Quarterly Revenue'].apply(format_rounded_dollar)
+
+    return df_results
+

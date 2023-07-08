@@ -137,10 +137,15 @@ layout = dbc.Container([
                           labelStyle={'font-size': '24px', 'font-family': 'Calibri'},
                           inputStyle={'margin-right': '4px', 'margin-left': '20px'},
                           ),
-        ]),
+        ]), style={'padding-top': '20px'}
     )),
 
     #Button
+    dbc.Row(html.P(id="big_data_error",
+                   style={
+                       'textAlign': 'left',
+                       'color': colors['red_button']
+                   })),
     dbc.Row(dbc.Col(
                 html.Div([
                     dcc.Loading(id='loading_price_drop', fullscreen=False, color=colors['mid_theme'],
@@ -159,6 +164,39 @@ layout = dbc.Container([
     dbc.Row(html.P()),
     dbc.Row(html.P()),
     dbc.Row(html.P()),
+
+    ##
+
+    ##
+
+    #revenue chart with filter
+    dbc.Row(html.Div(html.Hr(className="my-2"))),
+    dbc.Row(html.Div(html.H1(""))),
+    html.Div(html.H3(
+        children='Quarterly Earnings by Stock Symbol',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        })),
+    dbc.Row(html.Div(html.Hr(className="my-2"))),
+    dbc.Row(html.Div(html.H1(""))),
+    dbc.Row([
+        dbc.Col(html.Div([dcc.Dropdown(dataframes_from_queries.stock_dropdown_for_price_drops()[0],
+                                       id='stock_dropdown_rev_chart', placeholder='Stock Symbol', value='')
+                          ],
+                         ), width={"size": 2}),
+        dbc.Col(
+        html.Div([
+            dcc.Loading(id='loading_revenue_chart', fullscreen=False, color=colors['mid_theme'],
+                        children=dbc.Button("Apply Filters",
+                                            id='revenue_chart_button',
+                                            className='d-grid gap-2',
+                                            n_clicks=0,
+                                            style={"background-color": colors['dark_theme'], "width": "100%"})),
+            html.Div(id='revenue_chart_output')
+        ]), width={"size": 3}
+    )]),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='revenue_chart', figure={})), width={"size": 9, "offset": 2})),
     ]
 )
 
@@ -184,7 +222,30 @@ def number_type_text(order_by):
     number_type_high = number_type_text
     return number_type_low, number_type_high
 
+@callback(
+    Output('big_data_error', 'children'),
+    Input('price_drop_button', 'n_clicks'),
+    [State('stock_dropdown', 'value'),
+     State('company_dropdown', 'value'),
+     State('sector_dropdown', 'value'),
+     State("numeric-input-low", "value"),
+     State("numeric-input-high", "value"),
+     ],
+    prevent_initial_call=True
+)
+def big_data_error(n_clicks, stock_dropdown, company_dropdown, sector_dropdown, numeric_input_low, numeric_input_high):
+    big_data_error = ''
+    if n_clicks > -1:
+        print("1", stock_dropdown, "2", company_dropdown, "3", sector_dropdown, "4", numeric_input_low, "5", numeric_input_high)
+        if stock_dropdown == '' and company_dropdown == '' and sector_dropdown == '' and numeric_input_low is None and numeric_input_high is None:
+            big_data_error = "You requested a large dataset. Try applying some filters to improve the load time"
+        else:
+            big_data_error = ''
+    print(n_clicks, "filter_applied")
+    return big_data_error
 
+
+##Table callback
 @callback(
     Output('price_drop_table', 'children'),
     Output('price_drop_button', 'loading_state'),
@@ -231,6 +292,9 @@ def price_drop_update_output(n_clicks, stock_dropdown, company_dropdown, sector_
                                                                    start_date, end_date, order_by, order_by_order,
                                                                    numeric_input_low, numeric_input_high)
         price_drop_df = price_drop_df[selected_data]
+        #Steps to prevent slow loads
+        if sector_dropdown == '':
+            price_drop_df = price_drop_df.head(100)
         price_drop_table = my_dash_charts.generate_table_price_drops(price_drop_df)
         print("filter_applied")
     elif len(start_date) == 0:
@@ -244,5 +308,38 @@ def price_drop_update_output(n_clicks, stock_dropdown, company_dropdown, sector_
     Input('price_drop_button', 'n_clicks')
 )
 def update_output(n_clicks):
+    if n_clicks is not None:
+        time.sleep(5)
+
+
+##
+##
+
+
+##Revenue Chart Callbacks
+@callback(
+    Output('revenue_chart', 'figure'),
+    Output('revenue_chart_button', 'loading_state'),
+    Input('revenue_chart_button', 'n_clicks'),
+    [State('stock_dropdown_rev_chart', 'value'),
+     ],
+    prevent_initial_call=True
+)
+def revenue_chart_output(n_clicks, stock_filter):
+    if len(stock_filter) > 0:
+        revenue_chart_df = dataframes_from_queries.revenue_data_from_json_column(stock_filter)
+        revenue_chart = my_dash_charts.annual_revenue_lines(revenue_chart_df, stock_filter)
+        print("filter_applied")
+    elif len(stock_filter) == 0:
+        raise exceptions.PreventUpdate
+    return revenue_chart, {'is_loading': True}
+
+
+#callback for the loading of the button
+@callback(
+    Output('revenue_chart_output', 'children'),
+    Input('revenue_chart_button', 'n_clicks')
+)
+def update_revenue_chart_output(n_clicks):
     if n_clicks is not None:
         time.sleep(5)
