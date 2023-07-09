@@ -15,6 +15,7 @@ stock_list = [
     'ATOM',
     'HHC',
     'DDOG',
+    'SNOW',
 #S&P 500
         'A',
         'AAL',
