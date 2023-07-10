@@ -595,6 +595,8 @@ def weekly_buy_recommendation_list(this_week_or_last):
 # append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
 
+
+##THis doesn't appear to be used anywhere. Maybe delete?
 def calculate_purchase_amounts(principal):
     query_for_buys = f'''
     with stock_selections as (

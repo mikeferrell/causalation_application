@@ -3,6 +3,7 @@ import passwords
 from sqlalchemy import create_engine
 from static.stock_list import stock_list
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
+from datetime import date, timedelta, datetime
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -13,6 +14,18 @@ keyword_list = ['advertising', 'blockchain', 'cloud', 'COVID', 'credit', 'curren
                 'digital', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
                 'insurance', 'politic', 'profitability', 'recession',
                 'security', 'software', 'supply chain', 'uncertainty', 'war']
+
+def get_dates():
+    today = date.today()
+    yesterdays_date = today - timedelta(days=1)
+    yesterdays_date = str(yesterdays_date)
+    year = int(yesterdays_date[0:4])
+    month = int(yesterdays_date[5:7])
+    day = int(yesterdays_date[8:10])
+
+    yesterday = str(date(year, month, day))
+    return yesterday
+
 
 #format percentages in query results
 def format_percent(value):
@@ -320,6 +333,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               , stock_symbol 
               from {this_week_or_last_table}
               where predicted_weekly_close_price > previous_weekly_close_price
+              and previous_weekly_open_date >= date('{get_dates()}') - interval '9' day
               ),
               
             buy_amounts as (
@@ -333,6 +347,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               FROM
                   public.{this_week_or_last_table}
               WHERE predicted_weekly_close_price > previous_weekly_close_price
+              and previous_weekly_open_date >= date('{get_dates()}') - interval '9' day
             ),
             
             total_estimation as (
