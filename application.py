@@ -8,11 +8,14 @@ import one_time_jobs
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
 
+
 app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static", assets_url_path="static",
            external_stylesheets=[dbc.themes.UNITED])
 server = Flask(__name__)
 scheduler = BackgroundScheduler()
 application = app.server
+
+
 # log_file = 'application.log'
 # logging.basicConfig(filename=log_file, format='%(asctime)s - %(message)s', level=logging.INFO)
 

@@ -184,7 +184,7 @@ def ml_update_output(n_intervals):
     backtest_all_results_df = backtest.backtesting_buy_recommendation_list('decision_tree')
     ml_top_five_accuracy_table = my_dash_charts.generate_table_with_filters(backtest_all_results_df[2])
     stocks_to_buy_table = my_dash_charts.generate_table(
-        dataframes_from_queries.stocks_to_buy_this_week(10000, 'future_buy_recommendations')[0])
+        dataframes_from_queries.stocks_to_buy_this_week(1000, 'future_buy_recommendations')[0])
     # stocks_to_buy_last_week_table = my_dash_charts.generate_table(
     #     dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[0])
     # last_week_returns = dataframes_from_queries.stocks_to_buy_this_week(1000, 'last_week_buy_recommendations')[1]

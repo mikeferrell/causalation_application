@@ -168,6 +168,7 @@ def keyword_count_cron_job():
     print("Keywords Done")
 
 
+
 def weekly_stock_opening_cron_job():
     print("starting weekly stock price query")
     query_results = f'''
@@ -222,6 +223,7 @@ def weekly_stock_opening_cron_job():
 # For each critieria in the lists, pull the stocks with the top 10 correlation scores. Loop through all the different
 # options
 def top_correlation_scores(asc_or_desc):
+    print("Starting correlation job")
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
     # time delays to test
@@ -258,6 +260,7 @@ def top_correlation_scores(asc_or_desc):
         '''
     dates_dict = pd.read_sql(dates_dict, con=connect)
     dates_dict = dates_dict['date_strings'].tolist()
+    print("Dates", dates_dict)
 
     list_of_all_correlations = []
     print("starting correlation for loop")
@@ -268,6 +271,7 @@ def top_correlation_scores(asc_or_desc):
             for time_delays in time_delay_dict:
                 for keywords in keywords_dict:
                     for filings in filing_type:
+                        print(dates, time_delays, keywords, filings)
                         # Pulls the top 10 stock correlation scores with the applied filters
                         query_results = f'''
                             with top_correlations as (with rolling_average_calculation as (
@@ -400,3 +404,5 @@ def predicted_prices_for_last_week():
     append_to_postgres(df_for_upload, 'last_week_buy_recommendations', 'replace')
 
 # predicted_prices_for_next_week()
+
+# wrapper_top_correlation_scores_desc()
