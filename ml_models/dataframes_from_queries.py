@@ -333,7 +333,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               , stock_symbol 
               from {this_week_or_last_table}
               where predicted_weekly_close_price > previous_weekly_close_price
-              and previous_weekly_open_date >= date('{get_dates()}') - interval '9' day
+              and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
               ),
               
             buy_amounts as (
@@ -347,7 +347,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               FROM
                   public.{this_week_or_last_table}
               WHERE predicted_weekly_close_price > previous_weekly_close_price
-              and previous_weekly_open_date >= date('{get_dates()}') - interval '9' day
+              and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
             ),
             
             total_estimation as (

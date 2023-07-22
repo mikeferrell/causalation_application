@@ -260,7 +260,7 @@ def top_correlation_scores(asc_or_desc):
         '''
     dates_dict = pd.read_sql(dates_dict, con=connect)
     dates_dict = dates_dict['date_strings'].tolist()
-    print("Dates", dates_dict)
+    # print("Dates", dates_dict)
 
     list_of_all_correlations = []
     print("starting correlation for loop")
@@ -271,7 +271,7 @@ def top_correlation_scores(asc_or_desc):
             for time_delays in time_delay_dict:
                 for keywords in keywords_dict:
                     for filings in filing_type:
-                        print(dates, time_delays, keywords, filings)
+                        # print(dates, time_delays, keywords, filings)
                         # Pulls the top 10 stock correlation scores with the applied filters
                         query_results = f'''
                             with top_correlations as (with rolling_average_calculation as (
@@ -355,7 +355,9 @@ def last_week_top_correlation_scores():
 
 
 def top_ten_correlations_today():
+    print("starting top_ten_correlations_today")
     df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results('all_correlation_scores')
+    print("top_ten_correlations_today dataframe", df_of_top_ten_correlations)
     df_of_top_ten_correlations['correlation'] = df_of_top_ten_correlations['correlation'].apply(lambda x: '{:.2%}'.format(x))
     append_to_postgres(df_of_top_ten_correlations, 'top_ten_correlations_today', 'replace')
     print("done with top_ten_correlations_today")
