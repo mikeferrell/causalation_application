@@ -9,7 +9,7 @@ url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-
+#added artificial intelligence on 8/2/23
 keyword_list = ['advertising', 'blockchain', 'cloud', 'COVID', 'credit', 'currency exchange',
                 'digital', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
                 'insurance', 'politic', 'profitability', 'recession',
@@ -331,6 +331,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               , predicted_weekly_close_price
               , (predicted_weekly_close_price / previous_weekly_close_price) - 1 as predicted_growth
               , stock_symbol 
+              , keyword
               from {this_week_or_last_table}
               where predicted_weekly_close_price > previous_weekly_close_price
               and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
@@ -372,6 +373,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
             
             select buy_date
             , buy_recs.stock_symbol
+            , buy_recs.keyword
             , buy_recs.previous_weekly_close_price
             , buy_recs.predicted_weekly_close_price
             , predicted_growth
@@ -389,6 +391,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
     df_full = df_full.round({'number_of_shares_to_purchase': 2})
     df_full.rename(columns={'buy_date': 'Buy Date',
                             'stock_symbol': 'Stock Symbol',
+                            'keyword': 'Correlated Keyword',
                              'predicted_weekly_close_price': 'Predicted Weekly Close Price',
                              'previous_weekly_close_price': 'Previous Week Close Price',
                             'predicted_growth': 'Predicted Growth',
