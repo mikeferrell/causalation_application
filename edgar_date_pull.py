@@ -20,6 +20,7 @@ def make_url(base_url, comp):
 def edgar_filing_dates():
     base_url = r"https://www.sec.gov/Archives/edgar/data"
     filing_numbers = finding_files.naming_files()
+    # print(filing_numbers)
     filing_numbers = filing_numbers[1]
     filing_numbers = [filing_url for sublist in filing_numbers for filing_url in sublist]
 
@@ -37,6 +38,7 @@ def edgar_filing_dates():
         html_with_date = html_with_date.partition('>')[2]
         html_with_date = html_with_date.partition('<')[0]
 
+        # print("links", filing_links, "url", filings_url, "date", html_with_date)
         list_of_filings_data.append((filing_links, filings_url, html_with_date))
 
     # This DF has the links to the html pages where the files reside. If I want to change the scraping process to not
@@ -46,3 +48,4 @@ def edgar_filing_dates():
 
 
 
+# edgar_filing_dates()

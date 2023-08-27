@@ -78,7 +78,7 @@ scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week=
 # scheduler.add_job(one_time_jobs.backfill_score_wrapper_asc, 'cron', day_of_week='fri', hour=18, minute=55)
 # scheduler.add_job(one_time_jobs.backfill_score_wrapper_desc, 'cron', day_of_week='sat', hour=3, minute=45)
 # scheduler.add_job(one_time_jobs.one_time_backfill_correlation_scores, 'cron', day_of_week='tue', hour=13, minute=40)
-# scheduler.add_job(one_time_edgar_pull.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=15, minute=1, name='one_time_edgar_10ks')
+# scheduler.add_job(one_time_jobs.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=12, minute=2, name='one_time_edgar_10ks')
 # scheduler.add_job(one_time_edgar_pull.full_edgar_job_10qs, 'cron', day_of_week='sun', hour=20, minute=1, name='one_time_edgar_10qs')
 scheduler.start()
 

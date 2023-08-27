@@ -590,9 +590,9 @@ def weekly_buy_recommendation_list(this_week_or_last):
 
 
 
-# df_for_upload = weekly_buy_recommendation_list('this week')
-# print(df_for_upload)
-# append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
+df_for_upload = weekly_buy_recommendation_list('this week')
+print(df_for_upload)
+append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
 
 

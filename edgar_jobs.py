@@ -163,8 +163,10 @@ def analyze_edgar_files(filing_type):
 
     print("starting df changes", datetime.now())
     df_with_dates = edgar_date_pull.edgar_filing_dates()
+    # print("with dates", df_with_dates)
     df = pd.DataFrame(list(ten_k_file_dict.items()))
     df.columns = ['file_location', 'nested_data']
+    # print("first df", df)
     if filing_type == '10k':
         df_with_risk_data = pd.DataFrame(df['nested_data'].to_list(),
                                          columns=['company_name', 'filing_type', 'filing_number',
