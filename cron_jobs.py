@@ -314,6 +314,7 @@ def top_correlation_scores(asc_or_desc):
                             '''
                         df_results = pd.read_sql(query_results, con=connect)
                         df_results = df_results.round({'correlation': 4})
+                        # print("running", datetime.now())
                         list_of_all_correlations.append(df_results)
 
     list_of_all_correlations = pd.concat(list_of_all_correlations, ignore_index=True)
@@ -408,3 +409,4 @@ def predicted_prices_for_last_week():
 # predicted_prices_for_next_week()
 
 # wrapper_top_correlation_scores_desc()
+

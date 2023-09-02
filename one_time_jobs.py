@@ -70,9 +70,9 @@ def append_to_postgres(df, table, append_or_replace):
     conn.close()
 
 
-#last ran on 8/27/23
+#last ran on 9/2/23
 def full_edgar_job_10ks():
-    update_edgar_files('10-K', "2023-08-15")
+    update_edgar_files('10-K', "2023-08-27")
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10k')
     time.sleep(5)
@@ -80,16 +80,16 @@ def full_edgar_job_10ks():
     print("done with edgar cron job")
 
 
-#last ran on 8/27/23
+#last ran on 9/2/23
 def full_edgar_job_10qs():
-    update_edgar_files('10-Q', "2023-08-15")
+    update_edgar_files('10-Q', "2023-08-27")
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10q')
     time.sleep(5)
     edgar_jobs.delete_edgar_file_paths()
     print("done with edgar cron job")
 
-# full_edgar_job_10ks()
+# # full_edgar_job_10ks()
 # full_edgar_job_10qs()
 #
 symbols_list = ['SNOW']
