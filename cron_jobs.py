@@ -168,7 +168,6 @@ def keyword_count_cron_job():
     print("Keywords Done")
 
 
-
 def weekly_stock_opening_cron_job():
     print("starting weekly stock price query")
     query_results = f'''

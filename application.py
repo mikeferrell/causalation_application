@@ -74,17 +74,20 @@ scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat
 scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week='sat', hour=22, minute=1)
 # scheduler.add_job(cron_jobs.predicted_prices_for_last_week, 'cron', day_of_week='sat', hour=22, minute=3)
 # scheduler.add_job(cron_jobs.last_week_top_correlation_scores, 'cron', day_of_week='sat', hour=4, minute=5)
-# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=19, minute=21)
-# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=19, minute=50)
-# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=20, minute=20)
 
 # scheduler.add_job(one_time_jobs.backfill_score_wrapper_asc, 'cron', day_of_week='fri', hour=18, minute=55)
 # scheduler.add_job(one_time_jobs.backfill_score_wrapper_desc, 'cron', day_of_week='sat', hour=3, minute=45)
 # scheduler.add_job(one_time_jobs.one_time_backfill_correlation_scores, 'cron', day_of_week='tue', hour=13, minute=40)
-# scheduler.add_job(one_time_jobs.full_edgar_job_10ks, 'cron', day_of_week='sat', hour=1, minute=1, name='full_edgar_10ks')
-# scheduler.add_job(one_time_jobs.full_edgar_job_10qs, 'cron', day_of_week='sat', hour=1, minute=50, name='full_edgar_10qs')
-# scheduler.add_job(one_time_jobs.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=12, minute=2, name='one_time_edgar_10ks')
-# scheduler.add_job(one_time_edgar_pull.full_edgar_job_10qs, 'cron', day_of_week='sun', hour=20, minute=1, name='one_time_edgar_10qs')
+
+
+#weekly jobs for manual edgar work
+# scheduler.add_job(one_time_jobs.full_edgar_job_10ks, 'cron', day_of_week='sat', hour=19, minute=1, name='full_edgar_10ks')
+# scheduler.add_job(one_time_jobs.full_edgar_job_10qs, 'cron', day_of_week='sat', hour=19, minute=1, name='full_edgar_10qs')
+scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sat', hour=20, minute=5)
+scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=20, minute=10)
+scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=20, minute=43)
+scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=21, minute=18)
+
 scheduler.start()
 
 
