@@ -2,6 +2,7 @@ stock_list = [
 #Commodity and crypto ETFs
 'USL', 'UNL', 'BCD', 'GLD', 'GDX', 'CPER', 'COPX', 'URA', 'USO', 'BITO', 'BITI', 'GBTC', 'ETHE', 'VICE',
     '^GSPC',
+    '^SP500TR',
 #meme stocks
     'CVNA',
     'BBBY',

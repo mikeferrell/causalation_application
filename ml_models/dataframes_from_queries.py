@@ -62,14 +62,14 @@ def stock_dropdown_for_price_drops():
     query = f'''select distinct on (ticker_data.stock_symbol) ticker_data.stock_symbol, company_name
     from ticker_data
     inner join stock_names on ticker_data.stock_symbol = stock_names.stock_symbol
-    where ticker_data.stock_symbol != '^GSPC'
+    where ticker_data.stock_symbol not in ('^GSPC', '^SP500TR')
 
     union all
 
     select distinct on (ticker_data_russell.stock_symbol) ticker_data_russell.stock_symbol, company_name
     from ticker_data_russell
     inner join stock_names on ticker_data_russell.stock_symbol = stock_names.stock_symbol
-    where ticker_data_russell.stock_symbol != '^GSPC'
+    where ticker_data_russell.stock_symbol not in ('^GSPC', '^SP500TR')
     '''
     query_df = pd.read_sql(query, con=connect)
     query_df = query_df.sort_values(by=['stock_symbol'], ascending=True)
@@ -442,7 +442,7 @@ def buy_date():
 def s_and_p_returns_for_daterange(start_date, end_date):
     sandp_query = f'''
     select created_at as week_of_purchases, close_price as s_and_p_price from ticker_data
-    where stock_symbol = '^GSPC'
+    where stock_symbol = '^SP500TR'
     and created_at >= '{start_date}'
     and created_at <= '{end_date}'
     order by created_at asc
