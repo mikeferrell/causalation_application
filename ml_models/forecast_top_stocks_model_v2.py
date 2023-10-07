@@ -418,7 +418,7 @@ def calculate_top_ten_forecasts(testing_timeline):
         interval = df_row['time_delay']
         filing_type = df_row['filing_type']
 
-        # calling function to determing the end date for each loop for the model to use for the training set
+        # calling function to determine the end date for each loop for the model to use for the training set
         # this ensures that, when backtesting, the real data isn't appearing in the training set
         # when running this one time, just set datetime list as 'yesterday'
         if testing_timeline == 'backtest':

@@ -69,10 +69,10 @@ def append_to_postgres(df, table, append_or_replace):
     cursor = conn.cursor()
     conn.close()
 
-
-#last ran on 9/30/23
+#remember to drop duplicates after running this. figure out if I can add a drop dupes line before uploading
+#last ran on 10/7/23
 def full_edgar_job_10ks():
-    update_edgar_files('10-K', "2023-09-23")
+    update_edgar_files('10-K', "2023-09-30")
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10k')
     time.sleep(5)
@@ -82,17 +82,19 @@ def full_edgar_job_10ks():
 
 #last ran on 9/30/23
 def full_edgar_job_10qs():
-    update_edgar_files('10-Q', "2023-09-23")
+    update_edgar_files('10-Q', "2023-09-30")
     time.sleep(10)
     edgar_jobs.analyze_edgar_files('10q')
     time.sleep(5)
     edgar_jobs.delete_edgar_file_paths()
     print("done with edgar cron job")
 
+#
 # full_edgar_job_10ks()
 # time.sleep(60)
 # full_edgar_job_10qs()
-#
+
+
 symbols_list = ['^SP500TR']
 # symbols_list = stock_list.russell_finance_and_technology
 # symbols_list = dataframes_from_queries.stock_dropdown()

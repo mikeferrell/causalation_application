@@ -442,7 +442,7 @@ def buy_date():
 def s_and_p_returns_for_daterange(start_date, end_date):
     sandp_query = f'''
     select created_at as week_of_purchases, close_price as s_and_p_price from ticker_data
-    where stock_symbol = '^SP500TR'
+    where stock_symbol = '^GSPC'
     and created_at >= '{start_date}'
     and created_at <= '{end_date}'
     order by created_at asc

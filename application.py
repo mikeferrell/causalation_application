@@ -87,6 +87,11 @@ scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sat', h
 scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=20, minute=10)
 scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=20, minute=43)
 scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=21, minute=18)
+#
+# scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sun', hour=1, minute=35)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sun', hour=1, minute=45)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sun', hour=2, minute=18)
+# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sun', hour=2, minute=50)
 
 scheduler.start()
 

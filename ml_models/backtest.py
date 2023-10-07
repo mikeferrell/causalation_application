@@ -238,7 +238,7 @@ def comparing_returns_vs_sandp():
 
     sandp_query = f'''
     select created_at as week_of_purchases, close_price as s_and_p_price from ticker_data
-    where stock_symbol = '^SP500TR'
+    where stock_symbol = '^GSPC'
     and created_at >= '{first_date}'
     and created_at <= '{last_date}'
     '''
