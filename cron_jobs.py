@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
-import edgar_jobs
+from older_versions.edgar_jobs_old import edgar_jobs
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
 import static.stock_list as stock_list
 from bs4 import BeautifulSoup
@@ -385,32 +385,60 @@ def top_ten_correlations_today():
 
 
 def full_edgar_job_10ks():
-    update_edgar_files('10-K')
+    update_edgar_files('10-K', get_dates())
     time.sleep(10)
     count = 0
     for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
         count += len(files)
     if count > 1:
-        edgar_jobs.analyze_edgar_files('10k')
+        df_for_upload = edgar_jobs.analyze_edgar_files('10k')
+        append_to_postgres(df_for_upload, 'edgar_data_new_test', 'append')
         time.sleep(5)
         edgar_jobs.delete_edgar_file_paths()
     else:
         print("no files to analyze")
-    print("done with 10k cron job")
+    print("done with edgar cron job")
+
+    # update_edgar_files('10-K')
+    # time.sleep(10)
+    # count = 0
+    # for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
+    #     count += len(files)
+    # if count > 1:
+    #     edgar_jobs.analyze_edgar_files('10k')
+    #     time.sleep(5)
+    #     edgar_jobs.delete_edgar_file_paths()
+    # else:
+    #     print("no files to analyze")
+    # print("done with 10k cron job")
 
 def full_edgar_job_10qs():
-    update_edgar_files('10-Q')
+    update_edgar_files('10-Q', get_dates())
     time.sleep(10)
     count = 0
     for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
         count += len(files)
     if count > 1:
-        edgar_jobs.analyze_edgar_files('10q')
+        df_for_upload = edgar_jobs.analyze_edgar_files('10q')
+        append_to_postgres(df_for_upload, 'edgar_data', 'append')
         time.sleep(5)
         edgar_jobs.delete_edgar_file_paths()
     else:
         print("no files to analyze")
-    print("done with 10q cron job")
+    print("done with edgar cron job")
+
+    # update_edgar_files('10-Q')
+    # time.sleep(10)
+    # count = 0
+    # for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
+    #     count += len(files)
+    # if count > 1:
+    #     edgar_jobs.analyze_edgar_files('10q')
+    #     time.sleep(5)
+    #     edgar_jobs.delete_edgar_file_paths()
+    # else:
+    #     print("no files to analyze")
+    # print("done with 10q cron job")
 
 def ml_calculate_top_ten_forecasts():
     full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts('backtest')

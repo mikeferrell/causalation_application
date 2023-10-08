@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
-import edgar_jobs
+from older_versions.edgar_jobs_old import edgar_jobs
 import requests
 import json
 import yfinance as yf

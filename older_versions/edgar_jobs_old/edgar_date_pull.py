@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-import finding_files
+import older_versions.edgar_jobs_old.finding_files
 import pandas as pd
 
 headers = {'User-Agent': 'causalation, causalation@gmail.com'}
