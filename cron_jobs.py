@@ -11,6 +11,8 @@ import passwords
 import edgar_jobs
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
 import static.stock_list as stock_list
+from bs4 import BeautifulSoup
+import requests
 
 url = passwords.rds_access
 engine = create_engine(url)
@@ -30,6 +32,22 @@ def get_dates():
     yesterday = str(date(year, month, day))
     return yesterday
 
+
+# Pull CIKs for most current list of S&P 500
+def current_sp_cik_list():
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    table = soup.find('table', {'class': 'wikitable'})
+
+    cik_list = []
+    for row in table.find_all('tr')[1:]:
+        columns = row.find_all('td')
+        if len(columns) >= 2:
+            cik = columns[6].text.strip()
+            cik_list.append(cik)
+    return cik_list
+
 def get_dates_multiple():
     today = date.today()
     yesterdays_date = today - timedelta(days=1)
@@ -43,17 +61,20 @@ def get_dates_multiple():
     return yesterday, today_minus_one_eighty
 
 
-def update_edgar_files(filing_type):
+def update_edgar_files(filing_type, start_date):
+    cik_list = current_sp_cik_list()
     print("starting updates", datetime.now())
-    for ticker in symbols_list:
-        dl = Downloader()
+    for ciks in cik_list:
+        dl = Downloader("causalation", "causalation@gmail.com")
         try:
-            dl.get(f"{filing_type}", ticker, after=f"{get_dates()}", before=f"{get_dates()}")
+            dl.get(f"{filing_type}", f"{ciks}", after=start_date, before=f"{get_dates()}")
         except Exception as error:
             print(error)
             continue
+        print(ciks)
     print("ending updates", datetime.now())
 
+# update_edgar_files('10-Q', '2023-09-30')
 
 def append_to_postgres(df, table, append_or_replace):
     conn_string = passwords.rds_access
@@ -398,6 +419,7 @@ def ml_calculate_top_ten_forecasts():
 
 def predicted_prices_for_next_week():
     df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list('this week')
+    print(df_for_upload)
     append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
 

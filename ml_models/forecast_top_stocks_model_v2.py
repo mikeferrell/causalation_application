@@ -84,7 +84,7 @@ def top_correlation_query_results(table_for_this_week_or_last):
       from public.all_correlation_scores
       where correlation is not null
         and date(start_date) <= current_date - interval '40 week'
-        and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
+        and stock_symbol not in ('GEHC', 'CAH', 'DDOG', 'SIVB', 'FRC', 'BBBY')
         and abs(correlation) != 1
         and "Keyword" != 'cryptocurrency Mentions'
         and time_delay != '8'
@@ -103,7 +103,7 @@ def top_correlation_query_results(table_for_this_week_or_last):
       from public.all_inverse_correlation_scores
       where correlation is not null
         and date(start_date) <= current_date - interval '40 week'
-        and stock_symbol not in ('GEHC', 'CAH', 'DDOG')
+        and stock_symbol not in ('GEHC', 'CAH', 'DDOG', 'SIVB', 'FRC', 'BBBY')
         and abs(correlation) != 1
         and "Keyword" != 'cryptocurrency Mentions'
         and time_delay != '8'
@@ -400,6 +400,9 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
 # enough data to create a 12 week rolling average (and therefore the later queries in this function return no results)
 # to fix, run top_correlation_query_results against the DB and see what the top results are, then add that stock to the
 # where clause to supress it
+
+#it doesn't appear that I'm using this anymore, it's in a wrapper on the cron_jobs page, but the application doesn't run it
+#what is this for?
 def calculate_top_ten_forecasts(testing_timeline):
     yesterday, one_year_ago = defined_dates()
     df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
@@ -464,6 +467,8 @@ def calculate_top_ten_forecasts(testing_timeline):
 # append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
 
 
+#this has to run every saturday, because "end date" is set using the get_dates() function. If you try to run this on a
+#sunday, the end date will be a saturday and have no stock values, so it will return an empty dataframe
 def weekly_buy_recommendation_list(this_week_or_last):
     # this_week_or_next = 'this week'
 
@@ -506,6 +511,7 @@ def weekly_buy_recommendation_list(this_week_or_last):
             df_test_full, df_test, mae, model = train_ml_model(keyword, filing_type, stock_symbol, interval,
                                                                most_recent_date, correlation_start_date)
             full_test_data.append(df_test_full)
+            # print(df_test_full)
             mae_data.append(mae)
 
             try:
@@ -559,8 +565,9 @@ def weekly_buy_recommendation_list(this_week_or_last):
                     from most_recent_keyword_mention_rolling_average as r_a, most_recent_close_price as r_c
                     offset (select count(week_opening_date) - 1 from most_recent_keyword_mention_rolling_average)
                     '''
+
         df_for_predicting_next_week = pd.read_sql(data_for_predicting_next_week, con=connect)
-        # print(df_for_predicting_next_week)
+        # print("df values", df_for_predicting_next_week)
         try:
             future_prediction = model.predict(df_for_predicting_next_week)
             future_predictions.append(future_prediction)

@@ -62,36 +62,43 @@ logging.info('Admin logged in')
 
 
 scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name='full_edgar_10ks')
-scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=20, name='full_edgar_10qs')
-scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=20)
+scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=25, name='full_edgar_10qs')
 scheduler.add_job(cron_jobs.update_stock_data_russell, 'cron', day_of_week='tue-sat', hour=1, minute=59)
-scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='tue-sat', hour=2, minute=40)
-scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='tue-sat', hour=3, minute=1)
-scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='tue-sat', hour=3, minute=25)
-# scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
-scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=3, minute=50)
+scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=20)
+scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
+scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='tue-sat', hour=3, minute=20)
+scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='tue-sat', hour=3, minute=40)
+scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='tue-sat', hour=4, minute=1)
 # scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', day_of_week='sat', hour=4, minute=5)
 scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week='sat', hour=22, minute=1)
+
+#There is a lambda setup to run this one because it kept timing out. Keep an eye on the lambda
+# scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
+
+#Gave up on this and manually track everything in excel. maybe revisit in the future
 # scheduler.add_job(cron_jobs.predicted_prices_for_last_week, 'cron', day_of_week='sat', hour=22, minute=3)
 # scheduler.add_job(cron_jobs.last_week_top_correlation_scores, 'cron', day_of_week='sat', hour=4, minute=5)
 
+#Backfill cron jobs if errors happen
 # scheduler.add_job(one_time_jobs.backfill_score_wrapper_asc, 'cron', day_of_week='fri', hour=18, minute=55)
 # scheduler.add_job(one_time_jobs.backfill_score_wrapper_desc, 'cron', day_of_week='sat', hour=3, minute=45)
 # scheduler.add_job(one_time_jobs.one_time_backfill_correlation_scores, 'cron', day_of_week='tue', hour=13, minute=40)
 
 
-#weekly jobs for manual edgar work
+#weekly jobs for manual edgar work. Run it before 6pm EST to be factored into weekly predictions
 # scheduler.add_job(one_time_jobs.full_edgar_job_10ks, 'cron', day_of_week='sat', hour=19, minute=1, name='full_edgar_10ks')
 # scheduler.add_job(one_time_jobs.full_edgar_job_10qs, 'cron', day_of_week='sat', hour=19, minute=1, name='full_edgar_10qs')
-scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sat', hour=20, minute=5)
-scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=20, minute=10)
-scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=20, minute=43)
-scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=21, minute=18)
+# scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sat', hour=20, minute=5)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=20, minute=10)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=20, minute=43)
+# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=21, minute=18)
 #
+#Secondary run if Saturday screws up. Be sure to rerun predictor, and watch out for empty dataframe
 # scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sun', hour=1, minute=35)
-# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sun', hour=1, minute=45)
-# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sun', hour=2, minute=18)
-# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sun', hour=2, minute=50)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sun', hour=17, minute=40)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sun', hour=18, minute=11)
+# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sun', hour=18, minute=41)
+
 
 scheduler.start()
 

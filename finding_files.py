@@ -15,7 +15,7 @@ def naming_files():
     #creates a new link for each company folder
     company_names = [companies for companies in os.listdir(top_folder) if os.path.isdir(os.path.join(top_folder, companies))]
     for companies in company_names:
-        new_folder = f'{parent_file_path}/sec-edgar-filings/'+"/"+companies
+        new_folder = f'{parent_file_path}/sec-edgar-filings'+"/"+companies
         company_name_folders.append(new_folder)
     # print(company_name_folders)
 

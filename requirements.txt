@@ -118,7 +118,7 @@ renderer==1.0.3
 requests==2.26.0
 requests-html==0.10.0
 s3transfer==0.6.0
-sec-edgar-downloader @ git+https://github.com/mikeferrell/sec-edgar-downloader.git
+sec-edgar-downloader==5.0.2
 schedule==1.1.0
 scikit-learn==1.1.3
 scipy==1.9.1
