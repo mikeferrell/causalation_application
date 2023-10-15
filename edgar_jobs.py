@@ -229,7 +229,7 @@ def analyze_edgar_files(filing_type):
         extracted_cik_number = re.findall(r'/0{3}\d{5,12}/', names)
         extracted_cik_number = str(extracted_cik_number)
         extracted_cik_number = extracted_cik_number.translate(translation_table)
-        with open('all_stock_cik.json', 'r') as file:
+        with open('static/all_stock_cik.json', 'r') as file:
             cik_data = json.load(file)
         target_value = extracted_cik_number.lstrip('0')
         found_key = None
@@ -323,3 +323,4 @@ def analyze_edgar_files(filing_type):
     return df
 
 # analyze_edgar_files('10q')
+

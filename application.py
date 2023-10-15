@@ -88,10 +88,10 @@ scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week=
 #weekly jobs for manual edgar work. Run it before 6pm EST to be factored into weekly predictions
 # scheduler.add_job(one_time_jobs.full_edgar_job_10ks, 'cron', day_of_week='sat', hour=19, minute=1, name='full_edgar_10ks')
 # scheduler.add_job(one_time_jobs.full_edgar_job_10qs, 'cron', day_of_week='sat', hour=19, minute=1, name='full_edgar_10qs')
-# scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sat', hour=20, minute=5)
-# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=20, minute=10)
-# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=20, minute=43)
-# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=21, minute=18)
+# scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sat', hour=22, minute=25)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='sat', hour=22, minute=55)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='sat', hour=23, minute=25)
+# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='sat', hour=23, minute=55)
 #
 #Secondary run if Saturday screws up. Be sure to rerun predictor, and watch out for empty dataframe
 # scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='sun', hour=1, minute=35)
