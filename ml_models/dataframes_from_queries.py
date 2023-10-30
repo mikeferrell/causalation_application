@@ -9,9 +9,10 @@ url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-#added artificial intelligence on 8/2/23
-keyword_list = ['advertising', 'blockchain', 'cloud', 'COVID', 'credit', 'currency exchange',
-                'digital', 'election', 'exchange rate', 'growth', 'hack', 'housing market', 'inflation',
+#added artificial intelligence on 8/2/23, then dropped it shortly after
+#dropped blockchain and hack on 10/29/23
+keyword_list = ['advertising', 'cloud', 'COVID', 'credit', 'currency exchange',
+                'digital', 'election', 'exchange rate', 'growth', 'housing market', 'inflation',
                 'insurance', 'politic', 'profitability', 'recession',
                 'security', 'software', 'supply chain', 'uncertainty', 'war']
 
@@ -335,6 +336,9 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               from {this_week_or_last_table}
               where predicted_weekly_close_price > previous_weekly_close_price
               and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
+              and keyword != 'hack'
+              and stock_symbol not in ('SBNY')
+              and ((predicted_weekly_close_price / previous_weekly_close_price) - 1) > 0.05
               ),
               
             buy_amounts as (
@@ -349,6 +353,9 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
                   public.{this_week_or_last_table}
               WHERE predicted_weekly_close_price > previous_weekly_close_price
               and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
+              and keyword != 'hack'
+              and stock_symbol not in ('SBNY')
+              and ((predicted_weekly_close_price / previous_weekly_close_price) - 1) > 0.05
             ),
             
             total_estimation as (
