@@ -7,6 +7,7 @@ import cron_jobs
 import one_time_jobs
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
+import dd_employee_count_download
 
 
 app = Dash(__name__, use_pages=True, title='Causalation', assets_folder="static", assets_url_path="static",
@@ -60,17 +61,20 @@ console_handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(console_handler)
 logging.info('Admin logged in')
 
+#dd download
+scheduler.add_job(dd_employee_count_download.full_edgar_job_10ks, 'cron', day_of_week='sun', hour=22, minute=43)
 
-scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name='full_edgar_10ks')
-scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=25, name='full_edgar_10qs')
-scheduler.add_job(cron_jobs.update_stock_data_russell, 'cron', day_of_week='tue-sat', hour=1, minute=59)
-scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=20)
-scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
-scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='tue-sat', hour=3, minute=20)
-scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='tue-sat', hour=3, minute=40)
-scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='tue-sat', hour=4, minute=1)
-# scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', day_of_week='sat', hour=4, minute=5)
-scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week='sat', hour=22, minute=1)
+
+# scheduler.add_job(cron_jobs.full_edgar_job_10ks, 'cron', hour=1, minute=1, name='full_edgar_10ks')
+# scheduler.add_job(cron_jobs.full_edgar_job_10qs, 'cron', hour=1, minute=25, name='full_edgar_10qs')
+# scheduler.add_job(cron_jobs.update_stock_data_russell, 'cron', day_of_week='tue-sat', hour=1, minute=59)
+# scheduler.add_job(cron_jobs.update_stock_data, 'cron', day_of_week='tue-sat', hour=2, minute=20)
+# scheduler.add_job(cron_jobs.keyword_count_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_asc, 'cron', day_of_week='tue-sat', hour=3, minute=20)
+# scheduler.add_job(cron_jobs.wrapper_top_correlation_scores_desc, 'cron', day_of_week='tue-sat', hour=3, minute=40)
+# scheduler.add_job(cron_jobs.top_ten_correlations_today, 'cron', day_of_week='tue-sat', hour=4, minute=1)
+# # scheduler.add_job(cron_jobs.ml_calculate_top_ten_forecasts, 'cron', day_of_week='sat', hour=4, minute=5)
+# scheduler.add_job(cron_jobs.predicted_prices_for_next_week, 'cron', day_of_week='sat', hour=22, minute=1)
 
 #There is a lambda setup to run this one because it kept timing out. Keep an eye on the lambda
 # scheduler.add_job(cron_jobs.weekly_stock_opening_cron_job, 'cron', day_of_week='tue-sat', hour=2, minute=40)

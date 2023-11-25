@@ -335,7 +335,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               , keyword
               from {this_week_or_last_table}
               where predicted_weekly_close_price > previous_weekly_close_price
-              and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
+              and previous_weekly_open_date >= date('{get_dates()}') - interval '9' day
               and keyword != 'hack'
               and stock_symbol not in ('SBNY')
               and ((predicted_weekly_close_price / previous_weekly_close_price) - 1) > 0.05
@@ -352,7 +352,7 @@ def stocks_to_buy_this_week(principal, this_week_or_last_table):
               FROM
                   public.{this_week_or_last_table}
               WHERE predicted_weekly_close_price > previous_weekly_close_price
-              and previous_weekly_open_date >= date('{get_dates()}') - interval '11' day
+              and previous_weekly_open_date >= date('{get_dates()}') - interval '9' day
               and keyword != 'hack'
               and stock_symbol not in ('SBNY')
               and ((predicted_weekly_close_price / previous_weekly_close_price) - 1) > 0.05

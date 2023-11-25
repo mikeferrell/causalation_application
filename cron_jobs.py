@@ -63,6 +63,7 @@ def get_dates_multiple():
 
 def update_edgar_files(filing_type):
     cik_list = current_sp_cik_list()
+    print(cik_list)
     print("starting updates", datetime.now())
     for ciks in cik_list:
         dl = Downloader("causalation", "causalation@gmail.com")
@@ -74,7 +75,7 @@ def update_edgar_files(filing_type):
         print(ciks)
     print("ending updates", datetime.now())
 
-# update_edgar_files('10-Q', '2023-09-30')
+# update_edgar_files('10-Q')
 
 def append_to_postgres(df, table, append_or_replace):
     conn_string = passwords.rds_access
