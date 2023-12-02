@@ -12,8 +12,6 @@ import passwords
 from sqlalchemy import create_engine
 from sec_edgar_downloader import Downloader
 import psycopg2
-import spacy
-import ml_models.dataframes_from_queries as dataframe_from_queries
 
 
 headers = {'User-Agent': 'causalation, causalation@gmail.com'}
@@ -46,14 +44,14 @@ def update_edgar_files(filing_type, cik_batch):
     for ciks in cik_batch:
         dl = Downloader("causalation", "causalation@gmail.com")
         try:
-            dl.get(f"{filing_type}", f"{ciks}", after=f"2022-11-11", before=f"2023-11-11")
+            dl.get(f"{filing_type}", f"{ciks}", after=f"2021-11-11", before=f"2023-11-11")
         except Exception as error:
             print(error)
             continue
         # print(ciks)
     print("ending updates", datetime.now())
 
-# update_edgar_files('10-Q', ['SNOW'])
+# update_edgar_files('10-K')
 
 def append_to_postgres(df, table, append_or_replace):
     df = df
@@ -165,11 +163,7 @@ def edgar_filing_dates():
 
 
 
-def count_topics_in_10ks(type, link_to_10k):
-    #keywords that align to topics to find
-    keyword_list = dataframe_from_queries.keyword_list
-    # keyword_list = ['advertise', 'currency exchange']
-
+def extract_text_from_sections_10k(link_to_10k):
     raw_10k = open(link_to_10k, "r")
     raw_10k = raw_10k.read()
 
@@ -190,109 +184,125 @@ def count_topics_in_10ks(type, link_to_10k):
     for doc_type, doc_start, doc_end in zip(doc_types, doc_start_is, doc_end_is):
         document[doc_type] = raw_10k[doc_start:doc_end]
 
-    #new and improved, case insensitive regex. different from every other function pulling from EDGAR
-    regex = re.compile(r'(?i)(>Item\s*(1A|1B|2|7A|7|8)\.{0,1})|(ITEM\s*(1A|1B|2|7A|7|8))')
-    if type == '10-Q':
-        matches = regex.finditer(document['10-Q'])
-    else:
-        matches = regex.finditer(document['10-K'])
+    # Combine all sections into a single document
+    full_document = '\n'.join(document.values())
 
-    # Create the dataframe
-    test_df = pd.DataFrame([(x.group(), x.start(), x.end()) for x in matches])
+    try:
+        all_text = BeautifulSoup(full_document, 'lxml')
+    except Exception as e:
+        print(e)
+        pass
 
-    test_df.columns = ['item', 'start', 'end']
-    test_df['item'] = test_df.item.str.lower()
-    test_df.replace('&#160;', ' ', regex=True, inplace=True)
-    test_df.replace('&nbsp;', ' ', regex=True, inplace=True)
-    test_df.replace(' ', '', regex=True, inplace=True)
-    test_df.replace('\.', '', regex=True, inplace=True)
-    test_df.replace('>', '', regex=True, inplace=True)
+    all_text = all_text.get_text("\n\n")
 
-    pos_dat = test_df.sort_values('start', ascending=True).drop_duplicates(subset=['item'], keep='last')
-    pos_dat.set_index('item', inplace=True)
+    # Regular expression pattern to match employee counts
+    employee_count_pattern = r'\b(\d{1,3}(?:,\d{3})*|\d+)\s*(?:people|employees?)\b'
 
-    all_text_contents = []
+    # Create lists to store the extracted data
+    employee_numbers = []
+    surrounding_text = []
 
-    if type == '10-Q':
-        item_1a_raw = document['10-Q'][pos_dat['start'].loc['item1a']:pos_dat['start'].loc['item2']]
+    matches = re.finditer(employee_count_pattern, all_text)
+    for match in matches:
+        employee_numbers.append(match.group(1))  # Extract the number of employees
+        start_index = max(0, match.start() - 20)  # Start index for extracting surrounding text
+        end_index = min(len(all_text), match.end() + 40)  # End index for extracting surrounding text
+        surrounding_text.append(all_text[start_index:end_index])
 
-        try:
-            item_1a_content = BeautifulSoup(item_1a_raw, 'lxml')
-            item_1a_text = item_1a_content.get_text("\n\n")
-            # print("1a", item_1a_text)
-            all_text_contents.append(item_1a_text)
-        except Exception as e:
-            print(f"Error extracting item 1A: {e}")
-            pass
-    else:
-        item_1a_raw = document['10-K'][pos_dat['start'].loc['item1a']:pos_dat['start'].loc['item1b']]
-         # item_3_raw = document['10-K'][pos_dat['start'].loc['item3']:pos_dat['start'].loc['item4']]
-        item_7_raw = document['10-Q'][pos_dat['start'].loc['item7']:pos_dat['start'].loc['item7a']]
+    # Put the results into a dataframe
+    employee_numbers = [text.replace(',', '') for text in employee_numbers]
+    surrounding_text = [text.replace(',', '') for text in surrounding_text]
+    surrounding_text = ['...' + item for item in surrounding_text]
+    # print(employee_numbers, surrounding_text)
+    employee_count_df = pd.DataFrame({'employee_count': employee_numbers, 'surrounding_text': surrounding_text})
+    # print("DF1", employee_count_df)
 
-        try:
-            item_1a_content = BeautifulSoup(item_1a_raw, 'lxml')
-            item_1a_text = item_1a_content.get_text("\n\n")
-            # print("1a", item_1a_text)
-            all_text_contents.append(item_1a_text)
-        except Exception as e:
-            print(f"Error extracting item 1A: {e}")
-            pass
-
-        try:
-            item_7_content = BeautifulSoup(item_7_raw, 'lxml')
-            item_7_text = item_7_content.get_text("\n\n")
-            # print("7", item_7_text)
-            all_text_contents.append(item_7_text)
-        except Exception as e:
-            print(f"Error extracting item 7: {e}")
-            pass
-
-    # Concatenate all extracted contents
-    all_text = "\n\n".join(all_text_contents)
-
-    # use the spacy library of similar words
-    nlp = spacy.load("en_core_web_md")
-    similar_words_dict = {}
-
-    # Split the text into sentences
-    if len(all_text) > 1000:
-        sentences = [sent.text for sent in nlp(all_text).sents]
-        long_text_found = True
-
-    else:
-        sentences = all_text
-        long_text_found = False
-
-    for target_word in keyword_list:
-        if long_text_found == True:
-            similar_word_found = 0
-        else:
-            similar_word_found = None
-        for sentence in sentences:
-            doc = nlp(sentence)
-
-            # Check if the pattern is present in the current sentence
-            if target_word in doc.text:
-                similar_word_found = 1
-                print(f"Pattern '{target_word}' found in the text.")
-                print(sentence)
-                break
-
-        # Append the result for the current target word to the list
-        similar_words_dict.setdefault(target_word, []).append(similar_word_found)
-
-    #three values may in each cell: 0 (word not found), 1 (word found), or None (no text extracted from filing)
-    similar_words_df = pd.DataFrame(similar_words_dict)
-    # print(similar_words_df)
-
-    return similar_words_dict
+    return employee_count_df
 
 
-# count_topics_in_10ks('10-Q', '/Users/michaelferrell/PycharmProjects/causalation_dashboard/sec-edgar-filings/O/10-Q/0000726728-23-000107/full-submission.txt')
+
+# def extract_text_from_sections_10k(link_to_10k):
+#     raw_10k = open(link_to_10k, "r")
+#     raw_10k = raw_10k.read()
+#     # Regex to find <DOCUMENT> tags
+#     doc_start_pattern = re.compile(r'<DOCUMENT>')
+#     doc_end_pattern = re.compile(r'</DOCUMENT>')
+#     # Regex to find <TYPE> tag prceeding any characters, terminating at new line
+#     type_pattern = re.compile(r'<TYPE>[^\n]+')
+#
+#     doc_start_is = [x.end() for x in doc_start_pattern.finditer(raw_10k)]
+#     doc_end_is = [x.start() for x in doc_end_pattern.finditer(raw_10k)]
+#     doc_types = [x[len('<TYPE>'):] for x in type_pattern.findall(raw_10k)]
+#
+#     document = {}
+#
+#     # Create a loop to go through each section type and save only the 10-K section in the dictionary
+#     for doc_type, doc_start, doc_end in zip(doc_types, doc_start_is, doc_end_is):
+#         if doc_type == '10-K':
+#             document[doc_type] = raw_10k[doc_start:doc_end]
+#
+#     # regex = re.compile(r'(>Item(\s|&#160;|&nbsp;)(1|1A)\.{0,1})|(ITEM\s(1|1A))', re.IGNORECASE)
+#     item1_regex = re.compile(r'\bItem\s*1\.?\b', re.IGNORECASE)
+#         # re.compile(r'(>Item(\s|&#160;|&nbsp;)1\.{0,1})|(ITEM\s1\.{0,1})', re.IGNORECASE)
+#     item1_matches = item1_regex.finditer(document['10-K'])
+#     item1a_regex = re.compile(r'\bItem\s*1a\.?\b', re.IGNORECASE)
+#         # re.compile(r'(>Item(\s|&#160;|&nbsp;)1A\.{0,1})|(ITEM\s1A\.{0,1})', re.IGNORECASE)
+#     item1a_matches = item1a_regex.finditer(document['10-K'])
+#
+#     all_matches = list(item1_matches) + list(item1a_matches)
+#
+#     # Create the dataframe
+#     test_df = pd.DataFrame({
+#         'Matched Text': [match.group() for match in sorted(all_matches, key=lambda x: x.start())],
+#         'Start Position': [match.start() for match in sorted(all_matches, key=lambda x: x.start())],
+#         'End Position': [match.end() for match in sorted(all_matches, key=lambda x: x.start())],
+#     })
+#
+#     test_df.columns = ['item', 'start', 'end']
+#     test_df['item'] = test_df.item.str.lower()
+#     test_df.replace('&#160;', ' ', regex=True, inplace=True)
+#     test_df.replace('&nbsp;', ' ', regex=True, inplace=True)
+#     test_df.replace(' ', '', regex=True, inplace=True)
+#     test_df.replace('\.', '', regex=True, inplace=True)
+#     test_df.replace('>', '', regex=True, inplace=True)
+#
+#     pos_dat = test_df.sort_values('start', ascending=True).drop_duplicates(subset=['item'], keep='last')
+#     pos_dat.set_index('item', inplace=True)
+#
+#     item1_text = document['10-K'][pos_dat['start'].loc['item1']:pos_dat['start'].loc['item1a']]
+#     try:
+#         item_1_content = BeautifulSoup(item1_text, 'lxml')
+#     except Exception:
+#         print(Exception)
+#         pass
+#     item_1_content = item_1_content.get_text("\n\n")
+#
+#     # Regular expression pattern to match employee counts
+#     employee_count_pattern = r'\b(\d{1,3}(?:,\d{3})*|\d+)\s*(?:people|employees?)\b'
+#
+#     # Create lists to store the extracted data
+#     employee_numbers = []
+#     surrounding_text = []
+#
+#     matches = re.finditer(employee_count_pattern, item_1_content)
+#     for match in matches:
+#         employee_numbers.append(match.group(1))  # Extract the number of employees
+#         start_index = max(0, match.start() - 20)  # Start index for extracting surrounding text
+#         end_index = min(len(item_1_content), match.end() + 40)  # End index for extracting surrounding text
+#         surrounding_text.append(item_1_content[start_index:end_index])
+#
+#     # Put the results into a dataframe
+#     employee_numbers = [text.replace(',', '') for text in employee_numbers]
+#     surrounding_text = [text.replace(',', '')  for text in surrounding_text]
+#     print(employee_numbers, surrounding_text)
+#     employee_count_df = pd.DataFrame({'employee_count': employee_numbers, 'surrounding_text': surrounding_text})
+#     print("DF1", employee_count_df)
+#
+#     return employee_count_df
+
+# extract_text_from_sections_10k('/Users/michaelferrell/PycharmProjects/sec_pull_testing/sec-edgar-filings/0001403161/10-K/0001403161-21-000060/full-submission.txt')
 
 
-#this is where I left off. I've been able to extract the keywords and put it into a dataframe (no identifying data on that
-#row, it will need to be merged with relevant data somewhere in this function).
 def analyze_edgar_files_for_employee_count():
     print("starting file finder", datetime.now())
     file_names = naming_files()[0]
@@ -301,7 +311,7 @@ def analyze_edgar_files_for_employee_count():
     print("starting analyzer", datetime.now())
     for names in file_names:
         try:
-            item1 = count_topics_in_10ks(names)
+            item1 = extract_text_from_sections_10k(names)
         except (KeyError, ValueError) as error1:
             print(error1)
             item1 = 'null'
