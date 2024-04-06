@@ -25,6 +25,7 @@ If you want to run part of all of this code yourself and run into issues, shoot 
 
 
 **Data**
+
 All of the data populated into the application are pulled from the underlying Postgres database using SQL.
 
 **Correlation Dashboard**
