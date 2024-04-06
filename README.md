@@ -12,7 +12,7 @@ In order to run this project:
 - Enter your database credentials into the two password.py files (or store these as environment variables)
 - Use one_time_jobs.py to backfill the data into your database for the timeframe you want to see:
     - Stock Data
-    - SEC filings
+    - SEC filings (10-K's and 10-Q's)
     - Crypto data
     - Financial Data using (AlphaVantage)
          - The code is written to use the free API which has a cap of 500 calls per day
@@ -22,6 +22,51 @@ In order to run this project:
 This is all the code necessary to run the causalation application. I have slimmed this down from my own project which has a lot of experimentation, so some things may be lost in translation. I know that it's poorly organized and commented, I originally built this just for myself but decided to publish it since I don't intend to keep the website running much longer.
 
 If you want to run part of all of this code yourself and run into issues, shoot me an email. I'm happy to help with any piece of this! causalation@gmail.com
+
+
+**Data**
+All of the data populated into the application are pulled from the underlying Postgres database using SQL.
+
+**Correlation Dashboard**
+1: Stock's closing price for a given week and the percentage of SEC Filings that mention the keyword selected. The keyword selected is cohorted by week and the percentage represented in the chart is based on a 12 week rolling average
+2: The returns of the stock in the given timeframe
+3: The returns of the S&P 500 during the same timeframe to make benchmarking easier
+4: The number of times the stock follows the moves of the keyword mentions with the filters applied. Example: you have the delay filter set to 2 weeks and the keyword mentions increase in a one week timeframe. Then two weeks later, the stock price increases as well. That would count as a match. If the moves match 50 out of 100 times, this value will show 50%.
+5: Total number of times this keyword is mentioned within the timeframe selected
+6: The correlation ratio between the stock and the keyword selected, within the given filters
+7: Top 25 stock/keyword combinations with the strongest correlation
+
+
+**Machine Learning Dashboard**
+1: recommended stock purchases based on ML analysis of historical stock data. Any stock predicted to increase in price by >5% is recommended to buy. Based on the projeted growth, the model recommends a proportional purchase amount, given a starting principle of $1,000
+2: Backtested historical returns by the model
+3: S&P 500 returns (with dividends reinvested) over the same time period
+4: Sharpe ratio of the backtest
+5: All predicted returns of the most highly correlated stock/keyword pairs
+
+**Discounted Stocks Dashboard**
+Over the selected time period:
+1: Total stock % change
+2: Highest price achieved
+3: Current price
+4: Days since peak price
+5: Peak price date
+6: Change in cash held by the company since the peak price
+7: Change in assets held by the company since the peak price
+8: Change in company valuation
+9: Peak company valuation
+10: Most recent company valuation (10-K or 10-Q, whatever is more recent)
+11: Change in EPS
+12: EPS at peak price
+13: Most recent EPS (10-K or 10-Q, whatever is more recent)
+14: Price to Sales ratio change over time
+15: Price to sales ratio at peak stock price
+16: Price to Sales ratio, most recent
+17: P/E Ratio
+18: P/E Ratio at peak stock price
+19: P/E Ratio, most recent
+20: EBITDA change over time
+21: Quarterly earnings results charted over time
 
 **HomePage**
 <img width="1438" alt="Screen Shot 2024-04-06 at 1 35 28 PM" src="https://github.com/mikeferrell/causalation_application/assets/68746547/d2ada04b-3f2a-4b33-ae8d-33a0b9bd3f9b">
