@@ -1,10 +1,10 @@
 # causalation_application
 Causalation is a project with several pieces, all of which can be run from this code base:
 
-- A website with homepage, blog, help page, about, contact, and a page for each of the following financial models
-- Comparing correlations between keyword frequency in SEC filings and stock moves over the same timeframe
-- Machine Learning prediction of which stocks will increase by >5% in value in the coming week, based on changes in keyword frequency
-- A table organzing financial data over the past several years in order to quickly identify undervalued stocks for further investigation
+- A website with homepage, blog, help page, about, contact, and a page for each of the following financial models:
+     - Comparing correlations between keyword frequency in SEC filings and stock moves over the same timeframe
+     - Machine Learning prediction of which stocks will increase by >5% in value in the coming week, based on changes in keyword frequency
+     - A table organzing financial data over the past several years in order to quickly identify undervalued stocks for further investigation
 
 In order to run this project:
 
