@@ -45,6 +45,7 @@ All of the data populated into the application are pulled from the underlying Po
 - All predicted returns of the most highly correlated stock/keyword pairs
 
 **Discounted Stocks Dashboard**
+
 Over the selected time period:
 - Total stock % change
 - Highest price achieved
