@@ -1,5 +1,5 @@
 import dash
-from dash import html, Input, Output, callback, dcc
+from dash import html, Input, Output, callback
 import dash_bootstrap_components as dbc
 from static.color_palette import colors
 import static.images as images

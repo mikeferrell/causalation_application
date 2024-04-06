@@ -20,7 +20,7 @@ connect = engine.connect()
 
 symbols_list = dataframes_from_queries.stock_dropdown()
 
-#returns a string
+
 def get_dates():
     today = date.today()
     yesterdays_date = today - timedelta(days=1)
@@ -47,18 +47,6 @@ def current_sp_cik_list():
             cik = columns[6].text.strip()
             cik_list.append(cik)
     return cik_list
-
-def get_dates_multiple():
-    today = date.today()
-    yesterdays_date = today - timedelta(days=1)
-    yesterdays_date = str(yesterdays_date)
-    year = int(yesterdays_date[0:4])
-    month = int(yesterdays_date[5:7])
-    day = int(yesterdays_date[8:10])
-    yesterday = str(date(year, month, day))
-
-    today_minus_one_eighty = today - timedelta(days=180)
-    return yesterday, today_minus_one_eighty
 
 
 def update_edgar_files(filing_type):
@@ -103,7 +91,6 @@ def append_to_postgres(df, table, append_or_replace):
         conn = psycopg2.connect(conn_string
                                 )
         conn.autocommit = True
-        cursor = conn.cursor()
         conn.close()
     except Exception as e:
         print('Error: ', e)
@@ -115,7 +102,6 @@ def update_stock_data():
     # symbols_list = ['CRM', 'IBM']
     for ticker in symbols_list:
         try:
-            # downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
             downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
@@ -136,13 +122,13 @@ def update_stock_data():
     append_to_postgres(trading_volume_df, 'ticker_trading_volume', 'replace')
     print("Stock Done")
 
+# update_stock_data()
 
 def update_stock_data_russell():
     symbols = []
     symbols_list_russell = stock_list.russell_finance_and_technology
     for ticker in symbols_list_russell:
         try:
-            # downloaded_data = yf.download(ticker, start='2017-01-01', end=date.today())
             downloaded_data = yf.download(ticker, start=f'{get_dates()}', end=date.today())
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
@@ -367,15 +353,6 @@ def wrapper_top_correlation_scores_desc():
     top_correlation_scores('desc')
 
 
-def last_week_top_correlation_scores():
-    query_results = f'''
-        select * from all_correlation_scores
-        '''
-    df_results = pd.read_sql(query_results, con=connect)
-    append_to_postgres(df_results, 'last_week_correlation_scores', 'replace')
-    print("done with last week correlation table")
-
-
 def top_ten_correlations_today():
     print("starting top_ten_correlations_today")
     df_of_top_ten_correlations = forecast_top_stocks_model.top_correlation_query_results('all_correlation_scores')
@@ -400,18 +377,7 @@ def full_edgar_job_10ks():
         print("no files to analyze")
     print("done with edgar cron job")
 
-    # update_edgar_files('10-K')
-    # time.sleep(10)
-    # count = 0
-    # for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
-    #     count += len(files)
-    # if count > 1:
-    #     edgar_jobs.analyze_edgar_files('10k')
-    #     time.sleep(5)
-    #     edgar_jobs.delete_edgar_file_paths()
-    # else:
-    #     print("no files to analyze")
-    # print("done with 10k cron job")
+
 
 def full_edgar_job_10qs():
     update_edgar_files('10-Q')
@@ -428,33 +394,12 @@ def full_edgar_job_10qs():
         print("no files to analyze")
     print("done with edgar cron job")
 
-    # update_edgar_files('10-Q')
-    # time.sleep(10)
-    # count = 0
-    # for root_dir, cur_dir, files in os.walk(r'sec-edgar-filings/'):
-    #     count += len(files)
-    # if count > 1:
-    #     edgar_jobs.analyze_edgar_files('10q')
-    #     time.sleep(5)
-    #     edgar_jobs.delete_edgar_file_paths()
-    # else:
-    #     print("no files to analyze")
-    # print("done with 10q cron job")
-
-def ml_calculate_top_ten_forecasts():
-    full_df_for_upload = forecast_top_stocks_model.calculate_top_ten_forecasts('backtest')
-    append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
-
 
 def predicted_prices_for_next_week():
     df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list('this week')
     print(df_for_upload)
     append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
 
-
-def predicted_prices_for_last_week():
-    df_for_upload = forecast_top_stocks_model.weekly_buy_recommendation_list('last week')
-    append_to_postgres(df_for_upload, 'last_week_buy_recommendations', 'replace')
 
 # predicted_prices_for_next_week()
 

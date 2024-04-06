@@ -3,6 +3,7 @@ stock_list = [
 'USL', 'UNL', 'BCD', 'GLD', 'GDX', 'CPER', 'COPX', 'URA', 'USO', 'BITO', 'BITI', 'GBTC', 'ETHE', 'VICE',
     '^GSPC',
     '^SP500TR',
+    'BTC-USD',
 #meme stocks
     'CVNA',
     'BBBY',

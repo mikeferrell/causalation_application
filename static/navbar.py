@@ -2,7 +2,6 @@ from dash import html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 from static.color_palette import colors
 import static.images as images
-import base64
 
 
 NAVBAR_STYLE = {

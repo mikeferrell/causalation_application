@@ -3,14 +3,13 @@ import passwords
 from sqlalchemy import create_engine
 from static.stock_list import stock_list
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 
 url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
-#added artificial intelligence on 8/2/23, then dropped it shortly after
-#dropped blockchain and hack on 10/29/23
+
 keyword_list = ['advertising', 'cloud', 'COVID', 'credit', 'currency exchange',
                 'digital', 'election', 'exchange rate', 'growth', 'housing market', 'inflation',
                 'insurance', 'politic', 'profitability', 'recession',
@@ -87,12 +86,6 @@ def stock_dropdown():
     stock_symbol_dropdown_list = stock_list
     return stock_symbol_dropdown_list
 
-# def keyword_dropdown():
-#     keyword_count = f'''select distinct keywords, keyword_count from public.rake_data
-# order by keyword_count desc'''
-#     keyword_count_df = pd.read_sql(keyword_count, con=connect)
-#     keyword_count_df= keyword_count_df.iloc[:, 0]
-#     return keyword_count_df
 
 #get rid of this one and use the count from the other charts instead. this is just confusing things
 def keyword_table(keyword, start_date, end_date):
@@ -116,32 +109,6 @@ def keyword_table(keyword, start_date, end_date):
     keyword_count_df = keyword_count_df.rename(columns={'keywords':'Keywords', 'keyword_count':'Keyword Count'})
     return keyword_count_df
 
-#def stock_crypto_correlation_filtered(stock_symbol):
-#     query_results = f'''
-#                 with a as (
-#                 with new_dates as (
-#                 select coin_name,
-#                 coin_price,
-#                 date(split_part(close_date, '-', 3) || '-' || split_part(close_date, '-', 2) || '-' || split_part(close_date, '-', 1)) as close_date
-#                 from public.crypto_data)
-#
-#                 select date(created_at) + interval '1 month' as created_at, close_price, stock_symbol, coin_name, coin_price
-#                 from ticker_data
-#                 join new_dates on date(ticker_data.created_at)  + interval '1 month' = new_dates.close_date
-#                 where created_at >= '2022-01-01'
-#                 order by stock_symbol, created_at
-#                 )
-#
-#                 select stock_symbol, coin_name, corr(coin_price, close_price) * 1.000 as correlation
-#                 from a
-#                 where stock_symbol = '{stock_symbol}'
-#                 group by 1, 2
-#                 order by correlation desc
-#                 limit 1
-#                 '''
-#     df_results = pd.read_sql(query_results, con=connect)
-#     df_results = df_results.round({'correlation': 4})
-#     return df_results
 
 def inflation_mention_correlation(stock_symbol, start_date, end_date, keyword, time_delay, filing_type):
     query_results = f'''

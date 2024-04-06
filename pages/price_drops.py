@@ -7,7 +7,6 @@ from ml_models import dataframes_from_queries
 import dash_components.charts as my_dash_charts
 from cron_jobs import get_dates
 from static.color_palette import colors
-import static.stock_list as stock_lists
 import static.images as images
 
 dash.register_page(__name__, path='/price_drops', name="Price Drops")
@@ -325,7 +324,7 @@ def update_output(n_clicks):
      ],
     prevent_initial_call=True
 )
-def revenue_chart_output(n_clicks, stock_filter):
+def revenue_chart_output(stock_filter):
     if len(stock_filter) > 0:
         revenue_chart_df = dataframes_from_queries.revenue_data_from_json_column(stock_filter)
         revenue_chart = my_dash_charts.annual_revenue_lines(revenue_chart_df, stock_filter)

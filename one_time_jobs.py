@@ -1,5 +1,4 @@
 from ml_models import dataframes_from_queries
-import pandas as pd
 from datetime import date, timedelta, datetime
 import time
 from sqlalchemy import create_engine
@@ -7,31 +6,23 @@ from sec_edgar_downloader import Downloader
 import psycopg2
 import passwords
 import edgar_jobs
-import requests
-import json
 import yfinance as yf
 import static.stock_list as stock_list
+from requests import Session
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
+import json
 
 url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
 
 symbols_list = dataframes_from_queries.stock_dropdown()
+# symbols_list = ['^SP500TR']
+# symbols_list = stock_list.russell_finance_and_technology
+# symbols_list = dataframes_from_queries.stock_dropdown()
 
 
 def get_dates():
-    today = date.today()
-    yesterdays_date = today - timedelta(days=1)
-    yesterdays_date = str(yesterdays_date)
-    year = int(yesterdays_date[0:4])
-    month = int(yesterdays_date[5:7])
-    day = int(yesterdays_date[8:10])
-
-    yesterday = str(date(year, month, day))
-    return yesterday
-
-
-def get_dates_multiple():
     today = date.today()
     yesterdays_date = today - timedelta(days=1)
     yesterdays_date = str(yesterdays_date)
@@ -49,7 +40,7 @@ def update_edgar_files(filing_type, start_date):
     for ticker in symbols_list:
         dl = Downloader()
         try:
-            dl.get(f"{filing_type}", f"{ticker}", after=start_date, before=f"{get_dates()}")
+            dl.get(f"{filing_type}", f"{ticker}", after=start_date, before=f"{get_dates()[0]}")
         except Exception as error:
             print(error)
             continue
@@ -57,7 +48,6 @@ def update_edgar_files(filing_type, start_date):
 
 
 def append_to_postgres(df, table, append_or_replace):
-    df = df
     conn_string = passwords.rds_access
     db = create_engine(conn_string)
     conn = db.connect()
@@ -66,7 +56,6 @@ def append_to_postgres(df, table, append_or_replace):
     conn = psycopg2.connect(conn_string
                             )
     conn.autocommit = True
-    cursor = conn.cursor()
     conn.close()
 
 #remember to drop duplicates after running this. figure out if I can add a drop dupes line before uploading
@@ -95,39 +84,37 @@ def full_edgar_job_10qs():
 # full_edgar_job_10qs()
 
 
-symbols_list = ['^SP500TR']
-# symbols_list = stock_list.russell_finance_and_technology
-# symbols_list = dataframes_from_queries.stock_dropdown()
-
 def one_time_update_stock_data():
     symbols = []
+    symbols_list = ['BTC-USD']
     for ticker in symbols_list:
         try:
-            downloaded_data = yf.download(ticker, start='2017-01-01', end='2020-12-31')
+            downloaded_data = yf.download(ticker, start='2016-01-01', end='2016-12-31')
         except (ValueError, KeyError, Exception) as error:
             print(f"{error} for {ticker}")
             continue
         downloaded_data['Symbol'] = ticker
         symbols.append(downloaded_data)
     df = pd.concat(symbols)
-    print(df)
+    # print(df)
     df = df.reset_index()
     df = df[['Date', 'Open', 'Close', 'Symbol']]
     df.columns = ['created_at', 'open_price', 'close_price', 'stock_symbol']
     df = df.drop_duplicates()
+    print(df)
     append_to_postgres(df, 'ticker_data', 'append')
     print("stocks done")
 
 # one_time_update_stock_data()
 
 def upload_csv_to_postgres():
-    df = pd.read_csv('/Users/michaelferrell/PycharmProjects/causalation_dashboard/static/company_name.csv')
+    df = pd.read_csv('foo')
     append_to_postgres(df, 'stock_names', 'replace')
 
 # upload_csv_to_postgres()
 
 def one_time_backfill_correlation_scores(asc_or_desc):
-    yesterday, today_minus_one_eighty = get_dates_multiple()
+    yesterday, today_minus_one_eighty = get_dates()
     # grab the keywords we want to test
     keywords_dict = dataframes_from_queries.keyword_list
     # list of each week that will be used as the week for backtest
@@ -344,7 +331,7 @@ def stock_earnings_data(start_symbol):
 #below jobs with only the technology companies
 def pull_sector_data(start_symbol):
     symbols_list = [item for item in stock_list.russell3k if item not in stock_list.stock_list]
-    symbols_list = ['^GSPC', 'SNOW']
+    # symbols_list = ['^GSPC', 'SNOW']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
@@ -383,7 +370,7 @@ def pull_sector_data(start_symbol):
 
 def income_statement_data(start_symbol):
     symbols_list = stock_list.russell_finance_and_technology
-    symbols_list = ['^GSPC', 'SNOW']
+    # symbols_list = ['^GSPC', 'SNOW']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
@@ -479,7 +466,7 @@ def income_statement_data(start_symbol):
 #can find shares outstanding point in time. need to fix everything below though
 def balance_sheet_data(start_symbol):
     symbols_list = stock_list.russell_finance_and_technology
-    symbols_list = ['^GSPC', 'SNOW']
+    # symbols_list = ['^GSPC', 'SNOW']
     if start_symbol:
         start_index = symbols_list.index(start_symbol) + 1
         symbols_list = symbols_list[start_index:]
@@ -574,3 +561,86 @@ def balance_sheet_data(start_symbol):
 
 
 
+
+
+
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+
+def scrape_sp500_data():
+    # Wikipedia URL for the S&P 500 page
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    # Send a GET request to the URL
+    response = requests.get(url)
+    # Parse the HTML content of the page
+    soup = BeautifulSoup(response.text, "html.parser")
+    # Find the table containing S&P 500 component data
+    table = soup.find("table", {"class": "wikitable"})
+
+    # Extract data from the table
+    data = []
+    for row in table.find_all("tr")[1:]:  # Skip the header row
+        columns = row.find_all("td")
+        if len(columns) >= 7:  # Ensure the row has enough columns
+            stock_symbol = columns[0].text.strip()
+            date_added = columns[5].text.strip()
+            date_ended = None  # Initialize date_ended as None
+
+            # Check if the "removed" column has data (company left S&P 500)
+            if columns[7].text.strip():
+                date_ended = columns[7].text.strip()
+
+            data.append({"stock_symbol": stock_symbol, "date_added": date_added, "date_ended": date_ended})
+
+    return data
+
+def build_sp_total_list():
+    # Scrape S&P 500 data
+    sp500_data = scrape_sp500_data()
+
+    # Create a DataFrame from the scraped data
+    df = pd.DataFrame(sp500_data)
+
+    # Convert date columns to datetime format
+    df["date_added"] = pd.to_datetime(df["date_added"])
+    df["date_ended"] = pd.to_datetime(df["date_ended"], errors="coerce")
+
+    # Filter companies added on or after January 1, 2020, or not ended by that date
+    df = df[(df["date_added"] >= pd.to_datetime("2020-01-01")) | (df["date_ended"] >= pd.to_datetime("2020-01-01"))]
+
+    # Display the resulting DataFrame
+    print(df)
+
+# build_sp_total_list()
+
+
+# coinmarketcap API for pulling crypto prices
+def query_coinmarketcap():
+    # endpoint = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/map'
+    # url = 'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+    parameters = {
+        'start': '1',
+        'limit': '5',
+        'convert': 'USD'
+    }
+    headers = {
+        'Accepts': 'application/json',
+        'X-CMC_PRO_API_KEY': passwords.coinmarketcap_api,
+    }
+
+    session = Session()
+    session.headers.update(headers)
+
+    try:
+        # response = session.get(endpoint, params=parameters)
+        # data = json.loads(response.text)
+        response = requests.get(url, headers=headers, params=parameters)
+        data = response.json
+        coin_ids = {coin['symbol']: coin['id'] for coin in data['data']}
+        for symbol, coin_id in coin_ids.items():
+            print(f"Symbol: {symbol}, CoinMarketCap ID: {coin_id}")
+    except (ConnectionError, Timeout, TooManyRedirects) as e:
+        print(e)
+
+# query_coinmarketcap()

@@ -4,7 +4,6 @@ from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
 from dash.dash_table import DataTable
 from static.color_palette import colors
-import pandas as pd
 import passwords
 
 url = passwords.rds_access

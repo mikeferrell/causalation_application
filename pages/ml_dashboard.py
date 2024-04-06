@@ -175,7 +175,7 @@ layout = dbc.Container([
     Input('load_interval', 'n_intervals'),
     prevent_initial_call=False
 )
-def ml_update_output(n_intervals):
+def ml_update_output():
     date_and_stock_for_chart_backtest = my_dash_charts.backtest_Mult_Y_Axis_Lines(
         backtest.comparing_returns_vs_sandp('decision_tree')[0])
     s_and_p_returns = backtest.comparing_returns_vs_sandp('decision_tree')[1]

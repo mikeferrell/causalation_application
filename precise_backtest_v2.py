@@ -7,9 +7,12 @@ from pandasql import sqldf
 import numpy as np
 import ml_models.forecast_top_stocks_model_v2 as forecast_top_stocks_model
 
+
 url = passwords.rds_access
 engine = create_engine(url)
 connect = engine.connect()
+
+symbols_list = dataframes_from_queries.stock_dropdown()
 
 
 def format_percent(value):
@@ -19,15 +22,6 @@ def format_percent(value):
 def format_dollar(value):
     return "${:.2f}".format(value)
 
-
-url = passwords.rds_access
-engine = create_engine(url)
-connect = engine.connect()
-
-symbols_list = dataframes_from_queries.stock_dropdown()
-
-
-# symbols_list = ['COIN', 'AAPL']
 
 # returns a string
 def get_dates():
@@ -205,11 +199,11 @@ def build_backtest_prediction_table(model_type):
         df_for_calculating_backtest = df_for_calculating_backtest.append(df_full, ignore_index=True)
     return df_for_calculating_backtest
 
-
 # model_type = 'decision_tree'
 # df_for_calculating_backtest = build_backtest_prediction_table(model_type)
 # # print(df_for_calculating_backtest)
 # forecast_top_stocks_model.append_to_postgres(df_for_calculating_backtest, f'{model_type}_backtest_top_predictions_2', 'replace')
+
 
 # model_type options are decision_tree, random_forest, and linear
 def backtesting_buy_recommendation_list(model_type):
@@ -362,7 +356,6 @@ def comparing_returns_vs_sandp(model_type):
     starting_price_sp = starting_price_sp[0]
     ending_price_sp = ending_price_sp[0]
     s_and_p_returns = (ending_price_sp - starting_price_sp) / starting_price_sp
-    s_and_p_number = s_and_p_returns
     s_and_p_returns = "{:.1%}".format(s_and_p_returns)
 
     # calculate Backtest ROI
@@ -371,7 +364,6 @@ def comparing_returns_vs_sandp(model_type):
     starting_price_backtest = starting_price_backtest[0]
     ending_price_backtest = ending_price_backtest[0]
     backtest_returns = (ending_price_backtest - starting_price_backtest) / starting_price_backtest
-    backtest_number = backtest_returns
     backtest_returns = "{:.1%}".format(backtest_returns)
 
     # calculate Sharpe Ratio. This first way is from the book, the second one looks cleaner

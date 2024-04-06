@@ -1,11 +1,8 @@
-import numpy as np
 import pandas as pd
-from pandas_datareader import data
-from datetime import date, timedelta, datetime
-import time
+from datetime import date, timedelta
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
 from sqlalchemy import create_engine
@@ -61,7 +58,6 @@ def append_to_postgres(df, table, append_or_replace):
         conn = psycopg2.connect(conn_string
                                 )
         conn.autocommit = True
-        cursor = conn.cursor()
         conn.close()
     except Exception as e:
         print('Error: ', e)
@@ -70,7 +66,7 @@ def append_to_postgres(df, table, append_or_replace):
 
 # this is the list of the top 25 correlations from the all_correlation_scores table, with some filtering
 #this only works for this week, not last week. if we want to add last week into the dash, we need to fix this
-def top_correlation_query_results(table_for_this_week_or_last):
+def top_correlation_query_results():
     top_correlation_query_results = f'''
     with top_absolute_scores AS (
       with correlated as (select stock_symbol
@@ -401,71 +397,6 @@ def train_narrow_ml_model(keyword, filing_type, stock_symbol, interval, end_date
 # to fix, run top_correlation_query_results against the DB and see what the top results are, then add that stock to the
 # where clause to supress it
 
-#it doesn't appear that I'm using this anymore, it's in a wrapper on the cron_jobs page, but the application doesn't run it
-#what is this for?
-def calculate_top_ten_forecasts(testing_timeline):
-    yesterday, one_year_ago = defined_dates()
-    df_for_pg_upload = pd.DataFrame(columns=['current_week', 'week_opening_date', 'keyword_mentions_rolling_avg',
-                                             'current_close_price', 'next_week_close_price', 'predicted_price',
-                                             'stock_symbol', 'keyword', 'start_date', 'time_delay', 'filing_type'])
-
-    query_df = top_correlation_query_results()
-
-    row_count = query_df.shape[0]
-    row_range = range(0, row_count)
-    for rows in row_range:
-        df_row = query_df.iloc[rows]
-        stock_symbol = df_row['stock_symbol']
-        keyword = df_row['keyword']
-        correlation_start_date = df_row['start_date']
-        interval = df_row['time_delay']
-        filing_type = df_row['filing_type']
-
-        # calling function to determine the end date for each loop for the model to use for the training set
-        # this ensures that, when backtesting, the real data isn't appearing in the training set
-        # when running this one time, just set datetime list as 'yesterday'
-        if testing_timeline == 'backtest':
-            datetime_list = list_of_filing_weeks_for_training(keyword, filing_type, stock_symbol, interval,
-                                                              correlation_start_date)
-        else:
-            datetime_list = [yesterday]
-
-        test_results = []
-        full_test_data = []
-        mae_data = []
-
-        for dates in datetime_list:
-            df_test_full, df_test, mae, model = train_ml_model(keyword, filing_type, stock_symbol,
-                                                               interval, dates, correlation_start_date)
-            full_test_data.append(df_test_full)
-            mae_data.append(mae)
-
-            try:
-                prediction = model.predict(df_test)
-                test_results.append(prediction)
-                print('Predicted stock price:', prediction)
-            except (KeyError, ValueError) as error:
-                print(error)
-                continue
-
-        df_test = pd.DataFrame(test_results, columns=['predicted_price'])
-        full_results_df = pd.concat(full_test_data, ignore_index=True)
-        df_full = pd.DataFrame(full_results_df)
-        df_full['predicted_price'] = df_test
-        df_full['stock_symbol'] = stock_symbol
-        df_full['keyword'] = keyword
-        df_full['start_date'] = correlation_start_date
-        df_full['time_delay'] = interval
-        df_full['filing_type'] = filing_type
-        df_full = df_full.drop_duplicates()
-        df_for_pg_upload = df_for_pg_upload.append(df_full, ignore_index=True)
-    return df_for_pg_upload
-
-#
-# full_df_for_upload = calculate_top_ten_forecasts('backtest')
-# print(full_df_for_upload)
-# append_to_postgres(full_df_for_upload, 'top_five_prediction_results', 'replace')
-
 
 #this has to run every saturday, because "end date" is set using the get_dates() function. If you try to run this on a
 #sunday, the end date will be a saturday and have no stock values, so it will return an empty dataframe
@@ -595,48 +526,6 @@ def weekly_buy_recommendation_list(this_week_or_last):
                                      'predicted_price': 'predicted_weekly_close_price'}, inplace=True)
     return df_for_pg_upload
 
-
-#
 # df_for_upload = weekly_buy_recommendation_list('this week')
 # print(df_for_upload)
 # append_to_postgres(df_for_upload, 'future_buy_recommendations', 'replace')
-
-
-
-##THis doesn't appear to be used anywhere. Maybe delete?
-def calculate_purchase_amounts(principal):
-    query_for_buys = f'''
-    with stock_selections as (
-      SELECT
-          stock_symbol,
-          previous_weekly_open_date,
-          previous_weekly_close_price,
-          predicted_weekly_close_price, 
-          (predicted_weekly_close_price / previous_weekly_close_price) - 1 AS predicted_price_change_percentage
-      FROM
-          public.future_buy_recommendations
-      WHERE predicted_weekly_close_price > previous_weekly_close_price
-      order by predicted_price_change_percentage desc
-      limit 5
-    ),
-
-    total_estimation as (
-      select previous_weekly_open_date, sum(predicted_price_change_percentage) as total_change_amount
-      from stock_selections
-      group by previous_weekly_open_date
-    )
-
-    select 
-      stock_symbol
-      , previous_weekly_close_price
-      , ({principal} * (predicted_price_change_percentage / total_change_amount)) / previous_weekly_close_price as number_of_shares_to_purchase
-      , predicted_price_change_percentage / total_change_amount as scaled_predicted_change
-    from 
-      stock_selections 
-      join total_estimation on stock_selections.previous_weekly_open_date = total_estimation.previous_weekly_open_date
-    where predicted_price_change_percentage != 0
-    order by 
-     stock_symbol asc
-        '''
-    df_for_buys = pd.read_sql(query_for_buys, con=connect)
-    return df_for_buys
