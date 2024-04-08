@@ -14,8 +14,10 @@ In order to run this project:
     - Stock Data
     - SEC filings (10-K's and 10-Q's)
     - Crypto data
+           - Not necessary for any dashboards, but can be additive
     - Financial Data using (AlphaVantage)
          - The code is written to use the free API which has a cap of 500 calls per day
+         - Only necessary for the "Discounted Stocks" dashboard
     - Deploy your code to your preferred cloud provider; I've been running this with ElasticBeanstalk and left the necessary extensions and packages
       
 
