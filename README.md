@@ -24,6 +24,7 @@ In order to run this project:
 This is all the code necessary to run the causalation application. I have slimmed this down from my own project which has a lot of experimentation, so some things may be lost in translation. I know that it's poorly organized and commented, I originally built this just for myself but decided to publish it since I don't intend to keep the website running much longer.
 
 If you want to run part of all of this code yourself and run into issues, shoot me an email. I'm happy to help with any piece of this! causalation@gmail.com
+Also, check out my Substack where I've published a bit of extra details about the code base. For example: https://causalation.substack.com/p/taking-causalation-offline
 
 
 **Data**
