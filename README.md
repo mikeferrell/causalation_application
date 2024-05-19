@@ -73,6 +73,10 @@ Over the selected time period:
 - EBITDA change over time
 - Quarterly earnings results charted over time
 
+**Quick Website Tour**
+
+https://www.youtube.com/watch?v=LDYV78nO21g
+
 **HomePage**
 <img width="1438" alt="Screen Shot 2024-04-06 at 1 35 28 PM" src="https://github.com/mikeferrell/causalation_application/assets/68746547/d2ada04b-3f2a-4b33-ae8d-33a0b9bd3f9b">
 
