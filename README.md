@@ -81,12 +81,12 @@ https://www.youtube.com/watch?v=LDYV78nO21g
 <img width="1438" alt="Screen Shot 2024-04-06 at 1 35 28 PM" src="https://github.com/mikeferrell/causalation_application/assets/68746547/d2ada04b-3f2a-4b33-ae8d-33a0b9bd3f9b">
 
 
-**Correlation Chart**
+**Stock & Keyword Correlation Chart**
 
 <img width="1053" alt="Screen Shot 2023-07-13 at 1 53 45 PM" src="https://github.com/mikeferrell/causalation_application/assets/68746547/89190532-556c-4452-91f9-20b4188ab270">
 
 
-**Predicted Price Moves**
+**Machine Learning Predicted Price Output**
 
 <img width="707" alt="Screen Shot 2023-06-30 at 5 51 51 PM" src="https://github.com/mikeferrell/causalation_application/assets/68746547/7f7cf848-933f-4d31-aa7a-48ef933ac7a1">
 
