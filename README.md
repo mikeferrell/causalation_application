@@ -1,4 +1,8 @@
 # causalation_application
+Causalation is a project I built that uses keywords in public earnings reports to predict stock moves for S&P 500 stocks. Using Python & SQL, I downloaded all 10Ks & 10Qs from S&P 500 companies, analyzed the frequency of keywords and their correlations to stock trends, then used Machine Learning to predict future stock moves.
+
+I maintained this for about 6 months, and in that time returned over 8x as much as the S&P 500. However, I decided to stop maintaing it because the Sharpe ratio was <1 and the work wasn't worth the gains. Here is where you can see the weekly returns, as well as commentary about the project: https://causalation.substack.com/
+
 Causalation is a project with several pieces, all of which can be run from this code base:
 
 - A website with homepage, blog, help page, about, contact, and a page for each of the following financial models:
